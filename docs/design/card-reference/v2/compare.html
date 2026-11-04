@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>카드 v2 ↔ 레퍼런스 장별 비교 (내부 참고 전용)</title><meta name="viewport" content="width=1480">
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; width:1480px; background:#ecebe8; color:#222; font:15px/1.6 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif; }
+  header { padding:34px 48px 6px; } h1 { margin:0 0 6px; font-size:26px; } header p { margin:0 0 4px; max-width:1240px; color:#444; }
+  .badge { display:inline-block; margin:8px 8px 0 0; padding:2px 10px; border:1.5px solid #222; border-radius:999px; font-size:12.5px; font-weight:700; background:#fff; }
+  .badge.warn { background:#fff3cd; border-color:#8a6d00; }
+  section { padding:18px 48px 8px; } h2 { margin:0 0 6px; font-size:19px; }
+  .strip { display:flex; gap:8px; } .strip img { height:210px; display:block; border:1px solid #bbb; background:#fff; }
+  .hd { display:grid; grid-template-columns:380px 380px 1fr; gap:24px; font-size:13px; font-weight:700; color:#444; padding:10px 0 6px; border-top:2px solid #222; margin-top:14px; }
+  .pair { display:grid; grid-template-columns:380px 380px 1fr; gap:24px; align-items:start; border-top:1px solid #cfcdc7; padding:18px 0; }
+  .pair img { width:100%; display:block; border:1px solid #bbb; background:#fff; }
+  .pair .ref img { aspect-ratio:3/4; object-fit:cover; }
+  .pair h3 { margin:0 0 6px; font-size:17px; } .pair .meta { font-size:12.5px; color:#666; margin-bottom:10px; }
+  .pair h4 { margin:12px 0 4px; font-size:13px; letter-spacing:.02em; } .pair h4.same { color:#0a5c3b; } .pair h4.diff { color:#8a3b00; }
+  .pair ul { margin:0; padding-left:18px; } .pair li { margin:0 0 3px; }
+  .note { margin:14px 0 40px; font-size:13px; color:#555; max-width:1240px; }
+</style></head><body>
+<header>
+  <h1>카드 v2 — 레퍼런스와 장별 나란히 비교</h1>
+  <p>왼쪽은 사용자가 지정한 카드뉴스 형태(구조 분해용 캡처), 가운데는 v2 예시(생성형 사진 배경 · 1080×1350), 오른쪽은 장별로 <b>맞춘 점</b>과 <b>일부러 다르게 둔 점</b>이다. 이전 시안 A·B(도식 중심)는 그대로 두고 v2 를 기본안으로 제안한다.</p>
+  <span class="badge warn">내부 참고 전용 — 레퍼런스 캡처는 분해·학습용, 재배포·게시 금지</span><span class="badge">레퍼런스의 로고·계정명·문구·사진 원본은 쓰지 않았다</span><span class="badge">배경 7장 = 생성형 이미지(codex image_generate, 스타일 바이블 1개)</span><span class="badge">SAMPLE · 발행 불가 · 채널명·운영자·사실 수치 자리표시</span>
+</header>
+
+<section>
+  <h2>1. 한눈에 — 레퍼런스 9장 ↔ v2 8장</h2>
+  <div class="strip" title="레퍼런스">
+    <img src="../capture/ref-01.jpg" alt=""><img src="../capture/ref-02.jpg" alt=""><img src="../capture/ref-03.jpg" alt=""><img src="../capture/ref-04.jpg" alt=""><img src="../capture/ref-05.jpg" alt=""><img src="../capture/ref-06.jpg" alt=""><img src="../capture/ref-07.jpg" alt=""><img src="../capture/ref-08.jpg" alt=""><img src="../capture/ref-09.jpg" alt="">
+  </div>
+  <div class="strip" style="margin-top:10px" title="v2">
+    <img src="render/v2-01.png" alt=""><img src="render/v2-02.png" alt=""><img src="render/v2-03.png" alt=""><img src="render/v2-04.png" alt=""><img src="render/v2-05.png" alt=""><img src="render/v2-06.png" alt=""><img src="render/v2-07.png" alt=""><img src="render/v2-08.png" alt="">
+  </div>
+</section>
+
+<section>
+  <h2>2. 장별 비교</h2>
+  <div class="hd"><span>레퍼런스 (3:4, 1080×1440)</span><span>우리 v2 (4:5, 1080×1350)</span><span>맞춘 점 · 일부러 다르게 둔 점</span></div>
+
+  <div class="pair"><figure class="ref" style="margin:0"><img src="../capture/ref-01.jpg" alt=""></figure><figure style="margin:0"><img src="render/v2-01.png" alt=""></figure>
+    <div><h3>1 · 표지 <span class="meta">↔ 레퍼런스 1</span></h3>
+      <h4 class="same">맞춘 점</h4><ul><li>사진이 화면 전체를 채우고, 큰 흰 제목이 하단 1/4 에 놓인다(굵은 산세리프, 줄 간격 촘촘).</li><li>좌상단 로고 자리(자간 넓은 가는 글자) · 우상단 원형 「edited by」 크레딧 · 하단 중앙 계정 표시.</li><li>사진은 차분한 한 톤(레퍼런스는 벽돌·자연광, 우리는 블루아워)으로 통일.</li></ul>
+      <h4 class="diff">일부러 다르게 둔 점</h4><ul><li>제목은 수치로 시작하는 질문이 아니라 사건 명제(포맷 ① 제목) — 영어라 3줄.</li><li>로고·크레딧 원은 자리표시(채널명·운영자 미정). 크레딧 원 안에 인물 사진 없음.</li><li>사진은 생성형(미 의사당, 의사당 형태만 암시 · 깃발·정당색 없음). 기준 시점·SAMPLE 표시가 하단에 붙는다(정본 §5).</li></ul></div></div>
+
+  <div class="pair"><figure class="ref" style="margin:0"><img src="../capture/ref-03.jpg" alt=""></figure><figure style="margin:0"><img src="render/v2-02.png" alt=""></figure>
+    <div><h3>2 · 왜 중요한가 <span class="meta">↔ 레퍼런스 3 (질문 → 한 줄 답 → 문단)</span></h3>
+      <h4 class="same">맞춘 점</h4><ul><li>사진 위에서 아래로 어두워지며 질문 말풍선(좌, 흰) → 답 말풍선(우, 황동) → 글 영역. 말풍선은 굵은 테두리 + 오프셋 그림자 + 꼬리 + 이모지 1개.</li><li>말풍선 위치가 3~7장에서 같다(고정 앵커). 짧은 문장·의미 단위 줄바꿈, 굵기+밑줄 강조.</li><li>마지막 문단이 다음 장의 질문을 부른다(호기심 사슬). 글 ≈45단어(레퍼런스 45~65 어절 범위).</li></ul>
+      <h4 class="diff">일부러 다르게 둔 점</h4><ul><li>레퍼런스는 사진 → 흰색 페이드, v2 는 글을 사진 위에서 직접 읽히게 딥 네이비 페이드(요청 사항).</li><li>문장 앞 ◆(해석) 표시 — 사실/해석 구분 정본(§2) 때문이다. 레퍼런스에는 없다.</li></ul></div></div>
+
+  <div class="pair"><figure class="ref" style="margin:0"><img src="../capture/ref-04.jpg" alt=""></figure><figure style="margin:0"><img src="render/v2-03.png" alt=""></figure>
+    <div><h3>3 · 시장의 기대 <span class="meta">↔ 레퍼런스 4 (비교 대상)</span></h3>
+      <h4 class="same">맞춘 점</h4><ul><li>사진이 상단 절반을 차지하고 같은 자리에 같은 말풍선 쌍, 이어서 두 문단.</li><li>사진 톤은 어두운 사무 공간(레퍼런스는 대리석 로비) — 「정돈된 실내」라는 인상을 맞췄다.</li></ul>
+      <h4 class="diff">일부러 다르게 둔 점</h4><ul><li>사진 위에 반투명 <b>차트 자리표시 패널</b>(구간 · today 선 · 출처·시점 줄) — 사실 수치는 자리표시. 레퍼런스에는 차트가 없다.</li><li>레퍼런스의 강조 인용 대신 굵기+밑줄 한 문장.</li></ul></div></div>
+
+  <div class="pair"><figure class="ref" style="margin:0"><img src="../capture/ref-02.jpg" alt=""></figure><figure style="margin:0"><img src="render/v2-04.png" alt=""></figure>
+    <div><h3>4 · 시나리오 ① 조건 <span class="meta">↔ 레퍼런스 2 (번호 목록 상자)</span></h3>
+      <h4 class="same">맞춘 점</h4><ul><li>둥근 모서리 · 황동 테두리의 <b>❶❷❸ 목록 상자</b>(행 사이 가는 선) + 그 아래 한 줄 밑줄 문장.</li><li>배경 사진의 세 갈래(문 셋)가 「세 시나리오」를 한눈에 암시.</li></ul>
+      <h4 class="diff">일부러 다르게 둔 점</h4><ul><li>시나리오를 <b>2장으로 분할</b>(조건 / 읽는 법) — 한 장에 다 넣으면 글이 레퍼런스 밀도(45~65 어절)를 넘는다.</li><li>확률·목표가 없음 — 「not a forecast」 한 줄을 넣었다(정본 §2).</li></ul></div></div>
+
+  <div class="pair"><figure class="ref" style="margin:0"><img src="../capture/ref-05.jpg" alt=""></figure><figure style="margin:0"><img src="render/v2-05.png" alt=""></figure>
+    <div><h3>5 · 시나리오 ② 읽는 법 <span class="meta">↔ 레퍼런스 5 (차이점)</span></h3>
+      <h4 class="same">맞춘 점</h4><ul><li>앞 장의 마지막 질문(「How would each one read?」)이 이 장의 질문이 된다 — 호기심 사슬.</li><li>사진은 정적 소품(신문·커피) → 「읽는다」는 동사와 맞춘 장면. 목록 상자 구조를 앞 장과 동일하게 유지해 눈이 같은 곳에 머문다.</li></ul>
+      <h4 class="diff">일부러 다르게 둔 점</h4><ul><li>신문 글자는 흐리게 처리(읽히는 글자 금지). 상자 안은 해석만(◆) — 결론·권유 없음.</li></ul></div></div>
+
+  <div class="pair"><figure class="ref" style="margin:0"><img src="../capture/ref-07.jpg" alt=""></figure><figure style="margin:0"><img src="render/v2-06.png" alt=""></figure>
+    <div><h3>6 · 파급 경로 <span class="meta">↔ 레퍼런스 7 (본문 장)</span></h3>
+      <h4 class="same">맞춘 점</h4><ul><li>같은 고정 앵커의 말풍선 · 같은 글 영역 시작선. 사진은 「갈라지는 물길」로 세 경로를 은유(소재·색조 연속).</li></ul>
+      <h4 class="diff">일부러 다르게 둔 점</h4><ul><li>경로 3개를 목록 상자로 — 레퍼런스는 문단. 경로 이름을 굵게, 닿는 곳(섹터·금리·달러)은 마지막 문장에서 한 번에.</li></ul></div></div>
+
+  <div class="pair"><figure class="ref" style="margin:0"><img src="../capture/ref-08.jpg" alt=""></figure><figure style="margin:0"><img src="render/v2-07.png" alt=""></figure>
+    <div><h3>7 · 발표 뒤 확인 <span class="meta">↔ 레퍼런스 8 (지금의 방식 · 굵은 인용)</span></h3>
+      <h4 class="same">맞춘 점</h4><ul><li>마지막 본문 장에서 <b>강조 상자</b>로 닫는다(레퍼런스는 굵은 밑줄 인용·9장의 검정 상자). 사진은 「빈 노트와 펜」 — 독자가 손에 쥘 것.</li></ul>
+      <h4 class="diff">일부러 다르게 둔 점</h4><ul><li>체크박스 3행 + 「어디서 확인」 보조 줄(독자가 직접 검증할 수 있게). 닫는 상자는 어두운 바탕 위라 검정이 아닌 크림색 반전.</li></ul></div></div>
+
+  <div class="pair"><figure class="ref" style="margin:0"><img src="../capture/ref-09.jpg" alt=""></figure><figure style="margin:0"><img src="render/v2-08.png" alt=""></figure>
+    <div><h3>8 · 출처 · 마무리 <span class="meta">↔ 레퍼런스 9 (종이색 마무리)</span></h3>
+      <h4 class="same">맞춘 점</h4><ul><li>마지막 장만 종이색 바탕(사진 없음) · 말풍선 쌍이 위로 올라가고 · 아래에 검정 하이라이트 상자로 닫는다 · 코너 브랜드 상자.</li></ul>
+      <h4 class="diff">일부러 다르게 둔 점</h4><ul><li>레퍼런스에 없는 <b>출처·구분 장</b>이다 — ■▲◆○ 범례, 실선=조사/점선=직접 경험, 운영자 해석·고지 문구 자리(정본 §5: 출처·기준 시점 없는 주장 금지).</li><li>닫는 상자는 인용이 아니라 다음 편(②) 예고.</li></ul></div></div>
+
+  <p class="note">레퍼런스 장수는 9 · 우리는 8(시나리오 분할 +1, 레퍼런스 본문 7 → 우리 본문 6 · 출처 1). 판형은 4:5(R1 결정 대기) — 3:4 로 바꾸려면 cards-v2.html 의 카드 높이와 배경 위치만 바꾸면 된다. 배경 생성 프롬프트는 gen-prompts/, 스타일 바이블은 style-bible.md.</p>
+</section>
+</body></html>

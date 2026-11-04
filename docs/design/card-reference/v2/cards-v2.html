@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Card template sample v2 — pre-issue-5 · generated-photo backgrounds — channel name TBD</title><meta name="viewport" content="width=1080">
+<style>
+  /* 카드 템플릿 예시 v2 — 포맷 ① pre-issue-5, 8장(표지 + 본문 6 + 출처), 1080×1350(4:5). 정적 HTML(스크립트·외부 주소 없음).
+     배경 사진은 생성형 이미지 7장(bg/*.jpg, 스타일 바이블 style-bible.md 공유) + 출처 장 종이색.
+     레퍼런스(카드 9장)의 시각 문법만 차용: 이미지 전면 배경 · 질문/답 말풍선(고정 앵커) · 굵기+밑줄 강조 · 번호 목록 상자 · 닫는 강조 상자 · 코너 브랜드 상자.
+     채널명·운영자·고지 문구·사실 수치는 모두 자리표시. */
+  :root { --navy:#0A121C; --cream:#F4F0E8; --mut:rgba(244,240,232,.66); --brass:#CDA46B; --ink:#111111; --paper:#EFEAE0; }
+  * { box-sizing:border-box; }
+  body::after { content:""; display:block; height:1500px; }
+  body { margin:0; width:1080px; background:#8d8b86; color:var(--cream); font-family:"Helvetica Neue","Apple SD Gothic Neo","Noto Sans KR","Arial",sans-serif; -webkit-font-smoothing:antialiased; }
+  .card { width:1080px; height:1350px; position:relative; overflow:hidden; background:var(--navy); margin:0 0 40px; }
+  .bg { position:absolute; inset:0; background-size:cover; background-position:center top; background-repeat:no-repeat; }
+  .shade { position:absolute; inset:0; background:linear-gradient(180deg, rgba(10,18,28,.10) 0%, rgba(10,18,28,0) 30%, rgba(10,18,28,.50) 44%, rgba(10,18,28,.88) 58%, rgba(10,18,28,.95) 100%); }
+  /* 질문/답 말풍선 — 3~7장에서 위치가 같다(고정 앵커) */
+  .qa { position:absolute; left:52px; right:52px; top:585px; }
+  .b { display:inline-block; position:relative; font-size:40px; font-weight:800; line-height:1.2; letter-spacing:-.01em; padding:15px 34px 17px; border:4px solid var(--ink); border-radius:42px; box-shadow:6px 6px 0 rgba(0,0,0,.88); color:var(--ink); }
+  .q { background:#fff; }
+  .q::after { content:""; position:absolute; left:46px; bottom:-17px; width:26px; height:26px; background:#fff; border-right:4px solid var(--ink); border-bottom:4px solid var(--ink); transform:rotate(45deg) skew(12deg,12deg); border-bottom-right-radius:6px; }
+  .arow { text-align:right; margin-top:26px; }
+  .a { background:var(--brass); }
+  .a::after { content:""; position:absolute; right:46px; bottom:-17px; width:26px; height:26px; background:var(--brass); border-right:4px solid var(--ink); border-bottom:4px solid var(--ink); transform:rotate(45deg) skew(12deg,12deg); border-bottom-right-radius:6px; }
+  /* 글 영역 */
+  .txt { position:absolute; left:60px; right:60px; top:830px; font-size:34px; line-height:1.5; }
+  .txt p { margin:0 0 24px; position:relative; padding-left:42px; }
+  .txt p.plain { padding-left:0; }
+  .txt p:last-child { margin-bottom:0; }
+  .mk { position:absolute; left:0; top:0; color:var(--brass); font-size:26px; font-weight:700; line-height:2; }
+  b.u { font-weight:800; text-decoration:underline; text-decoration-thickness:3px; text-underline-offset:7px; }
+  .next { color:var(--brass); font-weight:700; }
+  /* 번호 목록 상자 */
+  .box { border:3px solid var(--brass); border-radius:28px; background:rgba(10,18,28,.62); padding:4px 30px; margin:0 0 26px; }
+  .row { display:grid; grid-template-columns:50px 1fr; gap:6px; padding:15px 0; font-size:31px; line-height:1.36; border-top:1.5px solid rgba(205,164,107,.38); }
+  .row:first-child { border-top:0; }
+  .row .n { font-size:34px; line-height:1.2; }
+  .row b { font-weight:800; }
+  /* 점검 목록 */
+  .chk { display:grid; grid-template-columns:50px 1fr; gap:6px; margin:0 0 15px; }
+  .chk .n { color:var(--brass); font-size:34px; line-height:1.3; }
+  .chk b { display:block; font-size:32px; font-weight:800; line-height:1.3; }
+  .chk small { display:block; font-size:24px; line-height:1.35; color:var(--mut); margin-top:2px; }
+  .rule { height:2px; background:rgba(244,240,232,.4); margin:12px 0 18px; }
+  .close { display:inline-block; background:var(--cream); color:var(--ink); font-size:34px; font-weight:800; line-height:1.42; padding:12px 24px 14px; }
+  /* 차트 자리(3장) */
+  .chart { position:absolute; left:52px; right:52px; top:236px; height:268px; border-radius:24px; background:rgba(10,18,28,.60); border:1.5px solid rgba(244,240,232,.34); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:18px 26px 12px; }
+  .chart svg { width:100%; height:100%; display:block; }
+  /* 푸터 · 브랜드 상자 */
+  .ft { position:absolute; left:60px; bottom:30px; right:150px; display:flex; align-items:center; gap:16px; font-size:22px; color:var(--mut); white-space:nowrap; }
+  .ft b { color:var(--cream); font-weight:700; letter-spacing:.03em; }
+  .tag { border:1.5px solid currentColor; padding:0 8px; font-size:19px; letter-spacing:.09em; line-height:1.5; }
+  .brand { position:absolute; right:0; bottom:0; width:96px; height:74px; background:#000; color:#fff; font-size:26px; font-weight:800; letter-spacing:.02em; display:flex; align-items:center; justify-content:center; }
+  /* 표지 */
+  .cover .shade { background:linear-gradient(180deg, rgba(10,18,28,.28) 0%, rgba(10,18,28,0) 22%, rgba(10,18,28,0) 46%, rgba(10,18,28,.62) 66%, rgba(10,18,28,.92) 100%); }
+  .logo { position:absolute; left:78px; top:84px; font-size:46px; font-weight:300; letter-spacing:.34em; color:#fff; }
+  .credit { position:absolute; right:64px; top:60px; width:244px; height:244px; border-radius:50%; border:3.5px dashed rgba(255,255,255,.88); background:rgba(255,255,255,.10); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; }
+  .credit i { font-family:"Snell Roundhand","Apple Chancery","Brush Script MT",cursive; font-size:38px; font-style:italic; transform:rotate(-7deg); margin-bottom:6px; }
+  .credit span { font-size:25px; line-height:1.3; font-weight:600; }
+  .cover h1 { position:absolute; left:58px; right:58px; top:864px; margin:0; font-size:90px; font-weight:800; line-height:1.1; letter-spacing:-.035em; color:#fff; text-shadow:0 3px 28px rgba(0,0,0,.5); }
+  .cover .ch { position:absolute; left:0; right:0; top:1226px; text-align:center; font-size:40px; font-weight:800; letter-spacing:.04em; }
+  .cover .ft { left:0; right:0; justify-content:center; bottom:34px; }
+  /* 출처 장(종이색 마무리) */
+  .paper { background:var(--paper); color:var(--ink); }
+  .paper .qa { top:84px; }
+  .paper .q { background:#fff; }
+  .paper .b { box-shadow:6px 6px 0 var(--ink); }
+  .paper .txt { top:330px; left:72px; right:72px; font-size:32px; }
+  .paper .src { display:grid; grid-template-columns:48px 1fr; gap:6px; padding:20px 0; font-size:31px; line-height:1.38; border-top:1.5px solid #CFC7B8; }
+  .paper .src:first-child { border-top:0; }
+  .paper .src small { display:block; font-size:24px; color:#6A655C; margin-top:3px; }
+  .paper .src .n { font-weight:800; font-size:32px; }
+  .paper b.u { text-decoration-color:var(--ink); }
+  .u2 { font-weight:800; text-decoration:underline dashed; text-decoration-thickness:3px; text-underline-offset:7px; white-space:nowrap; }
+  .ph { border:3px dashed #6A655C; padding:16px 22px 17px; font-size:28px; line-height:1.4; margin-top:20px; }
+  .paper .shut { display:inline-block; background:#000; color:#fff; font-size:34px; font-weight:800; line-height:1.4; padding:14px 26px 16px; margin-top:40px; }
+  .paper .ft { color:#6A655C; } .paper .ft b { color:var(--ink); }
+</style></head>
+<body>
+
+<!-- 1 / 8 · 표지 -->
+<article class="card cover" id="c1">
+  <div class="bg" style="background-image:url(bg/v2-1-cover.jpg)"></div><div class="shade"></div>
+  <div class="logo">[CHANNEL]</div>
+  <div class="credit"><i>edited by</i><span>[operator<br>— TBD]</span></div>
+  <h1>Three things markets<br>will re&#8209;price after<br>the US midterms</h1>
+  <div class="ch">[Channel TBD]</div>
+  <footer class="ft"><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="tag">SAMPLE</span></footer>
+</article>
+
+<!-- 2 / 8 · why_it_matters -->
+<article class="card" id="c2">
+  <div class="bg" style="background-image:url(bg/v2-2-why.jpg)"></div><div class="shade"></div>
+  <div class="qa"><div class="b q">Q. Why does a vote move prices? 🤔</div><div class="arow"><div class="b a">A. Because it changes what's expected</div></div></div>
+  <div class="txt">
+    <p><i class="mk">◆</i>Markets trade on what they expect to happen next &mdash; not on what already happened.</p>
+    <p><i class="mk">◆</i>An election can change which policies look realistic. So the useful question isn't who wins, but <b class="u">which expectations a surprise would move.</b></p>
+    <p class="plain next">First: what is the market already assuming?</p>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="tag">SAMPLE</span></footer><div class="brand">[CH]</div>
+</article>
+
+<!-- 3 / 8 · market_expectation -->
+<article class="card" id="c3">
+  <div class="bg" style="background-image:url(bg/v2-3-expect.jpg)"></div><div class="shade"></div>
+  <div class="chart">
+    <svg viewBox="0 0 868 244" role="img" aria-label="Chart placeholder: most-likely band and today marker (no data)">
+      <g font-family="Helvetica Neue,Arial,sans-serif" fill="#F4F0E8">
+        <text x="0" y="26" font-size="25" font-weight="700">▲ Implied expectation — [series name, unit]</text>
+        <rect x="250" y="56" width="300" height="130" fill="#CDA46B" fill-opacity=".34"/>
+        <line x1="0" y1="186" x2="868" y2="186" stroke="#F4F0E8" stroke-width="3"/>
+        <line x1="0" y1="56" x2="0" y2="186" stroke="#F4F0E8" stroke-width="3"/>
+        <line x1="400" y1="44" x2="400" y2="186" stroke="#CDA46B" stroke-width="5" stroke-dasharray="14 9"/>
+        <text x="414" y="78" font-size="24" font-weight="700" fill="#CDA46B">today</text>
+        <text x="250" y="212" font-size="22" fill-opacity=".7">[low]</text>
+        <text x="550" y="212" font-size="22" text-anchor="end" fill-opacity=".7">[high]</text>
+        <text x="20" y="104" font-size="24" font-weight="700">most-likely band</text>
+        <text x="20" y="136" font-size="22" fill-opacity=".7">[value] — placeholder</text>
+        <text x="0" y="240" font-size="20" fill-opacity=".7">Source: [publisher] · as of [YYYY-MM-DD HH:MM TZ]</text>
+      </g>
+    </svg>
+  </div>
+  <div class="qa"><div class="b q">Q. What's already in the price? 🔍</div><div class="arow"><div class="b a">A. A baseline, set before the result</div></div></div>
+  <div class="txt">
+    <p><i class="mk">◆</i>Before the result, prices already lean toward a most-likely outcome.</p>
+    <p><i class="mk">◆</i><b class="u">Reading that baseline comes first.</b> A surprise matters most where the baseline is widely shared.</p>
+    <p class="plain next">So what if the result isn't the baseline?</p>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="tag">SAMPLE</span></footer><div class="brand">[CH]</div>
+</article>
+
+<!-- 4 / 8 · scenarios (1/2) — 조건 -->
+<article class="card" id="c4">
+  <div class="bg" style="background-image:url(bg/v2-4-doors.jpg)"></div><div class="shade"></div>
+  <div class="qa"><div class="b q">Q. What if the result differs? 🧐</div><div class="arow"><div class="b a">A. Three outcomes, not predictions</div></div></div>
+  <div class="txt" style="top:826px">
+    <div class="box">
+      <div class="row"><span class="n">❶</span><span><b>Close to the baseline</b> — near what is already assumed</span></div>
+      <div class="row"><span class="n">❷</span><span><b>More room for policy change</b> — bigger shifts in spending, tax or regulation look more plausible</span></div>
+      <div class="row"><span class="n">❸</span><span><b>A slow, unclear result</b> — control takes time to settle</span></div>
+    </div>
+    <p class="plain"><span class="mk" style="position:static">○ </span>Each is a condition to watch, <b class="u">not a forecast.</b> <span class="next">How would each one read?</span></p>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="tag">SAMPLE</span></footer><div class="brand">[CH]</div>
+</article>
+
+<!-- 5 / 8 · scenarios (2/2) — 읽는 법 -->
+<article class="card" id="c5">
+  <div class="bg" style="background-image:url(bg/v2-5-paper.jpg)"></div><div class="shade"></div>
+  <div class="qa"><div class="b q">Q. And how would each one read? 👀</div><div class="arow"><div class="b a">A. Same data, three stories</div></div></div>
+  <div class="txt" style="top:826px">
+    <div class="box">
+      <div class="row"><span class="n">❶</span><span>Little is re-priced. Attention moves to the details of what comes next.</span></div>
+      <div class="row"><span class="n">❷</span><span>Sectors tied to those policies may need a new set of assumptions.</span></div>
+      <div class="row"><span class="n">❸</span><span>Uncertainty itself becomes the story until it clears.</span></div>
+    </div>
+    <p class="plain"><span class="mk" style="position:static">◆ </span>Readings to <b class="u">test against what you see</b> &mdash; not conclusions. <span class="next">Now: how does a result reach prices?</span></p>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="tag">SAMPLE</span></footer><div class="brand">[CH]</div>
+</article>
+
+<!-- 6 / 8 · transmission -->
+<article class="card" id="c6">
+  <div class="bg" style="background-image:url(bg/v2-6-delta.jpg)"></div><div class="shade"></div>
+  <div class="qa"><div class="b q">Q. How does it reach prices? 🔀</div><div class="arow"><div class="b a">A. Through three paths</div></div></div>
+  <div class="txt" style="top:826px">
+    <div class="box">
+      <div class="row"><span class="n">❶</span><span><b>Policy path</b> — which proposals become more or less likely</span></div>
+      <div class="row"><span class="n">❷</span><span><b>Fiscal outlook &amp; rates</b> — expectations for spending and borrowing</span></div>
+      <div class="row"><span class="n">❸</span><span><b>Sector exposure</b> — expectations for regulation, trade and tax</span></div>
+    </div>
+    <p class="plain"><span class="mk" style="position:static">◆ </span>Each path ends where you can <b class="u">look it up yourself</b>: sectors, bond yields, the dollar. <span class="next">So what to check afterwards?</span></p>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="tag">SAMPLE</span></footer><div class="brand">[CH]</div>
+</article>
+
+<!-- 7 / 8 · after_checks -->
+<article class="card" id="c7">
+  <div class="bg" style="background-image:url(bg/v2-7-notebook.jpg)"></div><div class="shade"></div>
+  <div class="qa"><div class="b q">Q. What do I check afterwards? ✍️</div><div class="arow"><div class="b a">A. Three signals you can verify</div></div></div>
+  <div class="txt" style="top:826px">
+    <div class="chk"><span class="n">☐</span><span><b>Was it a surprise against the baseline you noted?</b><small>Your notes vs. the first official results</small></span></div>
+    <div class="chk"><span class="n">☐</span><span><b>How did rate expectations move?</b><small>Central bank communication · market-implied rates</small></span></div>
+    <div class="chk"><span class="n">☐</span><span><b>Which sectors moved most?</b><small>Sector performance from a data source you trust</small></span></div>
+    <div class="rule"></div>
+    <div class="close">Write down your baseline first.<br>Then compare it with the first official results.</div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="tag">SAMPLE</span></footer><div class="brand">[CH]</div>
+</article>
+
+<!-- 8 / 8 · sources (종이색 마무리) -->
+<article class="card paper" id="c8">
+  <div class="qa"><div class="b q">Q. Where does this come from? 📎</div><div class="arow"><div class="b a">A. Every claim keeps its source and time</div></div></div>
+  <div class="txt">
+    <div class="src"><span class="n">■</span><div><b class="u">Reported facts</b> — [publisher] · accessed [date]<small>None used in this sample — add a primary source and a quote for every figure</small></div></div>
+    <div class="src"><span class="n">▲</span><div><b class="u">Market reaction</b> — [publisher] · observed [HH:MM TZ]<small>Observation time to the minute; re-check just before posting</small></div></div>
+    <div class="src"><span class="n">◆</span><div><b class="u">Operator's view</b> — built on the facts above · <span class="u2">dashed = first-hand</span><small>Solid underline = researched · dashed underline = first-hand experience</small></div></div>
+    <div class="src"><span class="n">○</span><div><b class="u">Scenarios</b> — conditions → readings, no probabilities<small>Two or more per post; never a one-way forecast</small></div></div>
+    <div class="ph">◆ Operator's view — <b>not written yet</b> [required before review]</div>
+    <div class="ph">[Disclosure text — TBD] · Status: <b>draft, cannot be published</b></div>
+    <div class="shut">Follow-up › ② closes these checks with what happened.</div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="tag">SAMPLE</span></footer><div class="brand">[CH]</div>
+</article>
+
+</body></html>
