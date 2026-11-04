@@ -14,8 +14,8 @@
 
 ## M2. MVP 대시보드
 - 범위: `domain`·`application`·`storage`·`render-html`·`video`(자막만)·`publisher-manual`·`apps/dashboard`.
-- 화면: 06 문서 MVP 목록 전부.
-- 완료 기준: 이벤트 입력 → 원고 → 출처 → 렌더 → Shorts → 승인 → 업로드 묶음 → 성과 수동 입력이 대시보드에서 끊김 없이 3편 연속 돈다. 승인 없는 게시 시도가 도메인 규칙으로 막히는 테스트 통과.
+- 화면: 06 문서 화면 명세 전부(와이어프레임 [design/wireframes.html](design/wireframes.html)). 콘텐츠 3종 코드 스키마(② `post-issue-4`·③ `research-5`)·구분 필드·수정 이력(01 §4~6)이 이 단계 이전에 `packages/domain` 에 들어가야 한다.
+- 완료 기준: 이벤트 입력 → 원고 → 출처 → 렌더 → (릴스) → 승인 → 업로드 묶음 → 성과 수동 입력이 대시보드에서 끊김 없이 3편 연속 돈다. 승인 없는 게시 시도가 도메인 규칙으로 막히는 테스트 통과.
 
 ## M3. 게시 연동
 - 선결: Instagram 프로페셔널 계정·Meta 앱, YouTube OAuth 프로젝트(사람이 생성 — 이 설계 범위 밖), 공개 이미지 호스팅.
