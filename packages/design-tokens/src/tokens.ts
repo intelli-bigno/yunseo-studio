@@ -48,18 +48,21 @@ export const fontStack = {
   mono: `var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace`,
 } as const;
 
+/** 굵기는 400(본문)·600(강조) 두 단계뿐이다 — 한글 서체 파일이 굵기마다 약 100조각이라 단계를 늘리면 전송량이 그대로 는다. */
+export type FontWeight = 400 | 600;
+
 /**
- * 글자 6단계 — 이 밖의 크기는 쓰지 않는다.
+ * 글자 6단계 — 이 밖의 크기·굵기는 쓰지 않는다.
  * label: 표 머리·배지·보조 / body: 본문·행 / title: 칸 제목·행 강조 / heading: 화면 제목 / metric: 핵심 숫자 / hero: 히어로 숫자
  */
 export const type = {
   label: { size: 12, line: 16, weight: 600, family: "sans", tracking: "0.02em" },
   body: { size: 14, line: 24, weight: 400, family: "sans", tracking: "0" },
   title: { size: 18, line: 24, weight: 600, family: "sans", tracking: "-0.005em" },
-  heading: { size: 28, line: 36, weight: 500, family: "head", tracking: "-0.01em" },
-  metric: { size: 40, line: 40, weight: 500, family: "head", tracking: "-0.02em" },
-  hero: { size: 64, line: 64, weight: 500, family: "head", tracking: "-0.02em" },
-} as const satisfies Record<string, { size: number; line: number; weight: number; family: keyof typeof fontStack; tracking: string }>;
+  heading: { size: 28, line: 36, weight: 400, family: "head", tracking: "-0.01em" },
+  metric: { size: 40, line: 40, weight: 400, family: "head", tracking: "-0.02em" },
+  hero: { size: 64, line: 64, weight: 400, family: "head", tracking: "-0.02em" },
+} as const satisfies Record<string, { size: number; line: number; weight: FontWeight; family: keyof typeof fontStack; tracking: string }>;
 
 export type TypeStep = keyof typeof type;
 export const typeSteps = Object.keys(type) as TypeStep[];
