@@ -14,7 +14,7 @@
 | 05 | [automation.md](05-automation.md) | 무엇을 자동화할 수 있나 — 일정 실행·이벤트 감지·게시 API 의 근본 제약 |
 | 06 | [dashboard.md](06-dashboard.md) | 운영자는 어떤 화면을 쓰나 |
 | 07 | [roadmap.md](07-roadmap.md) | 어떤 순서로 만드나 — MVP → 자동화 |
-| 08 | [decisions.md](08-decisions.md) | 사람이 정해야 하는 것 — 기술 스택·게시 방식·호스팅 비용 등 |
+| 08 | [decisions.md](08-decisions.md) | 결정 항목 — D1~D3(스택·게시 방식·호스팅) 확정, 나머지는 사람이 정해야 함 |
 
 ## 읽는 규칙
 
