@@ -1,2 +1,3 @@
-// 어댑터 계층 (빈 모듈): storage — application 의 포트를 구현한다. M1~M2 에서 채운다.
-export {};
+// 어댑터 계층: storage — application 의 StudioRepository 포트를 SQLite 로 구현한다.
+export * from "./sqlite-studio-repository";
+export { SEED_TODAY } from "./seed";

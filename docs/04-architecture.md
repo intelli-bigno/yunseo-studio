@@ -58,3 +58,26 @@
 - 도메인·유스케이스: 가짜 포트로 단위 테스트 (빠르고 외부 없음). 상태 전이·승인 무효화·출처 누락 차단이 핵심 케이스.
 - 어댑터: 계약 테스트(같은 포트 테스트를 각 구현에 돌림). 외부 API 어댑터는 녹화된 응답으로.
 - 렌더: 골든 이미지 비교는 비용 대비 효과를 보고 결정(초기엔 규격 검사만).
+
+## 구현 현황 — 대시보드가 한 바퀴 도는 길 (2026-11-05)
+
+화면 → 유스케이스 → 포트 → 어댑터가 실제로 이어져 있다(목업 데이터는 화면에서 어댑터의 시안 데이터로 옮겼다).
+
+| 계층 | 위치 | 지금 있는 것 |
+| --- | --- | --- |
+| 도메인 | `packages/domain/src/story` | `Piece`·`PieceClaim`·`QueueItem`·`WeekVariable`·`EventCandidate` 모델, 게이트·발행 대기열·출처 점검 규칙(`currentGate`·`queueState`·`claimIssues` …), 날짜 계산 |
+| 유스케이스 | `packages/application` | 포트 `StudioRepository`·`Clock`·`CardAssets`, 읽기 모델(`views.ts`), 유스케이스 `getNavSummary`·`getTodayBoard`·`getSchedule`·`listContent`·`getPieceDetail`·`getPublishQueue`·`getPaletteIndex`·`getCardSet`·`readCardImage`, 읽기 캐시 데코레이터 `withReadCache` |
+| 어댑터 | `packages/adapters/storage` | `StudioRepository` 의 **SQLite 구현**(Node 내장 `node:sqlite`, 외부 연동 없음). 빈 저장소를 처음 열 때 시안 데이터를 한 번 채움 |
+| 어댑터 | `packages/adapters/render-html` | `CardAssets` 의 파일 구현(렌더된 카드 PNG 읽기, 이름 화이트리스트) |
+| 인프라(조립) | `apps/dashboard/src/server/studio.ts` | **어댑터를 만들고 유스케이스에 꽂는 유일한 파일**. `STUDIO_DB`(SQLite 파일 경로, 없으면 메모리 시안 모드)·`STUDIO_CLOCK=system`(KST 오늘, 기본은 시안 기준일)·`CARD_V2_DIR` 환경변수를 여기서만 읽음 |
+| 화면 | `apps/dashboard/src/app`·`components` | 서버 컴포넌트가 `studio().<유스케이스>()` 결과만 그림. 클라이언트 섬은 props 만 받음 |
+
+### 경계 강제 — 네 겹
+
+1. **ESLint**(`eslint.config.mjs`): 규칙 1~3(import 문 단위) + 대시보드에서 어댑터·`node:*` 는 `src/server/` 안에서만 + 클라이언트 섬(`components/`)은 유스케이스·서버 조립부·어댑터 import 금지.
+2. **선언 의존**(`tests/boundaries.test.ts`): `package.json` 의 의존 방향.
+3. **import 그래프**(`tests/import-graph.test.ts`): 전체 소스를 훑어 계층별 import 허용 목록, 「어댑터를 import 하는 대시보드 파일은 `server/studio.ts` 하나」, 선언 없이 쓰는 workspace 의존 없음, 패키지 밖으로 나가는 상대 경로 없음.
+4. **규칙이 실제로 잡는지**(`tests/eslint-boundaries.test.ts`): 위반 코드 16개를 ESLint 에 넣어 잡히는지·올바른 import 는 통과하는지 확인 — 규칙을 고치다 구멍이 나면 여기서 드러난다.
+
+유스케이스와 SQLite 를 실제로 이은 통합 검증은 `tests/studio-integration.test.ts`, 포트 계약 테스트는 `packages/adapters/storage/src/sqlite-studio-repository.test.ts`. 성능 정책(읽기 캐시·렌더 전략)은 [09-performance.md](09-performance.md).
+

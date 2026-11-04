@@ -1,28 +1,34 @@
-// 대시보드 디자인 시스템 「Private Ledger」 토큰 — 근거는 docs/design/final-direction.md.
-// 원칙: 웜 차콜 바탕 + 크림 글자 + 황동 1색 강조. 상태는 색이 아니라 칩 모양(채움/윤곽)으로 구분한다(06 §5).
+// 대시보드 디자인 시스템 「Club Green」 토큰 — 근거는 docs/design/directions-v2/ (안 B, 2026-11-04 사용자 결정).
+// 딥그린 바탕 · 아이보리 글자 · 민트 1색 강조 · 버건디는 막힘에만.
+// 규격 원칙: 간격은 4/8 배수 한 줄 스케일, 글자는 6단계, 화면은 이 값(과 @yunseo/ui 컴포넌트)만 쓴다.
 
 export const color = {
-  // 바탕 — 따뜻한 차콜 4단(아래로 갈수록 떠 있다)
-  bg: "#0F0F0E",
-  sunken: "#0B0B0A",
-  surface: "#161614",
-  raised: "#1E1D1A",
-  hover: "#24231F",
-  // 선 — 카드 대신 선으로 구획한다
-  line: "#2A2824",
-  lineStrong: "#3E3B35",
-  // 글자 — 크림 3단
-  text: "#ECE6DA",
-  textDim: "#ADA597",
-  textMute: "#8A8378",
-  // 강조 — 황동(brass). 오늘·선택·주 행동·포커스에만
-  accent: "#C2A06A",
-  accentHi: "#D9BD8A",
-  accentDim: "#5E4E33",
-  accentInk: "#17130C",
-  // 경고 — 막힘 표시 글자에만(면 채움 금지)
-  alert: "#D98A7A",
-  // 종이 — 카드 미리보기 틀(밝은 카드 표지를 어두운 화면 안에서 대조)
+  // 바탕 — 딥그린 4단(아래로 갈수록 떠 있다)
+  bg: "#0A1612",
+  sunken: "#0D1D18",
+  surface: "#12261F",
+  raised: "#183129",
+  hover: "#1D3A30",
+  // 선
+  line: "#1F3A30",
+  lineStrong: "#2A4A3E",
+  // 글자 — 아이보리 3단
+  text: "#F1EBDD",
+  textDim: "#B4C2B8",
+  textMute: "#8EA397",
+  // 강조 — 민트. 오늘·선택·주 행동·진행에만
+  accent: "#9FD3B4",
+  accentHi: "#BDE4CC",
+  accentDim: "#2F6B52",
+  accentInk: "#0D1D18",
+  // 클럽 그린 — 브랜드 면(크레스트·히어로 그라데이션)
+  brand: "#1B3D31",
+  // 황동 — 아주 작은 표시(구분 기호·크레스트 글자)에만
+  brass: "#C8A56A",
+  // 버건디 — 막힘 표시에만
+  alert: "#E39AA4",
+  alertBg: "#4A1A22",
+  // 종이 — 카드 미리보기 틀
   paper: "#EFE9DD",
   paperInk: "#1A1A18",
   paperLine: "#D6CEBF",
@@ -30,74 +36,112 @@ export const color = {
 
 export type ColorToken = keyof typeof color;
 
-/** 서체 — 전부 SIL OFL 무료 서체(Google Fonts). 유료 서체 금지. */
+/** 서체 — 무료만. 제목·숫자는 Optima(macOS 기본) → 없으면 본문 서체. 본문은 IBM Plex Sans KR(SIL OFL). */
 export const font = {
-  display: "Cormorant Garamond", // 큰 숫자·라틴 헤드라인
-  serifKr: "Noto Serif KR", // 한글 헤드라인
-  sans: "IBM Plex Sans KR", // UI 본문
-  mono: "IBM Plex Mono", // 시각·수치·해시
+  sans: "IBM Plex Sans KR",
+  mono: "IBM Plex Mono",
 } as const;
 
 export const fontStack = {
-  display: `var(--font-display), var(--font-serif-kr), "Times New Roman", serif`,
-  serif: `var(--font-serif-kr), var(--font-display), serif`,
+  head: `"Optima", "Candara", var(--font-sans), -apple-system, "Apple SD Gothic Neo", sans-serif`,
   sans: `var(--font-sans), -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`,
   mono: `var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace`,
 } as const;
 
-/** 글자 크기(px) — 컴팩트: UI 기본 13 */
-export const fontSize = {
-  micro: 10.5,
-  xs: 11,
-  sm: 12,
-  base: 13,
-  md: 14,
-  lg: 16,
-  xl: 20,
-  h2: 26,
-  h1: 34,
-  display: 56,
-  hero: 84,
-} as const;
+/**
+ * 글자 6단계 — 이 밖의 크기는 쓰지 않는다.
+ * label: 표 머리·배지·보조 / body: 본문·행 / title: 칸 제목·행 강조 / heading: 화면 제목 / metric: 핵심 숫자 / hero: 히어로 숫자
+ */
+export const type = {
+  label: { size: 12, line: 16, weight: 600, family: "sans", tracking: "0.02em" },
+  body: { size: 14, line: 24, weight: 400, family: "sans", tracking: "0" },
+  title: { size: 18, line: 24, weight: 600, family: "sans", tracking: "-0.005em" },
+  heading: { size: 28, line: 36, weight: 500, family: "head", tracking: "-0.01em" },
+  metric: { size: 40, line: 40, weight: 500, family: "head", tracking: "-0.02em" },
+  hero: { size: 64, line: 64, weight: 500, family: "head", tracking: "-0.02em" },
+} as const satisfies Record<string, { size: number; line: number; weight: number; family: keyof typeof fontStack; tracking: string }>;
 
-export const fontWeight = { regular: 400, medium: 500, semibold: 600 } as const;
+export type TypeStep = keyof typeof type;
+export const typeSteps = Object.keys(type) as TypeStep[];
 
-export const letterSpacing = { caps: "0.14em", tight: "-0.01em", display: "-0.02em" } as const;
+/** 간격(px) — 4/8 배수 한 줄 스케일. 여백·패딩·간격은 이 값만. */
+export const space = { 0: 0, 1: 4, 2: 8, 3: 12, 4: 16, 5: 24, 6: 32, 7: 48, 8: 64 } as const;
+export type SpaceStep = keyof typeof space;
 
-export const lineHeight = { tight: 1.1, snug: 1.3, base: 1.5 } as const;
+/** 모서리 — 8 배수 */
+export const radius = { none: 0, sm: 8, md: 16, lg: 24, pill: 999 } as const;
 
-/** 간격(px) — 4 기반, 밀도 높게 */
-export const space = { 0: 0, 1: 2, 2: 4, 3: 6, 4: 8, 5: 12, 6: 16, 7: 20, 8: 24, 9: 32, 10: 48 } as const;
+/** 정렬 그리드 — 12단, 홈 벤토는 단 수로만 나눈다 */
+export const grid = { columns: 12, gutter: space[5], margin: space[6] } as const;
 
-/** 모서리 — 거의 직각(가죽 다이어리·시계 다이얼의 단정한 선) */
-export const radius = { none: 0, xs: 2, sm: 3, md: 4, pill: 999 } as const;
-
-/** 레이아웃 치수(px) — 노트북(1280~1512) 기준 */
+/** 레이아웃 치수(px) — 전부 8 배수 */
 export const layout = {
-  sidebar: 208,
-  sidebarCollapsed: 56,
-  topbar: 44,
-  rail: 300,
-  rowDense: 30,
-  row: 34,
+  sidebar: 232,
+  sidebarCollapsed: 72,
+  topbar: 64,
+  rail: 360,
+  row: 48,
   contentMax: 1440,
-  bpRail: 1180, // 이 폭 아래에서 오른쪽 레일이 본문 아래로
-  bpSidebar: 960, // 이 폭 아래에서 사이드바가 아이콘 폭으로
 } as const;
 
-export const motion = { fast: "120ms", base: "180ms", ease: "cubic-bezier(.2,.7,.2,1)" } as const;
+/** 반응형 경계(px) — CSS @media 는 변수를 못 써서 ui 스타일과 테스트가 같은 값을 쓴다 */
+export const breakpoint = { rail: 1184, sidebar: 960 } as const;
 
-/** 컴포넌트 토큰 — 화면은 이 값만 쓴다 */
+/** 그림자 — 떠 있는 것(미리보기 카드·대화상자)에만 */
+export const shadow = {
+  card: "0 24px 48px -24px rgba(0, 0, 0, 0.55)",
+  dialog: "0 32px 80px -24px rgba(0, 0, 0, 0.7)",
+} as const;
+
+/**
+ * 모션 — 길이·이징·스태거·거리. 움직이는 속성은 transform·opacity 뿐(합성 단계만, 레이아웃을 다시 계산하지 않는다).
+ * duration: fast 호버·눌림 / base 상태 변화 / slow 완료 표시 / scene 화면 전환 한 조각
+ */
+export const duration = { fast: 120, base: 200, slow: 320, scene: 420 } as const;
+export const easing = {
+  standard: "cubic-bezier(.2,.7,.2,1)",
+  out: "cubic-bezier(.16,1,.3,1)", // 들어올 때 — 빠르게 와서 천천히 멈춘다
+  in: "cubic-bezier(.55,0,.75,.2)", // 나갈 때 — 천천히 떠나 빠르게 사라진다
+  spring: "cubic-bezier(.34,1.56,.64,1)", // 재조립 — 자리를 살짝 지나쳤다 돌아온다
+} as const;
+
+/**
+ * 화면 전환 안무(분해 → 재조립). 이전 화면 조각은 누른 곳에서 바깥으로 흩어지고, 새 화면 조각은 반대쪽에서 모여든다.
+ * stagger 는 누른 곳과의 거리 순서 한 칸당 지연, pieces 는 한 화면에서 따로 움직이는 조각 상한(넘으면 바탕과 함께 겹쳐 바뀐다).
+ */
+export const choreography = {
+  pieces: 20,
+  stagger: 12, // ms
+  scatter: 40, // px — 흩어지는 최대 거리
+  tilt: 3, // deg — 흩어질 때 기울기 상한
+  shrink: 0.94, // 흩어진 조각의 크기 배율
+  inDelay: 90, // ms — 새 조각이 출발하는 시점(이전 조각이 반쯤 흩어졌을 때)
+  budget: 800, // ms — 전환 전체 상한(테스트가 지킨다)
+} as const;
+
+export const motion = {
+  fast: `${duration.fast}ms`,
+  base: `${duration.base}ms`,
+  slow: `${duration.slow}ms`,
+  scene: `${duration.scene}ms`,
+  ease: easing.standard,
+  easeOut: easing.out,
+  easeIn: easing.in,
+  spring: easing.spring,
+  lift: "-2px", // 호버 때 떠오르는 높이
+  press: "0.97", // 눌림 배율
+} as const;
+
+/** 컴포넌트 치수 — 전부 4 배수 */
 export const component = {
-  chip: { height: 20, padX: 7, radius: radius.xs, fontSize: fontSize.xs },
-  button: { height: 30, padX: 12, radius: radius.sm, fontSize: fontSize.sm },
-  input: { height: 30, padX: 10, radius: radius.sm, fontSize: fontSize.base },
-  kbd: { height: 18, padX: 5, radius: radius.xs, fontSize: fontSize.micro },
-  table: { row: layout.row, headFontSize: fontSize.micro },
-  focus: { width: 1, offset: 2 },
+  chip: { height: 24, padX: 8, radius: radius.sm },
+  button: { height: 40, padX: 16, radius: radius.sm },
+  input: { height: 40, padX: 12, radius: radius.sm },
+  kbd: { height: 20, padX: 4, radius: 4 },
+  focus: { width: 2, offset: 2 },
 } as const;
 
-/** 글자/바탕 쌍 — 테스트가 대비를 검사한다(본문 4.5 이상, 큰 글자·강조 3 이상) */
+/** 글자/바탕 쌍 — 테스트가 대비를 검사한다(본문 4.5 이상) */
 export const contrastPairs = [
   { fg: "text", bg: "bg", min: 4.5 },
   { fg: "text", bg: "raised", min: 4.5 },
@@ -108,7 +152,8 @@ export const contrastPairs = [
   { fg: "accent", bg: "bg", min: 4.5 },
   { fg: "accent", bg: "surface", min: 4.5 },
   { fg: "alert", bg: "surface", min: 4.5 },
+  { fg: "alert", bg: "alertBg", min: 4.5 },
   { fg: "accentInk", bg: "accent", min: 4.5 },
-  { fg: "bg", bg: "text", min: 4.5 },
+  { fg: "accentInk", bg: "text", min: 4.5 },
   { fg: "paperInk", bg: "paper", min: 4.5 },
 ] as const satisfies readonly { fg: ColorToken; bg: ColorToken; min: number }[];

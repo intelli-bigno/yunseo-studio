@@ -44,6 +44,11 @@ describe("의존 경계 (선언 의존)", () => {
     expect(read("packages/design-tokens")?.deps).toEqual([]);
   });
 
+  it("ui 는 workspace 에서 design-tokens 만 안다", () => {
+    const ui = read("packages/ui");
+    expect(ui && workspace(ui)).toEqual(["@yunseo/design-tokens"]);
+  });
+
   it("application 은 domain 만 안다", () => {
     const application = read("packages/application");
     expect(application && workspace(application)).toEqual(["@yunseo/domain"]);
@@ -69,5 +74,17 @@ describe("의존 경계 (선언 의존)", () => {
     for (const p of [read("packages/domain"), read("packages/application"), presets, ...adapters]) {
       expect(p && workspace(p).filter((d) => d.startsWith("@yunseo/app-")), p?.name).toEqual([]);
     }
+  });
+});
+
+describe("번들 크기 (트리 셰이킹)", () => {
+  // 브라우저 번들에 실리는 패키지가 sideEffects 를 선언하지 않으면 안 쓰는 export 까지 통째로 실린다(2026-11-04 실측: gzip 5KB).
+  it.each([
+    ["packages/domain", false],
+    ["packages/design-tokens", false],
+    ["packages/ui", ["**/*.css"]],
+  ])("%s 는 sideEffects 를 선언한다", (dir, expected) => {
+    const json = JSON.parse(readFileSync(join(root, dir, "package.json"), "utf8")) as { sideEffects?: unknown };
+    expect(json.sideEffects).toEqual(expected);
   });
 });

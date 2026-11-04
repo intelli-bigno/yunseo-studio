@@ -1,0 +1,25 @@
+{
+  "name": "@yunseo/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./virtual": "./src/virtual.tsx",
+    "./motion": "./src/motion.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@yunseo/design-tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "react": "^19.3.1"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ]
+}

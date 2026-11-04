@@ -1,38 +1,30 @@
 "use client";
+// 전역 키 입력과 상단 도구. 대화상자(빠른 이동·단축키 도움말)는 처음 열 때 내려받는다(KeyDialog) —
+// 모든 화면이 대화상자·가상 목록 코드를 미리 싣지 않는다.
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Button, Kbd, KeyHint, Stack } from "@yunseo/ui";
+import { go as sceneGo, loadMotion, routerNavigate } from "@/lib/scene";
 import { goTarget, SHORTCUTS } from "@/lib/shortcuts";
+import type { DialogMode } from "./KeyDialog";
 
-export interface PaletteEntry {
-  href: string;
-  label: string;
-  tag: string;
-  hint?: string;
-}
+// next/dynamic 이 아니라 React.lazy — 같은 코드 분리인데 next/dynamic 은 런타임이 gzip 5KB 라 이 크기 코드에서는 분리 이득을 넘는다(실측)
+const KeyDialog = lazy(() => import("./KeyDialog").then((m) => ({ default: m.KeyDialog })));
 
 function typing(e: KeyboardEvent): boolean {
   const t = e.target as HTMLElement | null;
   return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
 }
 
-export function KeyNav({ entries }: { entries: PaletteEntry[] }) {
+export function KeyNav() {
   const router = useRouter();
-  const [mode, setMode] = useState<"none" | "palette" | "help">("none");
-  const [q, setQ] = useState("");
-  const [sel, setSel] = useState(0);
+  const push = useCallback((href: string) => router.push(href), [router]);
+  const [mode, setMode] = useState<DialogMode>("none");
   const pendingG = useRef<number>(0);
-
-  const results = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return s ? entries.filter((e) => `${e.label} ${e.tag} ${e.hint ?? ""}`.toLowerCase().includes(s)) : entries;
-  }, [q, entries]);
+  const warmed = useRef(false);
 
   useEffect(() => {
-    const open = (m: "palette" | "help") => {
-      setMode(m);
-      setQ("");
-      setSel(0);
-    };
+    const open = (m: "palette" | "help") => setMode(m);
     const onOpen = () => open("palette");
     const onHelp = () => open("help");
     window.addEventListener("ys:palette", onOpen);
@@ -55,18 +47,23 @@ export function KeyNav({ entries }: { entries: PaletteEntry[] }) {
       if (e.key === "[" || e.key === "]") {
         const el = document.querySelector<HTMLElement>("[data-tabs]");
         const href = el?.dataset[e.key === "[" ? "prev" : "next"];
-        if (href) router.push(href);
+        if (href) sceneGo(push, href);
         return;
       }
       const now = Date.now();
       if (e.key === "g") {
         pendingG.current = now;
+        // 「g」 다음에 거의 확실히 이동 키가 온다 — 이동 후보 화면을 이 틈에 미리 받아 둔다(한 번만)
+        if (!warmed.current) {
+          warmed.current = true;
+          for (const s of SHORTCUTS) if (s.href) router.prefetch(s.href);
+        }
         return;
       }
       if (now - pendingG.current < 900) {
         pendingG.current = 0;
         const href = goTarget(e.key);
-        if (href) router.push(href);
+        if (href) sceneGo(push, href);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -75,86 +72,52 @@ export function KeyNav({ entries }: { entries: PaletteEntry[] }) {
       window.removeEventListener("ys:palette", onOpen);
       window.removeEventListener("ys:help", onHelp);
     };
-  }, [router]);
+  }, [router, push]);
 
-  const go = (href: string) => {
-    setMode("none");
-    router.push(href);
-  };
+  // 화면 전환·누름 물결 — 첫 화면이 다 그려지고 브라우저가 한가할 때 모션 코드를 받아 켠다
+  useEffect(() => {
+    let off: (() => void) | null = null;
+    let cancelled = false;
+    const start = () =>
+      void loadMotion().then((m) => {
+        if (!cancelled) off = m.installMotion(routerNavigate(push));
+      });
+    let idle = 0;
+    if (window.requestIdleCallback) idle = window.requestIdleCallback(start, { timeout: 2000 });
+    else start();
+    return () => {
+      cancelled = true;
+      if (idle && window.cancelIdleCallback) window.cancelIdleCallback(idle);
+      off?.();
+    };
+  }, [push]);
 
-  if (mode === "none") return null;
-  return (
-    <div className="overlay" onMouseDown={() => setMode("none")}>
-      <div className="dialog" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
-        {mode === "palette" ? (
-          <>
-            <input
-              autoFocus
-              className="input"
-              placeholder="편 · 화면 이름으로 이동…"
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setSel(0);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setSel((s) => Math.min(s + 1, results.length - 1));
-                } else if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setSel((s) => Math.max(s - 1, 0));
-                } else if (e.key === "Enter" && results[sel]) {
-                  go(results[sel].href);
-                }
-              }}
-            />
-            <div className="palette-list" role="listbox">
-              {results.map((r, i) => (
-                <a key={r.href + r.label} href={r.href} aria-selected={i === sel} onMouseEnter={() => setSel(i)} onClick={(e) => { e.preventDefault(); go(r.href); }}>
-                  <span className="mono mute">{r.tag}</span>
-                  <span>{r.label}</span>
-                  <span className="mute" style={{ fontSize: "var(--fs-xs)" }}>{r.hint}</span>
-                </a>
-              ))}
-              {results.length === 0 && <div className="mute" style={{ padding: "12px 16px" }}>찾는 항목이 없습니다</div>}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="dialog-head">
-              <span className="h3">단축키</span>
-              <span className="kbd">esc</span>
-            </div>
-            <div style={{ padding: "8px 16px 16px" }}>
-              {SHORTCUTS.map((s) => (
-                <div key={s.keys} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid var(--c-line)" }}>
-                  <span className="dim">{s.label}</span>
-                  <span style={{ display: "flex", gap: 4 }}>
-                    {s.keys.split(" ").map((k) => (
-                      <kbd key={k} className="kbd">{k}</kbd>
-                    ))}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+  const close = useCallback(() => setMode("none"), []);
+  const go = useCallback(
+    (href: string) => {
+      setMode("none");
+      sceneGo(push, href);
+    },
+    [router],
+  );
+  const prefetch = useCallback((href: string) => router.prefetch(href), [router]);
+
+  return mode === "none" ? null : (
+    <Suspense fallback={null}>
+      <KeyDialog mode={mode} onClose={close} onGo={go} onPrefetch={prefetch} />
+    </Suspense>
   );
 }
 
 export function TopTools() {
   return (
-    <div className="top-tools">
-      <button className="btn btn-ghost" onClick={() => window.dispatchEvent(new Event("ys:palette"))}>
-        빠른 이동 <kbd className="kbd">⌘</kbd>
-        <kbd className="kbd">K</kbd>
-      </button>
-      <button className="btn btn-ghost" aria-label="단축키" onClick={() => window.dispatchEvent(new Event("ys:help"))}>
-        <kbd className="kbd">?</kbd>
-      </button>
-    </div>
+    <Stack direction="row" gap={2} align="center">
+      <Button variant="ghost" onClick={() => window.dispatchEvent(new Event("ys:palette"))}>
+        빠른 이동 <KeyHint keys={["⌘", "K"]} />
+      </Button>
+      <Button variant="ghost" aria-label="단축키" onClick={() => window.dispatchEvent(new Event("ys:help"))}>
+        <Kbd>?</Kbd>
+      </Button>
+    </Stack>
   );
 }

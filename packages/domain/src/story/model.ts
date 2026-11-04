@@ -1,32 +1,21 @@
-// 대시보드 화면 모델(목업 단계). 정본 스키마는 packages/domain — 유스케이스 연결(M2) 전까지 화면은 이 모델만 본다.
+// 운영 화면이 다루는 한 편(Piece)의 모델 — 종류·상태·게이트·출처 문장·발행 대기열.
+// 도메인은 외부 의존 0 이다(04 규칙 1). 표시용 한국어 라벨은 화면(apps) 몫이다.
 
-export type Kind = "pre" | "post" | "research" | "story";
-export const KIND_LABEL: Record<Kind, string> = { pre: "이전", post: "이후", research: "연구", story: "스토리" };
-export const KIND_NO: Record<Kind, string> = { pre: "01", post: "02", research: "03", story: "S" };
+export const PIECE_KINDS = ["pre", "post", "research", "story"] as const;
+export type PieceKind = (typeof PIECE_KINDS)[number];
 
 /** 게이트 상태. waiting = 사람 판단 대기, blocked = 칸이 비어 못 감 */
 export type GateState = "passed" | "waiting" | "blocked" | "todo";
-export type GateId = "G1" | "G2" | "G3";
-export const GATE_LABEL: Record<GateId, string> = { G1: "주제·관점", G2: "사실 확인", G3: "발행 판단" };
+export const GATE_IDS = ["G1", "G2", "G3"] as const;
+export type GateId = (typeof GATE_IDS)[number];
 
-export type Status = "idea" | "selected" | "evidence_wait" | "drafted" | "verified" | "in_review" | "approved" | "published";
-export const STATUS_LABEL: Record<Status, string> = {
-  idea: "후보",
-  selected: "선정",
-  evidence_wait: "자료 대기",
-  drafted: "작성 중",
-  verified: "확인됨",
-  in_review: "검수 중",
-  approved: "승인",
-  published: "발행",
-};
+export const PIECE_STATUSES = ["idea", "selected", "evidence_wait", "drafted", "verified", "in_review", "approved", "published"] as const;
+export type PieceStatus = (typeof PIECE_STATUSES)[number];
 
-/** 구분 표시 — 01 문서 §5: 사실 ■ · 시장 반응 ▲ · 해석 ◆ · 시나리오 ○ */
+/** 구분 표시 — 01 문서 §5: 사실 · 시장 반응 · 해석 · 시나리오 */
 export type Mark = "fact" | "reaction" | "view" | "scenario";
-export const MARK_GLYPH: Record<Mark, string> = { fact: "■", reaction: "▲", view: "◆", scenario: "○" };
-export const MARK_LABEL: Record<Mark, string> = { fact: "사실", reaction: "시장 반응", view: "해석", scenario: "시나리오" };
 
-export interface Claim {
+export interface PieceClaim {
   id: string;
   mark: Mark;
   basis: "research" | "experienced";
@@ -48,17 +37,17 @@ export interface Stage {
 
 export interface Piece {
   id: string;
-  kind: Kind;
+  kind: PieceKind;
   title: string;
   slot: string; // 게시 예정 ISO (KST)
-  status: Status;
+  status: PieceStatus;
   gates: Record<GateId, GateState>;
   blocker: string | null; // 「G2 · 출처 2개 미확인」 같은 한 줄
   viewpoint: string; // G1 핵심 관점 한 문장
   stages: Stage[];
-  claims: Claim[];
+  claims: PieceClaim[];
   preIssueId?: string;
-  cards?: string[]; // 미리보기 카드 이미지 이름(/api/cards/<name>)
+  cards?: string[]; // 미리보기 카드 이미지 이름
   hash?: string; // 승인 해시(G3 통과 시)
 }
 
