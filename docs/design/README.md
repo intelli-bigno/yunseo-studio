@@ -19,6 +19,10 @@
 
 **최종 1안 확정(2026-11-04): [final-direction.md](final-direction.md) — 「Private Ledger」** (안 2 다크 + 안 1 세리프·선 + 안 3 번호 블록, 추가 레퍼런스 30개 [references/pins-dandy.json](references/pins-dandy.json)). 토큰은 `packages/design-tokens`, 구현은 `apps/dashboard`.
 
+## 대시보드 방향 v2 — 새 3안 (2026-11-04)
+
+위 3안이 반려되어 새 레퍼런스 28개로 다시 그린 3안(A Atelier Noir · B Club Green · C Graphite Cockpit), 홈·카드뉴스 편집 두 화면씩. **내부 참고 전용**, 추천 B, 선택 대기. 입구: [directions-v2/index.html](directions-v2/index.html) · 설명: [directions-v2/README.md](directions-v2/README.md).
+
 ## 두 안 비교
 
 | | A — Paper & Ink | B — Signal |
