@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>안 C — Graphite Cockpit (차콜 × 시그널 오렌지, 계기판)</title>
+<!-- 내부 참고 전용 정적 시안. 스크립트·외부 자원 없음. 이름·수치·사건명은 자리표시. 서체는 macOS 시스템 서체(DIN Alternate·SF(-apple-system)·Apple SD Gothic Neo). -->
+<style>
+:root{
+  --bg:#101113; --rail:#0A0B0C; --t1:#17181B; --t2:#1D1F23; --t3:#25282D; --line:#2A2D33;
+  --ink:#ECEDEF; --ink2:#A2A6AE; --ink3:#6A6F78;
+  --sig:#FF6B1A; --sig2:#FF9A5C; --ok:#8FA39A; --cool:#C9CDD3;
+  --din:"DIN Alternate","DIN Condensed",-apple-system,sans-serif;
+  --sans:-apple-system,"SF Pro Text","Apple SD Gothic Neo",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+.screen{width:1600px;height:1000px;display:grid;grid-template-columns:68px 1fr;background:var(--bg);margin:0 auto 40px;overflow:hidden;position:relative}
+.n{font-family:var(--din);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.lab{font-size:11px;color:var(--ink3);font-weight:500}
+/* 아이콘 레일 */
+.rail{background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:6px}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--sig);display:grid;place-items:center;font-family:var(--din);font-weight:700;color:#111;font-size:18px;margin-bottom:18px}
+.ri{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--ink3);position:relative;font-size:10px;flex-direction:column}
+.ri i{width:18px;height:18px;border:1.6px solid currentColor;border-radius:5px;display:block;margin:0 auto 2px}
+.ri.on{background:var(--t3);color:var(--ink)}
+.ri.on:before{content:"";position:absolute;left:-12px;top:12px;bottom:12px;width:3px;border-radius:2px;background:var(--sig)}
+.ri b{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--sig)}
+.rail .sp{flex:1}
+/* 상단 명령 바 */
+.wrap{display:flex;flex-direction:column;min-width:0}
+.cmd{height:58px;display:flex;align-items:center;gap:14px;padding:0 22px;border-bottom:1px solid var(--line)}
+.cmd .ttl{font-size:15px;font-weight:600}
+.cmd .ttl small{font-weight:400;color:var(--ink3);margin-left:8px;font-size:12px}
+.cmd .sp{flex:1}
+.cbar{width:420px;height:36px;border-radius:10px;background:var(--t1);border:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 12px;font-size:12.5px;color:var(--ink3)}
+.cbar kbd,.k{font-family:var(--sans);font-size:10.5px;color:var(--ink2);background:var(--t3);border-radius:5px;padding:2px 6px}
+.cbar span{flex:1}
+.live{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink2)}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(143,163,154,.18)}
+.btn{height:36px;padding:0 14px;border-radius:10px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--t3);color:var(--ink);white-space:nowrap}
+.btn.s{background:var(--sig);color:#140A03}
+.btn .k{background:rgba(0,0,0,.18);color:inherit}
+/* 홈 그리드 */
+.body{padding:16px 22px 22px;display:grid;gap:12px;flex:1;min-height:0}
+.home .body{grid-template-columns:repeat(12,1fr);grid-template-rows:132px 1fr 230px}
+.t{background:var(--t1);border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden;min-height:0}
+.t h3{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;letter-spacing:.01em}
+.t h3 a{font-weight:500;color:var(--ink3)}
+.kp .n{font-size:44px;line-height:1;display:block;margin-top:6px}
+.kp .sub{font-size:11.5px;color:var(--ink3);margin-top:8px}
+.kp.hot{background:linear-gradient(140deg,#2A1A10,#17181B 70%);border-color:#4A2C18}
+.kp.hot .n{color:var(--sig)}
+.kp .tick{position:absolute;right:16px;top:16px;font-size:11px;color:var(--ink3)}
+.gauge{position:absolute;right:16px;bottom:14px;width:96px;height:52px;overflow:hidden}
+.gauge:before{content:"";position:absolute;inset:0 0 -48px 0;border-radius:50%;background:conic-gradient(from 270deg,var(--g,var(--sig)) 0 var(--v,30%),#2E3137 var(--v,30%) 50%,transparent 50%);-webkit-mask:radial-gradient(circle at 50% 50%,transparent 36px,#000 37px)}
+/* 오늘 슬롯 */
+.slot{grid-column:span 7;display:grid;grid-template-columns:250px 1fr;gap:20px}
+.slot .card{width:250px;height:312px;border-radius:10px;background:url(../card-reference/v2/render/v2-01.png) center/cover;box-shadow:0 0 0 1px var(--line)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11px;padding:4px 8px;border-radius:6px;background:var(--t3);color:var(--ink2);font-weight:600}
+.chip.s{background:rgba(255,107,26,.16);color:var(--sig2)}
+.slot h2{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin:12px 0 8px}
+.slot p{font-size:12.5px;color:var(--ink2);line-height:1.6}
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:18px 0 6px}
+.pipe div{height:34px;border-radius:7px;background:var(--t3);display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--ink3);font-weight:600}
+.pipe .d{background:#2A2E2C;color:var(--ok)}
+.pipe .now{background:var(--sig);color:#140A03}
+.mt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.mt div{background:var(--t2);border-radius:9px;padding:9px 11px}
+.mt .n{font-size:22px;display:block}
+.mt small{font-size:10.5px;color:var(--ink3)}
+.slot .acts{display:flex;gap:8px;margin-top:16px}
+.slot .acts .btn{height:40px;flex:1}
+/* 큐 */
+.queue{grid-column:span 5}
+.qr{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.qr:first-of-type{border-top:0}
+.qr .ic{width:36px;height:36px;border-radius:9px;background:var(--t3);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--ink2)}
+.qr .ic.s{background:rgba(255,107,26,.16);color:var(--sig2)}
+.qr b{font-size:13px;font-weight:600;display:block}
+.qr small{font-size:11.5px;color:var(--ink3)}
+.qr .r{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink3)}
+/* 하단: 주간 타임라인 + 변수 */
+.tl{grid-column:span 8}
+.days{display:grid;grid-template-columns:52px repeat(7,1fr);gap:6px;font-size:11.5px}
+.days .h{color:var(--ink3);font-size:11px;padding:2px 0 6px;font-weight:600}
+.days .h.on{color:var(--sig)}
+.days .rl{color:var(--ink3);font-size:11px;padding-top:9px}
+.cell{height:40px;border-radius:7px;background:var(--t2);padding:5px 8px;font-size:11px;color:var(--ink2);line-height:1.25;overflow:hidden}
+.cell.f{background:#2A2C31;color:var(--ink)}
+.cell.x{box-shadow:inset 3px 0 0 var(--sig);color:var(--sig2)}
+.cell.on{background:rgba(255,107,26,.16);color:var(--sig2)}
+.cell.r{background:transparent;border:1px dashed #3A3E45;color:var(--ink3)}
+.vars{grid-column:span 4}
+.vv{display:grid;grid-template-columns:70px 1fr;gap:10px;padding:7px 0;border-top:1px solid var(--line);align-items:center}
+.vv:first-of-type{border-top:0}
+.vv .n{font-size:18px}
+.vv .n small{font-family:var(--sans);font-weight:500;font-size:10.5px;color:var(--ink3);display:block}
+.vv p{font-size:12.5px;font-weight:600}
+.vv p small{display:block;font-weight:400;font-size:11px;color:var(--ink3)}
+.foot{position:absolute;left:90px;bottom:5px;font-size:10px;color:#454950}
+/* 편집기 */
+.editor .body{grid-template-columns:1fr 360px;grid-template-rows:auto 1fr}
+.etop{grid-column:span 2;display:flex;align-items:center;gap:12px}
+.etop h1{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.tabs{display:flex;background:var(--t1);border:1px solid var(--line);border-radius:10px;padding:3px;margin-left:auto}
+.tabs a{font-size:12.5px;padding:7px 12px;border-radius:8px;color:var(--ink3);font-weight:600;display:flex;gap:6px;align-items:center}
+.tabs a.on{background:var(--t3);color:var(--ink)}
+.tabs a .k{font-size:9.5px;padding:1px 4px}
+.viewer{display:grid;grid-template-rows:1fr 150px;gap:12px;min-height:0}
+.split{display:grid;grid-template-columns:auto 1fr;gap:12px;min-height:0}
+.big{width:520px;border-radius:14px;background:#0B0C0D;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;position:relative}
+.big .card{width:470px;height:588px;border-radius:8px;background:url(../card-reference/v2/render/v2-04.png) center/cover}
+.big .ov{position:absolute;inset:auto 14px 12px 14px;display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)}
+.safe{position:absolute;left:25px;right:25px;top:20px;bottom:30px;border:1px dashed rgba(255,107,26,.0)}
+.lines{display:flex;flex-direction:column;gap:8px;min-height:0}
+.ln{background:var(--t1);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start}
+.ln .k2{width:26px;height:26px;border-radius:7px;background:var(--t3);display:grid;place-items:center;font-size:12px;color:var(--ink2)}
+.ln b{font-size:13px;font-weight:600;line-height:1.45;display:block}
+.ln u{text-underline-offset:3px;text-decoration-color:#5A5F68}
+.ln u.d{text-decoration-style:dashed}
+.ln small{font-size:11px;color:var(--ink3)}
+.ln .st{font-size:11px;color:var(--ok);font-weight:600}
+.ln.sel{border-color:#5A3A24;background:linear-gradient(90deg,rgba(255,107,26,.08),var(--t1) 60%)}
+.ln.sel .k2{background:var(--sig);color:#140A03}
+.edbox{background:var(--t2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink2);line-height:1.55;margin-top:8px}
+.edbox .cur{display:inline-block;width:1.5px;height:14px;background:var(--sig);vertical-align:-2px;margin-left:1px}
+.film{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;background:var(--t1);border:1px solid var(--line);border-radius:14px;padding:12px}
+.film div{position:relative}
+.film .th{height:100px;border-radius:7px;background-size:cover;background-position:center;opacity:.75}
+.film .on .th{opacity:1;box-shadow:0 0 0 2px var(--sig)}
+.film p{font-size:11px;color:var(--ink3);margin-top:6px;display:flex;justify-content:space-between;font-weight:600}
+.film .on p{color:var(--ink)}
+.film p i{font-style:normal;color:var(--ok)}
+.film .w p i{color:var(--sig2)}
+.rp{display:flex;flex-direction:column;gap:12px;min-height:0}
+.ring{display:flex;gap:14px;align-items:center}
+.ring .dial{width:92px;height:92px;border-radius:50%;background:conic-gradient(var(--sig) 0 87.5%,#2E3137 0);display:grid;place-items:center;flex:none}
+.ring .dial span{width:74px;height:74px;border-radius:50%;background:var(--t1);display:grid;place-items:center;text-align:center;line-height:1}
+.ring .dial .n{font-size:26px}
+.ring .dial small{font-size:10px;color:var(--ink3);display:block;margin-top:2px}
+.ck{display:flex;justify-content:space-between;font-size:12.5px;padding:8px 0;border-top:1px solid var(--line);color:var(--ink2)}
+.ck b{font-weight:600;color:var(--ok)} .ck b.w{color:var(--sig2)} .ck b.m{color:var(--ink)}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11.5px;color:var(--ink3)}
+.keys span{display:flex;justify-content:space-between;background:var(--t2);border-radius:7px;padding:6px 8px}
+</style>
+</head>
+<body>
+
+<!-- 화면 1 — 홈(오늘) -->
+<section class="screen home" id="home">
+  <nav class="rail"><div class="logo">Y</div>
+    <div class="ri on"><i></i>오늘</div><div class="ri"><i></i>편성</div><div class="ri"><i></i>콘텐츠</div><div class="ri"><b></b><i></i>발행</div><div class="ri"><i></i>성과</div><div class="sp"></div><div class="ri"><i></i>설정</div>
+  </nav>
+  <div class="wrap">
+    <header class="cmd"><div class="ttl">오늘<small>수 11.11 · W46 · 기준 시점 22:00 KST</small></div><span class="sp"></span>
+      <div class="cbar">⌕ <span>명령 또는 편 찾기 — 「검수」「새 편」「사건 B」</span><kbd>⌘K</kbd></div>
+      <div class="live"><i></i>실행기 정상</div><span class="btn s">＋ 새 편 <span class="k">N</span></span></header>
+    <div class="body">
+      <div class="t kp hot" style="grid-column:span 3"><span class="lab">지금 할 일</span><span class="n">G3 · 1</span><div class="sub">사건 A 이전 편 검수 → 21:30 발행</div><div class="gauge" style="--v:44%"></div></div>
+      <div class="t kp" style="grid-column:span 3"><span class="lab">막힌 편</span><span class="n" style="color:var(--sig2)">2</span><div class="sub">G2 시나리오 1 · 자료 대기 1</div><div class="gauge" style="--v:20%;--g:#FF9A5C"></div></div>
+      <div class="t kp" style="grid-column:span 3"><span class="lab">이번 주 피드</span><span class="n">6<span style="color:var(--ink3);font-size:26px">/7</span></span><div class="sub">스토리 1/1 · 릴스 0/2</div><div class="gauge" style="--v:43%;--g:#C9CDD3"></div></div>
+      <div class="t kp" style="grid-column:span 3"><span class="lab">발행 대기열</span><span class="n">1</span><div class="sub">해시 일치 1 · 불일치 0</div><div class="gauge" style="--v:50%;--g:#8FA39A"></div></div>
+
+      <section class="t slot">
+        <div class="card"></div>
+        <div>
+          <div class="chips"><span class="chip">① 이전</span><span class="chip s">G3 검수 대기</span><span class="chip">8장 · EN</span></div>
+          <h2>사건 A — 발표 전에 볼 세 갈래</h2>
+          <p>출처·구분 확인(G2) 통과. 승인하면 업로드 묶음과 캡션이 발행 대기열로 갑니다.</p>
+          <div class="pipe"><div class="d">선정 ✓</div><div class="d">작성 ✓</div><div class="d">출처 ✓</div><div class="now">검수</div><div>발행</div></div>
+          <div class="mt"><div><span class="n">24/24</span><small>문장 원문 대조</small></div><div><span class="n">0</span><small>금지 표현</small></div><div><span class="n" style="color:var(--sig2)">1</span><small>프리셋 TBD</small></div></div>
+          <div class="acts"><span class="btn s">검수 열기 <span class="k">↵</span></span><span class="btn">미리보기 <span class="k">P</span></span></div>
+        </div>
+      </section>
+      <section class="t queue">
+        <h3>처리할 것 <a>우선순위 순</a></h3>
+        <div class="qr"><span class="ic s">G3</span><div><b>사건 A — 이전 편</b><small>최종 검수 · 오늘 21:30 슬롯</small></div><span class="r">지금 <span class="k">1</span></span></div>
+        <div class="qr"><span class="ic s">G2</span><div><b>사건 A — 이후 편</b><small>시나리오 3 미응답 · 막힘</small></div><span class="r">1일 <span class="k">2</span></span></div>
+        <div class="qr"><span class="ic">②</span><div><b>사건 B — 이후 편</b><small>자료 대기 2일째 · 조건 2/4</small></div><span class="r">2일 <span class="k">3</span></span></div>
+        <div class="qr"><span class="ic">①</span><div><b>사건 B — 이전 편</b><small>작성 3/5 · 목요일 슬롯</small></div><span class="r">내일 <span class="k">4</span></span></div>
+        <div class="qr"><span class="ic">③</span><div><b>연구 — 실패 조건</b><small>스레드 단계 2/5 · 토요일</small></div><span class="r">3일 <span class="k">5</span></span></div>
+        <div class="qr"><span class="ic">G1</span><div><b>사건 후보함</b><small>판정 대기 3 · major/watch/skip</small></div><span class="r">— <span class="k">6</span></span></div>
+      </section>
+
+      <section class="t tl">
+        <h3>이번 주 편성 <a>캘린더 열기 →</a></h3>
+        <div class="days">
+          <span></span><span class="h">9 월</span><span class="h">10 화</span><span class="h on">11 수 · 오늘</span><span class="h">12 목</span><span class="h">13 금</span><span class="h">14 토</span><span class="h">15 일</span>
+          <span class="rl">피드</span><div class="cell f">① A 이전 · 완료</div><div class="cell x">② A 이후 · 막힘</div><div class="cell on">① A · G3 대기</div><div class="cell">① B · 3/5</div><div class="cell r">쉬는 날로 두기</div><div class="cell">③ 연구</div><div class="cell">② B 이후 · 자료</div>
+          <span class="rl">스토리</span><div class="cell r"></div><div class="cell r"></div><div class="cell on">이번 주 변수</div><div class="cell r"></div><div class="cell r"></div><div class="cell r"></div><div class="cell r"></div>
+          <span class="rl">릴스</span><div class="cell r"></div><div class="cell r"></div><div class="cell r"></div><div class="cell r"></div><div class="cell r"></div><div class="cell">후보 · 사람 확정 전</div><div class="cell r"></div>
+        </div>
+      </section>
+      <section class="t vars">
+        <h3>이번 주의 변수 <a>스토리 초안 →</a></h3>
+        <div class="vv"><span class="n">12 21:30<small>목</small></span><p>■ 고용 지표 발표<small>통계 일정표 · 접근 11/9</small></p></div>
+        <div class="vv"><span class="n">13 03:00<small>금</small></span><p>■ 중앙은행 의사록 공개<small>공식 일정 · 접근 11/9</small></p></div>
+        <div class="vv"><span class="n">15 종일<small>일</small></span><p>■ 분기 실적 시즌 시작<small>거래소 공시 일정 · 접근 11/9</small></p></div>
+      </section>
+    </div>
+  </div>
+  <div class="foot">자리표시 — 사건명·날짜·수치는 실제 값이 아니다 · 안 C Graphite Cockpit</div>
+</section>
+
+<!-- 화면 2 — 카드뉴스 편집·미리보기 -->
+<section class="screen editor" id="editor">
+  <nav class="rail"><div class="logo">Y</div>
+    <div class="ri"><i></i>오늘</div><div class="ri"><i></i>편성</div><div class="ri on"><i></i>콘텐츠</div><div class="ri"><b></b><i></i>발행</div><div class="ri"><i></i>성과</div><div class="sp"></div><div class="ri"><i></i>설정</div>
+  </nav>
+  <div class="wrap">
+    <header class="cmd"><div class="ttl">콘텐츠<small>① 이전 › 11.11 › 사건 A</small></div><span class="sp"></span>
+      <div class="cbar">⌕ <span>장으로 이동, 문장 찾기, 「검수로 보내기」</span><kbd>⌘K</kbd></div>
+      <div class="live"><i></i>자동 저장 21:57</div><span class="btn s">G3 검수로 보내기 <span class="k">⌘↵</span></span></header>
+    <div class="body">
+      <div class="etop"><h1>사건 A — 발표 전에 볼 세 갈래</h1><span class="chip s">G3 대기</span><span class="chip">verified</span><span class="chip">EN · 1080×1350</span>
+        <nav class="tabs"><a>작성 <span class="k">1</span></a><a>출처·구분 <span class="k">2</span></a><a>연결 <span class="k">3</span></a><a>이력 <span class="k">4</span></a><a class="on">미리보기 <span class="k">5</span></a><a>검수 <span class="k">6</span></a></nav></div>
+      <div class="viewer">
+        <div class="split">
+          <div class="big"><div class="card"></div><div class="ov"><span>04 / 08 · 갈림길</span><span>← → 장 이동 · Space 원본 크기</span></div></div>
+          <div class="lines">
+            <div class="ln"><span class="k2">○</span><div><b><u>예상보다 강하면 금리 경로 재조정 쪽으로 해석</u></b><small>시나리오 · 근거 ■2 ■3</small></div><span class="st">확인</span></div>
+            <div class="ln sel"><span class="k2">○</span><div><b><u>예상 범위면 반응이 작을 수 있음</u></b><small>시나리오 · 근거 ■2 · 편집 중</small>
+              <div class="edbox">A result close to the baseline — near what is already assumed<span class="cur"></span></div></div><span class="st">확인</span></div>
+            <div class="ln"><span class="k2">○</span><div><b><u>느린·불분명한 결과면 통제에 시간이 걸림</u></b><small>시나리오 · 근거 ■3</small></div><span class="st">확인</span></div>
+            <div class="ln"><span class="k2">◆</span><div><b><u class="d">발표 직후보다 다음 날 흐름을 볼 것</u></b><small>해석 · 직접 경험 · 근거 ▲1</small></div><span class="st">확인</span></div>
+            <div class="t" style="padding:12px 14px"><span class="lab">■ 사실 ▲ 시장 반응 ◆ 해석 ○ 시나리오 · 실선 밑줄 = 조사 · 점선 밑줄 = 직접 경험</span></div>
+          </div>
+        </div>
+        <div class="film">
+          <div><div class="th" style="background-image:url(../card-reference/v2/render/v2-01.png)"></div><p>01 표지<i>✓</i></p></div>
+          <div><div class="th" style="background-image:url(../card-reference/v2/render/v2-02.png)"></div><p>02 왜<i>✓</i></p></div>
+          <div><div class="th" style="background-image:url(../card-reference/v2/render/v2-03.png)"></div><p>03 예상<i>✓</i></p></div>
+          <div class="on"><div class="th" style="background-image:url(../card-reference/v2/render/v2-04.png)"></div><p>04 갈림길<i>✓</i></p></div>
+          <div><div class="th" style="background-image:url(../card-reference/v2/render/v2-05.png)"></div><p>05 문서<i>✓</i></p></div>
+          <div class="w"><div class="th" style="background-image:url(../card-reference/v2/render/v2-06.png)"></div><p>06 차이<i>TBD</i></p></div>
+          <div><div class="th" style="background-image:url(../card-reference/v2/render/v2-07.png)"></div><p>07 노트<i>✓</i></p></div>
+          <div><div class="th" style="background-image:url(../card-reference/v2/render/v2-08.png)"></div><p>08 출처<i>✓</i></p></div>
+        </div>
+      </div>
+      <aside class="rp">
+        <section class="t"><h3>준비도 <a>검수 기준 →</a></h3>
+          <div class="ring"><div class="dial"><span><b class="n">7/8</b><small>장 준비</small></span></div>
+            <div style="flex:1"><div class="ck" style="border-top:0"><span>금지 표현</span><b>0</b></div><div class="ck"><span>기준 시점·채널명</span><b>8/8</b></div><div class="ck"><span>프리셋 TBD</span><b class="w">1 · 06</b></div></div></div>
+        </section>
+        <section class="t"><h3>출처 · 이 장</h3>
+          <div class="ck" style="border-top:0"><span>■2 통계 일정표</span><b class="m">접근 11/9</b></div>
+          <div class="ck"><span>■3 공식 발표문</span><b class="m">접근 11/9</b></div>
+          <div class="ck"><span>▲1 시장 반응 기록</span><b class="m">관측 11/10</b></div>
+          <div class="ck"><span>승인 해시</span><b class="m">— 검수 전</b></div>
+        </section>
+        <section class="t"><h3>단축키</h3>
+          <div class="keys"><span>장 이동 <b class="k">← →</b></span><span>문장 확인 <b class="k">C</b></span><span>원본 크기 <b class="k">Space</b></span><span>탭 전환 <b class="k">1–6</b></span><span>묶음 받기 <b class="k">⌘E</b></span><span>검수로 <b class="k">⌘↵</b></span></div>
+        </section>
+        <span class="btn" style="height:42px">업로드 묶음 미리 받기</span>
+      </aside>
+    </div>
+  </div>
+  <div class="foot">카드 이미지 = card-reference v2 렌더(SAMPLE) · 안 C Graphite Cockpit</div>
+</section>
+</body>
+</html>

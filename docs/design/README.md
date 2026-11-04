@@ -17,6 +17,10 @@
 
 위 시안 A·B 는 **카드·표지**용이고, 운영 **대시보드 화면**의 방향은 별도로 제안했다 — Pinterest 레퍼런스 48개 무드보드, 분석, 같은 화면(편성 캘린더)을 3방향으로 그린 시안(안 1 Broadsheet = A 의 앱 확장 · 안 2 Terminal = 다크 · 안 3 Swiss = B 의 확장). **내부 참고 전용**, 방향은 아직 선택 전이다. 입구: [references/index.html](references/index.html) · 분석: [references/analysis.md](references/analysis.md).
 
+## 대시보드 방향 v2 — 새 3안 (2026-11-04)
+
+위 3안이 반려되어 새 레퍼런스 28개로 다시 그린 3안(A Atelier Noir · B Club Green · C Graphite Cockpit), 홈·카드뉴스 편집 두 화면씩. **내부 참고 전용**, 추천 B, 선택 대기. 입구: [directions-v2/index.html](directions-v2/index.html) · 설명: [directions-v2/README.md](directions-v2/README.md).
+
 ## 두 안 비교
 
 | | A — Paper & Ink | B — Signal |
