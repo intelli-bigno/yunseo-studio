@@ -1,0 +1,60 @@
+# 예시 1건 — 사실 수치를 넣지 않았다. 일시·시간대·운영자 해석은 자리만 두었다(draft).
+# verified 로 올리려면 verificationBlockers(card) 가 비어야 한다.
+schema: pre-issue-5/v1
+id: us-midterms-three-repricings
+status: draft
+language: en
+event:
+  name: US midterm elections
+  kind: election
+  scheduled_at: null         # 확인 전 — 공식 일정을 출처와 함께 채운다
+  timezone: null
+cover:
+  title: Three things markets will re-price after the US midterms
+  hook: The result matters less than what it changes about what comes next.
+stages:
+  why_it_matters:
+    headline: An election result is a change in expectations
+    points:
+      - Markets trade on what they expect to happen next, and an election can change which policies are realistic.
+      - The useful question is not who wins, but which expectations a surprise would actually move.
+  market_expectation:
+    headline: What the market seems to assume today
+    points:
+      - Before the result, prices already reflect a most-likely outcome. Reading that baseline comes first.
+      - A surprise matters most where the baseline is widely shared.
+  scenarios:
+    headline: Three ways the result can read
+    items:
+      - label: Close to the baseline
+        condition: The outcome is near what the market already assumes.
+        reading: Little is re-priced, and attention moves to the details of what comes next.
+      - label: More room for policy change
+        condition: The outcome makes larger shifts in spending, tax or regulation more plausible.
+        reading: Sectors tied to those policies may need a new set of assumptions.
+      - label: A slow, unclear result
+        condition: Control takes time to settle.
+        reading: Uncertainty itself becomes the story until it clears.
+  transmission:
+    headline: Three paths from the result to prices
+    paths:
+      - channel: Policy path
+        via: Which proposals become more or less likely
+        touches: [sectors tied to those policies]
+      - channel: Fiscal outlook and rates
+        via: Expectations for spending and borrowing
+        touches: [government bond yields, the dollar]
+      - channel: Sector exposure
+        via: Expectations for regulation, trade and tax
+        touches: [energy, health care, technology]
+  after_checks:
+    headline: What to check once the result is in
+    checks:
+      - what: Whether the result was a surprise against the baseline you noted
+        where: Compare your notes with the first official results
+      - what: How expectations for interest rates moved
+        where: Central bank communication and market-implied rate expectations
+      - what: Which sectors moved most
+        where: Sector performance from a data source you trust
+claims: []                   # 사실 수치를 쓰지 않았으므로 비어 있다
+operator_view: null          # 운영자 도메인 지식·경험으로 얹을 고유 해석 — 아직 없음

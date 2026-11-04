@@ -1,0 +1,14 @@
+{
+  "name": "@yunseo/app-cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@yunseo/domain": "workspace:*",
+    "@yunseo/presets-schema": "workspace:*",
+    "yaml": "^2.9.1"
+  }
+}

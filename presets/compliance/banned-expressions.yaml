@@ -1,0 +1,76 @@
+# 금지 표현 규칙 데이터. 검사 로직은 packages/domain (findBannedExpressions), 테스트가 이 파일을 읽는다.
+# origin: brief    = 브리프 원문이 직접 금지한 표현 (block)
+# origin: proposed = 영어 발행 대비 제안 — 사람이 확정하기 전까지 warn 만
+# surfaces: body = 본문·캡션·카드 / brand_promo = 프로필 소개 등 브랜드 전면 홍보 문구
+version: 1
+status: provisional
+rules:
+  - id: ko-free
+    terms: ["무료"]
+    surfaces: [body, brand_promo]
+    severity: block
+    origin: brief
+    reason: 브리프 금지 표현
+
+  - id: ko-profit-guarantee
+    terms: ["수익 보장"]
+    surfaces: [body, brand_promo]
+    severity: block
+    origin: brief
+    reason: 브리프 금지 표현. 투자 권유·수익 확약으로 읽힌다
+
+  - id: ko-secret-info
+    terms: ["비밀 정보"]
+    surfaces: [body, brand_promo]
+    severity: block
+    origin: brief
+    reason: 브리프 금지 표현
+
+  - id: ko-unconditional
+    terms: ["무조건"]
+    surfaces: [body, brand_promo]
+    severity: block
+    origin: brief
+    reason: 브리프 금지 표현. 결론 강요로 읽힌다
+
+  - id: ko-indicator-brand-front
+    terms: ["지표"]
+    surfaces: [brand_promo]
+    severity: block
+    origin: brief
+    reason: 브리프 — 「지표」는 브랜드 전면 홍보 문구에서만 금지. 본문(body)에서는 일반 용어로 쓸 수 있다
+
+  - id: en-free
+    terms: ["free of charge", "100% free", "for free"]
+    surfaces: [body, brand_promo]
+    severity: warn
+    origin: proposed
+    reason: 「무료」의 영어 대응 제안. free cash flow·risk-free rate 같은 용어는 걸리지 않게 문구 단위로만 잡는다
+
+  - id: en-profit-guarantee
+    terms: ["guaranteed return", "guaranteed profit", "profit guarantee"]
+    surfaces: [body, brand_promo]
+    severity: warn
+    origin: proposed
+    reason: 「수익 보장」의 영어 대응 제안
+
+  - id: en-secret-info
+    terms: ["secret information", "insider information", "insider tip"]
+    surfaces: [body, brand_promo]
+    severity: warn
+    origin: proposed
+    reason: 「비밀 정보」의 영어 대응 제안
+
+  - id: en-unconditional
+    terms: ["no matter what", "unconditionally"]
+    surfaces: [body, brand_promo]
+    severity: warn
+    origin: proposed
+    reason: 「무조건」의 영어 대응 제안
+
+  - id: en-indicator-brand-front
+    terms: ["indicator", "indicators"]
+    surfaces: [brand_promo]
+    severity: warn
+    origin: proposed
+    reason: 「지표」의 영어 대응 제안. 브랜드 전면 홍보 문구에서만

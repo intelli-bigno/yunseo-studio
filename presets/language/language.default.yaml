@@ -1,0 +1,6 @@
+# 언어 프리셋. 발행 언어는 미정 — 아래 기본값(영어)은 이전 전달 값이며 사용자 확정 전이다. [결정 D10]
+id: default
+status: provisional
+publish: en
+operator_ui: ko              # 대시보드 UI 언어 [결정 D9]
+note: 이전 전달 기본값(영어). 사용자 확정 전이므로 템플릿·글자 수 상한을 언어에 고정하지 않는다
