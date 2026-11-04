@@ -24,6 +24,11 @@ describe("디자인 토큰 (Club Green)", () => {
     for (const k of typeSteps) expect(type[k].line % 4).toBe(0);
   });
 
+  it("굵기는 400·600 두 단계뿐이다(서체 파일 수를 묶는다)", () => {
+    for (const k of typeSteps) expect([400, 600]).toContain(type[k].weight);
+    expect(cssVariables()["--fw-heading"]).toBe("400");
+  });
+
   it("레이아웃·컴포넌트 치수는 4 배수다", () => {
     for (const v of Object.values(layout)) expect(v % 8).toBe(0);
     for (const v of Object.values(radius)) if (v !== 999) expect(v % 8).toBe(0);
