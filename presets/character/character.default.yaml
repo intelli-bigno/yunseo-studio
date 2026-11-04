@@ -1,0 +1,6 @@
+# 화자 프리셋. 화자 형태는 미정 [결정 D7]: person(본인) | illustrated(캐릭터) | editor(익명 에디터)
+id: default
+kind: undecided
+name: TBD
+speaking_style: 차분하게 해석하되 결론을 강요하지 않는 에디터의 목소리
+appearance_ref: TBD

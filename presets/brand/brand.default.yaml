@@ -1,0 +1,25 @@
+# 브랜드 프리셋. 값이 TBD 인 항목은 미정 — 하나라도 남으면 게시 단계에서 차단한다.
+id: default
+status: placeholder          # 이름·핸들 확정 전. 확정하면 confirmed
+name: TBD                    # [결정 D5] 브랜드명 미정
+handle: TBD
+concept: 세계의 변화와 시장을 연결하고, 다가올 사건의 파급효과를 미리 짚는 투자 매거진
+core_sentence: 세계의 변화에서, 시장의 다음 질문을 찾습니다.
+impression:                  # 최우선 목표: 팔로우하고 싶은 매체
+  - 차분함
+  - 안목
+  - 신뢰감
+  - 접근성
+palette:                     # 절제된 색. 잠정값 — 브랜드 확정 때 교체
+  bg: "#FFFFFF"
+  ink: "#111111"
+  muted: "#6B6B6B"
+  accent: TBD
+typeface:                    # 선명한 타이포. 서체 미정
+  display: TBD
+  body: TBD
+logo: TBD
+visual_rules:
+  - 표지는 모든 게시물에서 같은 틀을 쓴다 (일관된 표지)
+  - 색은 배경·글자·보조 회색·강조 1색까지만 쓴다
+  - 차트는 한 장에 한 가지 메시지만 담고, 축·단위·출처를 읽을 수 있는 크기로 적는다

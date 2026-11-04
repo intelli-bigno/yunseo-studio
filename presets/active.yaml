@@ -1,0 +1,9 @@
+# 지금 쓰는 프리셋 조합. 파일 경로만 가리킨다 (docs/01-content-sot.md §3).
+brand: brand/brand.default.yaml
+character: character/character.default.yaml
+tone: tone/tone.default.yaml
+language: language/language.default.yaml
+compliance: compliance/banned-expressions.yaml
+formats:
+  - format/pre-issue-5.yaml
+  - format/post-issue-research.yaml

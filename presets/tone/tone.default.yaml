@@ -1,0 +1,13 @@
+id: default
+voice:                       # 팔로워가 「좋은 정보원을 알고, 흐름을 읽고, 자기 관점으로 판단하는 사람」으로 느끼게
+  - calm
+  - discerning
+  - trustworthy
+  - accessible
+principles:
+  - 읽기 쉽되 새로운 연결과 생각할 거리를 남긴다
+  - 알파는 선별과 해석의 깊이에서 만든다 (많이 말하기가 아니라 고르기)
+  - 결론을 강요하지 않는다 — 시나리오는 항상 둘 이상
+  - 모든 수치와 사실에는 출처가 있다
+reading_level: B2            # [미검증] 영어 발행 기준. 발행 언어 확정 뒤 재판단
+emoji: none

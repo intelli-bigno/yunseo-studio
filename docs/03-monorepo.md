@@ -1,6 +1,6 @@
 # 03. 모노레포 구조
 
-스택이 미정이므로([결정 필요 D1]) 구조는 언어 중립으로 적고, 예시는 TypeScript(pnpm workspace) 기준이다.
+스택은 확정 전이다([결정 필요 D1]). 구조는 언어 중립으로 적었고, 기본 셋팅은 추천안인 TypeScript(pnpm workspace)로 만들었다.
 
 ```
 yunseo-studio/
@@ -25,6 +25,8 @@ yunseo-studio/
     templates/        카드·Shorts 템플릿 (포맷별)
     config/           공용 lint·tsconfig·의존 경계 규칙
   presets/            01 문서의 프리셋 파일 (코드 아님, 데이터)
+  content/            콘텐츠 정본 (편별 YAML) — 지금은 예시 1건
+  tests/              패키지 경계(선언 의존) 검사
   docs/
 ```
 
@@ -40,3 +42,27 @@ yunseo-studio/
 
 - 경계는 CI 의 의존 검사 도구로 강제한다(예: dependency-cruiser 또는 ESLint boundaries). [결정 필요 D1 에 종속]
 - 패키지는 처음부터 다 만들지 않는다. MVP 는 `domain`·`application`·`presets-schema`·`render-html`·`publisher-manual`·`storage`·`apps/dashboard` 만 (07 로드맵).
+
+## 현재 골격 (기본 셋팅, 2026-11-04)
+
+| 위치 | 상태 |
+| --- | --- |
+| `packages/domain` | 동작 — 금지 표현 검사(`compliance/`), 이슈 이전 5단 카드 스키마(`content/`), 검증 도구. `story/`(상태 기계)는 빈 모듈 |
+| `packages/application` | 빈 모듈 (유스케이스·포트 자리) |
+| `packages/presets-schema` | 동작 — 프리셋 스키마·로더·자리표시자(`TBD`) 탐지 |
+| `packages/adapters/{render-html,publisher-manual,storage}` | 빈 모듈 (MVP 어댑터 3개 자리) |
+| `apps/cli` | 동작 — `pnpm run validate [--publish]` (프리셋·콘텐츠·금지 표현 검증) |
+| `apps/{dashboard,worker}` | 빈 모듈 |
+| `templates/`, `config/` 패키지 | 아직 만들지 않음 (M1 에서 필요할 때) |
+
+### 검사 명령
+
+```
+pnpm run lint        eslint — import 단위 경계(04 의존 규칙)
+pnpm run typecheck   tsc --noEmit
+pnpm run test        vitest — 도메인·프리셋·CLI + tests/boundaries (선언 의존 경계)
+pnpm run check       위 셋을 차례로
+```
+
+경계는 두 겹으로 강제한다: ESLint `no-restricted-imports`(import 문)와 `tests/boundaries.test.ts`(package.json 선언 의존).
+GitHub Actions(`.github/workflows/ci.yml`)가 PR·main push 마다 `check` 를 돌린다.
