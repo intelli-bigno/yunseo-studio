@@ -15,7 +15,9 @@
 
 ## 대시보드 방향 — Pinterest 레퍼런스와 3안 (2026-11-04)
 
-위 시안 A·B 는 **카드·표지**용이고, 운영 **대시보드 화면**의 방향은 별도로 제안했다 — Pinterest 레퍼런스 48개 무드보드, 분석, 같은 화면(편성 캘린더)을 3방향으로 그린 시안(안 1 Broadsheet = A 의 앱 확장 · 안 2 Terminal = 다크 · 안 3 Swiss = B 의 확장). **내부 참고 전용**, 방향은 아직 선택 전이다. 입구: [references/index.html](references/index.html) · 분석: [references/analysis.md](references/analysis.md).
+위 시안 A·B 는 **카드·표지**용이고, 운영 **대시보드 화면**의 방향은 별도로 제안했다 — Pinterest 레퍼런스 48개 무드보드, 분석, 같은 화면(편성 캘린더)을 3방향으로 그린 시안(안 1 Broadsheet = A 의 앱 확장 · 안 2 Terminal = 다크 · 안 3 Swiss = B 의 확장). **내부 참고 전용**. 입구: [references/index.html](references/index.html) · 분석: [references/analysis.md](references/analysis.md).
+
+**최종 1안 확정(2026-11-04): [final-direction.md](final-direction.md) — 「Private Ledger」** (안 2 다크 + 안 1 세리프·선 + 안 3 번호 블록, 추가 레퍼런스 30개 [references/pins-dandy.json](references/pins-dandy.json)). 토큰은 `packages/design-tokens`, 구현은 `apps/dashboard`.
 
 ## 두 안 비교
 

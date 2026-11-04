@@ -100,7 +100,7 @@ export function SourcesEditor({ piece }: { piece: Piece }) {
             <label>원문 인용</label>
             <input className="input" value={cur.quote ?? ""} onChange={(e) => set({ quote: e.target.value || null })} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 10 }}>
             <div className="field">
               <label>접근일</label>
               <input className="input mono" type="date" value={cur.accessedAt ?? ""} onChange={(e) => set({ accessedAt: e.target.value || null })} />

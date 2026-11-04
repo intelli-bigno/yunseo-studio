@@ -3,6 +3,7 @@
 *::before,
 *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+html { color-scheme: dark; }
 body {
   background: var(--c-bg);
   color: var(--c-text);
@@ -10,7 +11,7 @@ body {
   font-size: var(--fs-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: "tnum" 1;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; color: inherit; }
@@ -46,7 +47,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .h1 { font-family: var(--ff-serif); font-weight: 500; font-size: var(--fs-h1); line-height: 1.15; letter-spacing: var(--ls-tight); margin: var(--sp-3) 0 0; }
 .h2 { font-family: var(--ff-serif); font-weight: 500; font-size: var(--fs-xl); margin: 0; letter-spacing: var(--ls-tight); }
 .h3 { font-size: var(--fs-md); font-weight: 600; margin: 0; }
-.display { font-family: var(--ff-display); font-weight: 500; letter-spacing: var(--ls-display); line-height: 1; }
+.display { font-family: var(--ff-display); font-weight: 500; letter-spacing: var(--ls-display); line-height: 1; font-variant-numeric: lining-nums tabular-nums; }
 .mono { font-family: var(--ff-mono); font-size: 0.92em; }
 .dim { color: var(--c-text-dim); }
 .mute { color: var(--c-text-mute); }
@@ -63,7 +64,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .stat { padding: 0 var(--sp-7); border-right: 1px solid var(--c-line); min-width: 104px; }
 .stat-n { font-family: var(--ff-display); font-size: 40px; line-height: 1; }
 .stat-l { font-size: var(--fs-xs); color: var(--c-text-mute); margin-top: var(--sp-3); white-space: nowrap; }
-.split { display: grid; grid-template-columns: minmax(0, 1fr) var(--l-rail); gap: var(--sp-9); }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) var(--l-rail); gap: var(--sp-9); align-items: start; }
 .section { padding-top: var(--sp-8); }
 .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-5); padding-bottom: var(--sp-4); border-bottom: 1px solid var(--c-line); margin-bottom: var(--sp-2); }
 .section-head a { font-size: var(--fs-xs); color: var(--c-text-mute); }
@@ -90,7 +91,7 @@ a.row:hover, button.row:hover { background: var(--c-surface); }
 .chip-alert { border-color: var(--c-alert); color: var(--c-alert); }
 .kind { display: inline-grid; place-items: center; width: 26px; height: 20px; font-family: var(--ff-mono); font-size: var(--fs-micro); border: 1px solid var(--c-line-strong); color: var(--c-text-dim); }
 .kind-pre, .kind-post { background: var(--c-text); color: var(--c-bg); border-color: var(--c-text); }
-.mark { font-size: 10px; display: inline-block; width: 1.1em; color: var(--c-accent); }
+.mark { font-size: 9px; display: inline-block; width: 14px; margin-right: 2px; vertical-align: 1px; color: var(--c-accent); }
 .kbd { display: inline-grid; place-items: center; min-width: var(--kbd-height); height: var(--kbd-height); padding: 0 var(--kbd-pad-x); border: 1px solid var(--c-line-strong); border-bottom-width: 2px; border-radius: var(--kbd-radius); font-family: var(--ff-mono); font-size: var(--kbd-font-size); color: var(--c-text-dim); }
 
 /* 게이트 트랙 G1 — G2 — G3 */
@@ -115,7 +116,7 @@ a.row:hover, button.row:hover { background: var(--c-surface); }
 .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
 .field { display: flex; flex-direction: column; gap: var(--sp-2); }
 .field label { font-size: var(--fs-xs); color: var(--c-text-mute); }
-.input, .textarea, .select { width: 100%; min-height: var(--input-height); padding: 6px var(--input-pad-x); background: var(--c-sunken); border: 1px solid var(--c-line-strong); border-radius: var(--input-radius); font-size: var(--input-font-size); }
+.input, .textarea, .select { width: 100%; min-width: 0; min-height: var(--input-height); padding: 6px var(--input-pad-x); background: var(--c-sunken); border: 1px solid var(--c-line-strong); border-radius: var(--input-radius); font-size: var(--input-font-size); }
 .textarea { resize: vertical; line-height: 1.6; min-height: 120px; }
 .input:focus, .textarea:focus, .select:focus { outline: none; border-color: var(--c-accent); }
 .input-warn { border-color: var(--c-alert); }
