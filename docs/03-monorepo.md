@@ -63,7 +63,7 @@ yunseo-studio/
 pnpm run lint        eslint — import 단위 경계(04 의존 규칙)
 pnpm run typecheck   tsc --noEmit
 pnpm run test        vitest — 도메인·프리셋·CLI·워커·대시보드 헬스 + tests/boundaries (선언 의존 경계)
-pnpm run build       대시보드 `next build` (워커는 tsx 로 소스 실행 — 빌드 산출물 없음)
+pnpm run build       대시보드 `next build --webpack` (실행기 스레드 상한 때문 — next.config.ts 주석) (워커는 tsx 로 소스 실행 — 빌드 산출물 없음)
 pnpm run check       lint·typecheck·test 를 차례로
 
 실행 진입점(헬스 체크만, 기능 없음):
