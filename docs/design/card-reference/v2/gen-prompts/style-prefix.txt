@@ -1,0 +1,6 @@
+STYLE BIBLE (apply to every image, identically):
+Documentary editorial photograph, photorealistic, full-frame camera, 35-50mm lens, shallow depth of field.
+Restrained blue-hour color grade: cool slate-blue and deep navy shadows (#12202F to #2B3A4D), a single warm amber light source (#D6A86A) as the only warm accent, off-white highlights (#EDE6D8). Low saturation, soft film grain, gentle contrast, no HDR.
+Mood: calm, discerning, trustworthy - quiet confidence, no drama, no alarm.
+Format: vertical portrait, 2:3. Composition: the main subject sits in the upper two-thirds; the bottom third is calm, low-detail and darker (it will carry text).
+NEVER include: any readable text, letters or numbers, logos, watermarks, flags, party symbols or partisan red/blue color coding, identifiable real people or faces, charts with numbers, neon, illustration or cartoon look, 3D-render look, lens flare, heavy vignette.
