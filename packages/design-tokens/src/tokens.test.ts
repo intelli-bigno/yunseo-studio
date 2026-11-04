@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { color, component, contrastPairs, contrastRatio, cssText, cssVariables, grid, layout, radius, space, type, typeSteps } from "./index";
+import { choreography, color, component, duration, contrastPairs, contrastRatio, cssText, cssVariables, grid, layout, radius, space, type, typeSteps } from "./index";
 
 describe("디자인 토큰 (Club Green)", () => {
   it.each(contrastPairs.map((p) => [p.fg, p.bg, p.min] as const))("%s / %s 대비가 %s 이상", (fg, bg, min) => {
@@ -38,5 +38,20 @@ describe("디자인 토큰 (Club Green)", () => {
     expect(vars["--sp-5"]).toBe("24px");
     expect(vars["--chip-height"]).toBe("24px");
     expect(cssText()).toMatch(/^:root \{\n/);
+  });
+
+  it("모션 길이는 짧은 것부터 오름차순이고 화면 전환 전체가 상한 안이다", () => {
+    const ds = Object.values(duration);
+    expect([...ds].sort((a, b) => a - b)).toEqual(ds);
+    // 마지막 조각이 출발(inDelay + 스태거 × (조각 수 − 1))해서 도착(scene × 1.1 여유)할 때까지
+    const total = choreography.inDelay + choreography.stagger * (choreography.pieces - 1) + duration.scene * 1.1;
+    expect(total).toBeLessThanOrEqual(choreography.budget);
+  });
+
+  it("모션 토큰이 CSS 변수로 바뀐다", () => {
+    const vars = cssVariables();
+    expect(vars["--m-scene"]).toBe(`${duration.scene}ms`);
+    expect(vars["--m-ease-out"]).toMatch(/^cubic-bezier\(/);
+    expect(vars["--m-lift"]).toBe("-2px");
   });
 });

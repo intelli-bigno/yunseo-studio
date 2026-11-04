@@ -4,6 +4,7 @@
 import { useRouter } from "next/navigation";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Button, Kbd, KeyHint, Stack } from "@yunseo/ui";
+import { go as sceneGo, loadMotion, routerNavigate } from "@/lib/scene";
 import { goTarget, SHORTCUTS } from "@/lib/shortcuts";
 import type { DialogMode } from "./KeyDialog";
 
@@ -17,6 +18,7 @@ function typing(e: KeyboardEvent): boolean {
 
 export function KeyNav() {
   const router = useRouter();
+  const push = useCallback((href: string) => router.push(href), [router]);
   const [mode, setMode] = useState<DialogMode>("none");
   const pendingG = useRef<number>(0);
   const warmed = useRef(false);
@@ -45,7 +47,7 @@ export function KeyNav() {
       if (e.key === "[" || e.key === "]") {
         const el = document.querySelector<HTMLElement>("[data-tabs]");
         const href = el?.dataset[e.key === "[" ? "prev" : "next"];
-        if (href) router.push(href);
+        if (href) sceneGo(push, href);
         return;
       }
       const now = Date.now();
@@ -61,7 +63,7 @@ export function KeyNav() {
       if (now - pendingG.current < 900) {
         pendingG.current = 0;
         const href = goTarget(e.key);
-        if (href) router.push(href);
+        if (href) sceneGo(push, href);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -70,13 +72,31 @@ export function KeyNav() {
       window.removeEventListener("ys:palette", onOpen);
       window.removeEventListener("ys:help", onHelp);
     };
-  }, [router]);
+  }, [router, push]);
+
+  // 화면 전환·누름 물결 — 첫 화면이 다 그려지고 브라우저가 한가할 때 모션 코드를 받아 켠다
+  useEffect(() => {
+    let off: (() => void) | null = null;
+    let cancelled = false;
+    const start = () =>
+      void loadMotion().then((m) => {
+        if (!cancelled) off = m.installMotion(routerNavigate(push));
+      });
+    let idle = 0;
+    if (window.requestIdleCallback) idle = window.requestIdleCallback(start, { timeout: 2000 });
+    else start();
+    return () => {
+      cancelled = true;
+      if (idle && window.cancelIdleCallback) window.cancelIdleCallback(idle);
+      off?.();
+    };
+  }, [push]);
 
   const close = useCallback(() => setMode("none"), []);
   const go = useCallback(
     (href: string) => {
       setMode("none");
-      router.push(href);
+      sceneGo(push, href);
     },
     [router],
   );

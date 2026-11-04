@@ -189,3 +189,15 @@ export function Toast({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+/** 행동 완료 표시(저장·승인·확정) — 나타날 때 체크가 튀어 오르고 고리가 퍼진다. 다시 재생하려면 key 를 바꾼다. */
+export function Done({ children }: { children: ReactNode }) {
+  return (
+    <span className="ui-done" role="status">
+      <span className="ui-done-mark" aria-hidden>
+        ✓
+      </span>
+      <span className="ui-done-text ui-t-label">{children}</span>
+    </span>
+  );
+}

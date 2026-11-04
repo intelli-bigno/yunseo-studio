@@ -48,7 +48,7 @@ describe("ui 스타일은 토큰 값만 쓴다", () => {
 
   it("쓰는 변수는 모두 토큰에 있다", () => {
     const defined = new Set(Object.keys(cssVariables()));
-    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono"]);
+    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다)
     const used = new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]!));
     expect([...used].filter((v) => !defined.has(v) && !local.has(v))).toEqual([]);
   });

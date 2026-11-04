@@ -93,7 +93,44 @@ export const shadow = {
   dialog: "0 32px 80px -24px rgba(0, 0, 0, 0.7)",
 } as const;
 
-export const motion = { fast: "120ms", base: "200ms", ease: "cubic-bezier(.2,.7,.2,1)" } as const;
+/**
+ * 모션 — 길이·이징·스태거·거리. 움직이는 속성은 transform·opacity 뿐(합성 단계만, 레이아웃을 다시 계산하지 않는다).
+ * duration: fast 호버·눌림 / base 상태 변화 / slow 완료 표시 / scene 화면 전환 한 조각
+ */
+export const duration = { fast: 120, base: 200, slow: 320, scene: 420 } as const;
+export const easing = {
+  standard: "cubic-bezier(.2,.7,.2,1)",
+  out: "cubic-bezier(.16,1,.3,1)", // 들어올 때 — 빠르게 와서 천천히 멈춘다
+  in: "cubic-bezier(.55,0,.75,.2)", // 나갈 때 — 천천히 떠나 빠르게 사라진다
+  spring: "cubic-bezier(.34,1.56,.64,1)", // 재조립 — 자리를 살짝 지나쳤다 돌아온다
+} as const;
+
+/**
+ * 화면 전환 안무(분해 → 재조립). 이전 화면 조각은 누른 곳에서 바깥으로 흩어지고, 새 화면 조각은 반대쪽에서 모여든다.
+ * stagger 는 누른 곳과의 거리 순서 한 칸당 지연, pieces 는 한 화면에서 따로 움직이는 조각 상한(넘으면 바탕과 함께 겹쳐 바뀐다).
+ */
+export const choreography = {
+  pieces: 20,
+  stagger: 12, // ms
+  scatter: 40, // px — 흩어지는 최대 거리
+  tilt: 3, // deg — 흩어질 때 기울기 상한
+  shrink: 0.94, // 흩어진 조각의 크기 배율
+  inDelay: 90, // ms — 새 조각이 출발하는 시점(이전 조각이 반쯤 흩어졌을 때)
+  budget: 800, // ms — 전환 전체 상한(테스트가 지킨다)
+} as const;
+
+export const motion = {
+  fast: `${duration.fast}ms`,
+  base: `${duration.base}ms`,
+  slow: `${duration.slow}ms`,
+  scene: `${duration.scene}ms`,
+  ease: easing.standard,
+  easeOut: easing.out,
+  easeIn: easing.in,
+  spring: easing.spring,
+  lift: "-2px", // 호버 때 떠오르는 높이
+  press: "0.97", // 눌림 배율
+} as const;
 
 /** 컴포넌트 치수 — 전부 4 배수 */
 export const component = {

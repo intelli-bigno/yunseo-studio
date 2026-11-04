@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Piece } from "@yunseo/domain";
-import { Badge, Button, Card, CardHeader, Checkbox, Input, List, Metric, Notice, Split, Text } from "@yunseo/ui";
+import { Badge, Button, Card, CardHeader, Checkbox, Done, Input, List, Metric, Notice, Split, Text } from "@yunseo/ui";
 
 // 검수 (G3) — 전 항목 체크 뒤 승인, 반려는 사유 필수.
 const ITEMS = [
@@ -32,7 +32,7 @@ export function ReviewPanel({ piece }: { piece: Piece }) {
           <Metric size="hero" value={checked.filter(Boolean).length} unit={`/ ${items.length}`} label="확인" />
           {result === "approved" ? (
             <>
-              <Badge tone="accent">승인</Badge>
+              <Done>승인됨</Done>
               <Text size="label" tone="mute" mono>{piece.hash ?? "7ab2e019"}</Text>
             </>
           ) : result === "rejected" ? (

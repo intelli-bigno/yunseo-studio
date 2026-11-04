@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
 import type { Piece } from "@yunseo/domain";
-import { Button, Card, CardHeader, Check, CheckList, EmptyState, Glyph, List, ListItem, Metric, Split, Stack, Text, Textarea, type Media } from "@yunseo/ui";
+import { Button, Card, CardHeader, Check, CheckList, Done, EmptyState, Glyph, List, ListItem, Metric, Split, Stack, Text, Textarea, type Media } from "@yunseo/ui";
 
 // 작성 — 단 목록 · 가운데 쓰기 · 오른쪽 점검. 종류마다 단만 바뀐다.
 export function ComposeEditor({ piece, art }: { piece: Piece; art: Media }) {
   const [stages, setStages] = useState(piece.stages);
   const [i, setI] = useState(0);
-  const [saved, setSaved] = useState<string | null>(null);
+  const [saved, setSaved] = useState<{ at: string; n: number } | null>(null);
   const cur = stages[i];
   const empty = stages.filter((s) => !s.body.trim()).length;
 
@@ -70,11 +70,11 @@ export function ComposeEditor({ piece, art }: { piece: Piece; art: Media }) {
           onChange={(e) => setStages((xs) => xs.map((s, n) => (n === i ? { ...s, body: e.target.value } : s)))}
         />
         <Stack direction="row" justify="between" align="center">
-          <Text size="label" tone="mute">{saved ? `${saved} 저장됨` : ""}</Text>
+          {saved ? <Done key={saved.n}>{saved.at} 저장됨</Done> : <Text size="label" tone="mute">저장 전</Text>}
           <Stack direction="row" gap={2}>
             <Button disabled={i === 0} onClick={() => setI(i - 1)}>이전</Button>
             <Button disabled={i === stages.length - 1} onClick={() => setI(i + 1)}>다음</Button>
-            <Button variant="primary" onClick={() => setSaved(new Date().toTimeString().slice(0, 5))}>저장</Button>
+            <Button variant="primary" onClick={() => setSaved((s) => ({ at: new Date().toTimeString().slice(0, 5), n: (s?.n ?? 0) + 1 }))}>저장</Button>
           </Stack>
         </Stack>
       </Card>

@@ -21,7 +21,7 @@ export function cssVariables(): Record<string, string> {
   vars["--grid-gutter"] = `${grid.gutter}px`;
   vars["--grid-margin"] = `${grid.margin}px`;
   for (const [k, v] of Object.entries(shadow)) vars[`--shadow-${k}`] = v;
-  for (const [k, v] of Object.entries(motion)) vars[`--m-${k}`] = v;
+  for (const [k, v] of Object.entries(motion)) vars[`--m-${kebab(k)}`] = v;
   for (const [name, spec] of Object.entries(component)) {
     for (const [k, v] of Object.entries(spec)) vars[`--${name}-${kebab(k)}`] = typeof v === "number" ? `${v}px` : String(v);
   }
