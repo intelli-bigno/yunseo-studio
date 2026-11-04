@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>대시보드 와이어프레임 (저충실도) — 채널명 미정</title>
+<meta name="viewport" content="width=1440">
+<style>
+  :root { --ink:#1b1b1b; --mut:#6b6b6b; --line:#bdbdbd; --fill:#efefef; --fill2:#e1e1e1; --note:#2457d6; --bg:#f6f6f4; }
+  * { box-sizing: border-box; }
+  body { margin:0; width:1440px; background:var(--bg); color:var(--ink); font:14px/1.5 -apple-system,"Apple SD Gothic Neo","Noto Sans KR","Segoe UI",sans-serif; }
+  header.doc { padding:40px 48px 8px; }
+  header.doc h1 { margin:0 0 6px; font-size:28px; letter-spacing:-.01em; }
+  header.doc p { margin:0; color:var(--mut); max-width:980px; }
+  section { padding:28px 48px 12px; }
+  section > h2 { font-size:18px; margin:0 0 4px; }
+  section > .sub { color:var(--mut); margin:0 0 14px; }
+  .legend { display:flex; gap:18px; flex-wrap:wrap; margin:14px 0 0; font-size:12.5px; color:var(--mut); }
+  .legend b { color:var(--ink); }
+  .frame { background:#fff; border:2px solid var(--ink); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; }
+  .frame.row { flex-direction:row; align-items:stretch; gap:0; }
+  .bar { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:2px solid var(--ink); background:var(--fill); font-size:12.5px; }
+  .bar .dot { width:10px; height:10px; border:1.5px solid var(--ink); border-radius:50%; }
+  .bar .title { margin-left:6px; font-weight:700; }
+  .bar .url { margin-left:auto; color:var(--mut); font-family:ui-monospace,Menlo,monospace; font-size:11.5px; }
+  .side { width:176px; border-right:2px solid var(--ink); background:#fafafa; padding:12px 10px; flex:none; }
+  .side .brand { font-weight:800; letter-spacing:.02em; padding:4px 8px 10px; border-bottom:1px solid var(--line); margin-bottom:8px; }
+  .side .brand small { display:block; font-weight:500; color:var(--mut); font-size:11px; }
+  .side a { display:block; padding:6px 8px; border-radius:6px; color:var(--ink); text-decoration:none; font-size:13px; }
+  .side a.on { background:var(--ink); color:#fff; }
+  .side a small { color:var(--mut); }
+  .side a.on small { color:#ccc; }
+  .side hr { border:0; border-top:1px solid var(--line); margin:8px 0; }
+  .main { flex:1; padding:16px 18px; min-width:0; position:relative; }
+  .main h3 { margin:0 0 10px; font-size:16px; display:flex; align-items:center; gap:10px; }
+  .grid { display:grid; gap:10px; }
+  .g2 { grid-template-columns:1fr 1fr; } .g3 { grid-template-columns:repeat(3,1fr); } .g7 { grid-template-columns:repeat(7,1fr); } .g12 { grid-template-columns: 1fr 262px; }
+  .box { background:var(--fill); border:1.5px dashed var(--line); border-radius:8px; padding:8px 10px; }
+  .card { background:#fff; border:1.5px solid var(--ink); border-radius:8px; padding:8px 10px; }
+  .card.mut { border-color:var(--line); color:var(--mut); }
+  .card.dash { border-style:dashed; border-color:var(--line); background:repeating-linear-gradient(135deg,#fafafa 0 8px,#f0f0f0 8px 16px); color:var(--mut); }
+  .chip { display:inline-block; padding:1px 8px; border:1.5px solid var(--ink); border-radius:999px; font-size:11.5px; font-weight:600; background:#fff; white-space:nowrap; }
+  .chip.f { background:var(--ink); color:#fff; }
+  .chip.m { border-color:var(--line); color:var(--mut); font-weight:500; }
+  .btn { display:inline-block; padding:4px 12px; border:1.5px solid var(--ink); border-radius:6px; font-weight:600; font-size:12.5px; background:#fff; }
+  .btn.p { background:var(--ink); color:#fff; }
+  .btn.g { border-color:var(--line); color:var(--mut); font-weight:500; }
+  .lbl { font-size:11.5px; color:var(--mut); font-weight:600; letter-spacing:.02em; }
+  .line { height:9px; background:var(--fill2); border-radius:4px; margin:6px 0; }
+  .line.s { width:60%; } .line.m { width:80%; }
+  .row { display:flex; gap:10px; align-items:center; }
+  .sp { margin-left:auto; }
+  .tbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .tbl th { text-align:left; font-weight:700; border-bottom:2px solid var(--ink); padding:5px 8px; font-size:12px; color:var(--mut); }
+  .tbl td { border-bottom:1px solid var(--line); padding:6px 8px; vertical-align:top; }
+  .tbl tr.warn td { background:#f3f3f3; }
+  .no { position:absolute; width:22px; height:22px; border-radius:50%; background:var(--note); color:#fff; font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 3px #fff; }
+  .notes { margin:12px 0 0; padding:0; list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:6px 28px; font-size:13px; }
+  .notes li { display:flex; gap:8px; } .notes li i { flex:none; width:20px; height:20px; border-radius:50%; background:var(--note); color:#fff; font-style:normal; font-weight:700; font-size:11.5px; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .k { font-weight:700; } .u1 { text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:3px; } .u2 { text-decoration:underline dashed; text-decoration-thickness:2px; text-underline-offset:3px; }
+  .flow { display:flex; align-items:stretch; gap:0; flex-wrap:wrap; }
+  .step { border:2px solid var(--ink); border-radius:10px; background:#fff; padding:8px 10px; width:140px; position:relative; margin:0 22px 22px 0; }
+  .step.gate { background:var(--ink); color:#fff; }
+  .step b { display:block; font-size:13px; } .step span { font-size:11.5px; color:var(--mut); } .step.gate span { color:#ccc; }
+  .step::after { content:"→"; position:absolute; right:-20px; top:50%; transform:translateY(-50%); font-weight:700; }
+  .step.end::after { content:""; }
+  .tree { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+  .tree .col { border:2px solid var(--ink); border-radius:10px; background:#fff; padding:8px 10px; }
+  .tree .col h4 { margin:0 0 6px; font-size:13.5px; border-bottom:2px solid var(--ink); padding-bottom:4px; }
+  .tree .col li { margin:2px 0; font-size:12.5px; } .tree ul { padding-left:16px; margin:0; }
+  .day { min-height:150px; display:flex; flex-direction:column; gap:6px; }
+  .day .d { font-weight:700; font-size:12px; color:var(--mut); }
+  .conn { position:absolute; border-top:2px solid var(--note); height:0; }
+  .pair { display:grid; grid-template-columns: 1fr 90px 1fr; gap:0; align-items:stretch; }
+  .arrow { display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; color:var(--note); }
+  .nb { display:inline-flex; width:19px; height:19px; border-radius:50%; background:var(--note); color:#fff; font-weight:700; font-size:11px; align-items:center; justify-content:center; font-style:normal; vertical-align:middle; margin-left:4px; }
+  .hl { background:#fff; border:1.5px solid var(--note); border-radius:6px; padding:2px 6px; color:var(--note); font-size:11.5px; font-weight:700; }
+</style>
+</head>
+<body>
+
+<header class="doc">
+  <h1>운영 대시보드 와이어프레임 — 저충실도</h1>
+  <p>채널명·발행 언어·최종 시각은 <b>미정</b>이라 자리표시입니다. 문구는 구조를 보여 주는 가짜 글이고, 사건명·날짜·수치는 실제 값이 아닙니다.
+  색은 쓰지 않았고 <span class="hl">파란 번호</span>는 설명용 주석입니다. 이 화면들이 쓰는 데이터 규칙은 <code>docs/01-content-sot.md</code> §4~6, 공정은 <code>docs/02-sop.md</code>.</p>
+  <div class="legend">
+    <span><b>■</b> 사실</span><span><b>▲</b> 시장 반응</span><span><b>◆</b> 해석</span><span><b>○</b> 시나리오</span>
+    <span><b class="u1">실선 밑줄</b> = 조사</span><span><b class="u2">점선 밑줄</b> = 직접 경험</span>
+    <span><span class="chip f">게이트</span> = 사람이 통과해야 다음으로 감 (G1 주제·관점 / G2 사실 확인 / G3 최종 발행 판단)</span>
+  </div>
+</header>
+
+<!-- ───────────── 0. 정보구조 + 화면 흐름 ───────────── -->
+<section>
+  <h2>0. 정보구조와 화면 흐름</h2>
+  <p class="sub">왼쪽 메뉴 6개. 편 상세는 한 화면 안의 탭 6개로 흐름 그대로 이어진다.</p>
+  <div class="tree">
+    <div class="col"><h4>오늘</h4><ul><li>오늘의 피드 슬롯</li><li>막힌 편 (실패·반려)</li><li>내가 통과시킬 게이트</li><li>다음 3일 편성</li></ul></div>
+    <div class="col"><h4>편성</h4><ul><li><b>편성 캘린더</b> (주·월)</li><li>사건 후보함 + 중요도 판정</li><li><b>이번 주의 변수</b> (스토리)</li><li>릴스 후보</li></ul></div>
+    <div class="col"><h4>콘텐츠</h4><ul><li>① 이슈 이전</li><li>② 이슈 이후</li><li>③ 트레이딩 연구 (스레드)</li><li><b>편 상세</b> — 작성 · 출처·구분 · 연결 · 이력 · 미리보기 · 검수</li></ul></div>
+    <div class="col"><h4>발행</h4><ul><li><b>발행 대기열</b></li><li>업로드 묶음 (MVP)</li><li>게시 URL 기록</li></ul></div>
+    <div class="col"><h4>성과</h4><ul><li>편별 · 종별 표</li><li>수동 입력 폼</li><li>이후 편 대비 복기 메모</li></ul></div>
+    <div class="col"><h4>설정</h4><ul><li>프리셋 (읽기 전용)</li><li>금지 표현 규칙</li><li>자리표시자(<code>TBD</code>) 잔존 경고</li></ul></div>
+  </div>
+  <h2 style="margin-top:22px">화면 흐름 — 한 편의 길</h2>
+  <p class="sub">오른쪽으로 갈수록 상태가 올라간다. 검은 칸은 사람 게이트. ②는 대기 상태를 하나 더 거친다.</p>
+  <div class="flow">
+    <div class="step"><b>편성 캘린더</b><span>빈 슬롯·후보 확인</span></div>
+    <div class="step gate"><b>G1 선정</b><span>주제 · 핵심 관점 · 중요도</span></div>
+    <div class="step"><b>작성</b><span>종류별 단 폼</span></div>
+    <div class="step gate"><b>G2 출처·구분</b><span>claim 별 사실 확인</span></div>
+    <div class="step"><b>미리보기</b><span>카드 · 폰 크기</span></div>
+    <div class="step gate"><b>G3 검수</b><span>체크리스트 · 승인</span></div>
+    <div class="step"><b>발행 대기열</b><span>묶음 · 예약 · URL</span></div>
+    <div class="step end"><b>성과·복기</b><span>② 이후 편으로 이어짐</span></div>
+  </div>
+  <div class="flow" style="margin-top:-6px">
+    <div class="step" style="width:330px"><b>② 전용: 자료 대기</b><span>선정 뒤 <code>waiting_evidence</code> — 자료 확보 조건 4개가 채워지면 작성으로</span></div>
+    <div class="step" style="width:330px"><b>수정 발생 시</b><span>이력 탭에 이유 기록 → 기존 승인 무효 → G3 다시</span></div>
+    <div class="step end" style="width:330px"><b>릴스 확장 (주 1~2)</b><span>승인된 피드 중 선택 → 새 주장 없이 영상 구성 → 승인</span></div>
+  </div>
+</section>
+
+<!-- ───────────── 1. 편성 캘린더 ───────────── -->
+<section>
+  <h2>1. 편성 캘린더</h2>
+  <p class="sub">주 단위가 기본. 하루 피드 1칸, 주 1회 스토리, 릴스 1~2칸이 한눈에 보인다. 빈 날은 「채우기」가 아니라 「쉬는 날로 두기」도 같은 크기의 선택지다.</p>
+  <div class="frame row" style="height:490px">
+    <div class="side"><div class="brand">[채널명 미정]<small>운영 대시보드</small></div><a>오늘</a><a class="on">편성</a><a>콘텐츠</a><a>발행</a><a>성과</a><hr><a>설정</a></div>
+    <div class="main">
+      <h3>편성 캘린더 <span class="chip f">주</span><span class="chip m">월</span><span class="sp"></span><span class="btn g">◀</span><span class="k">MM.DD – MM.DD</span><span class="btn g">▶</span></h3>
+      <div class="grid g12">
+        <div>
+          <div class="grid g7">
+            <div class="card day"><span class="d">월 MM/DD</span><div class="card"><span class="chip f">① 이전</span><i class="nb">1</i><div class="k" style="margin-top:4px">[사건 A] 전날</div><span class="lbl">G3 대기</span></div></div>
+            <div class="card day"><span class="d">화 MM/DD</span><div class="card"><span class="chip">③ 연구</span><div class="k" style="margin-top:4px">T-03 조건</div><span class="lbl">작성 중</span></div></div>
+            <div class="card day"><span class="d">수 MM/DD</span><div class="card"><span class="chip f">② 이후</span><div class="k" style="margin-top:4px">[사건 A] 이후</div><span class="lbl">자료 대기</span></div><div class="card dash">연구 예비 1칸</div></div>
+            <div class="card day"><span class="d">목 MM/DD</span><div class="card"><span class="chip f">① 이전</span><div class="k" style="margin-top:4px">[사건 B] 전날</div><span class="lbl">작성 중</span></div></div>
+            <div class="card day"><span class="d">금 MM/DD</span><div class="card dash">쉬는 날<br><span class="lbl">사유 기록</span></div></div>
+            <div class="card day"><span class="d">토 MM/DD</span><div class="card"><span class="chip">③ 연구</span><div class="k" style="margin-top:4px">T-03 도구</div><span class="lbl">초안</span></div></div>
+            <div class="card day"><span class="d">일 MM/DD</span><div class="card dash">비어 있음<br><span class="btn g">+ 연구 배정</span> <span class="btn g">쉬는 날로</span></div></div>
+          </div>
+          <div class="grid" style="grid-template-columns:repeat(7,1fr);margin-top:8px">
+            <div class="card" style="grid-column:1 / span 2"><span class="chip">스토리</span> <b>이번 주의 변수</b><i class="nb">2</i> <span class="lbl">주 1회 · 요일 미정</span></div>
+            <div style="grid-column:3 / span 5" class="row"><span class="chip">릴스 1</span><span class="lbl">월 피드 확장 후보</span><span class="chip">릴스 2</span><span class="lbl">미배정</span><span class="sp"></span><span class="lbl">점수는 사람이 매김</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="card"><div class="row"><b>사건 후보함</b><i class="nb">3</i><span class="sp"></span><span class="chip m">자동 수집</span></div>
+            <div class="box" style="margin-top:8px"><b>[사건 C]</b> MM/DD HH:MM TZ<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:5px"><span class="chip">a 기대</span><span class="chip">b 갈림</span><span class="chip m">c 자료</span><span class="chip m">d 해석</span><span class="chip m">e 후속</span></div>
+              <div class="row" style="margin-top:6px;flex-wrap:wrap;gap:5px"><span class="lbl">제안: watch</span><span class="sp"></span><span class="btn p">major</span><span class="btn">watch</span><span class="btn g">skip</span></div></div>
+            <div class="box" style="margin-top:8px"><b>[사건 D]</b> MM/DD HH:MM TZ<div class="line m"></div><div class="row"><span class="lbl">판정 대기</span></div></div>
+          </div>
+          <div class="card" style="margin-top:10px"><b>규칙 알림</b><i class="nb">4</i><div class="lbl" style="margin-top:4px">· 같은 날 ① 둘 → 한 건은 스토리로<br>· ②가 3일째 자료 대기 → 운영자 판단<br>· 작은 사건 승격 시 사유 입력 필수</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li><i>1</i><span>칩 모양으로 종류를 구분한다: 검은 칩 = 사건 연동(①②), 흰 칩 = 연구(③). 색은 쓰지 않는다.</span></li>
+    <li><i>2</i><span>스토리·릴스 줄이 피드 아래에 붙어 한 주의 리듬이 보인다.</span></li>
+    <li><i>3</i><span>후보 카드의 a~e 는 02 문서 중요도 질문. 자동은 제안만, 판정 버튼은 사람.</span></li>
+    <li><i>4</i><span>규칙 알림은 막지 않고 알린다. 승격·강행에는 사유 입력.</span></li>
+  </ul>
+</section>
+
+<!-- ───────────── 2. 이번 주의 변수 ───────────── -->
+<section>
+  <h2>2. 이번 주의 변수 (스토리·하이라이트)</h2>
+  <p class="sub">날짜가 가장 크게 보인다. 오른쪽이 스토리 한 장 미리보기(9:16).</p>
+  <div class="frame row" style="height:520px">
+    <div class="side"><div class="brand">[채널명 미정]<small>운영 대시보드</small></div><a>오늘</a><a class="on">편성</a><a>콘텐츠</a><a>발행</a><a>성과</a><hr><a>설정</a></div>
+    <div class="main">
+      <h3>이번 주의 변수 <span class="chip">초안</span><span class="sp"></span><span class="btn">후보 불러오기</span><span class="btn p">검수로</span></h3>
+      <div class="grid" style="grid-template-columns:1.6fr 1fr;gap:18px">
+        <div>
+          <table class="tbl">
+            <tr><th style="width:110px">날짜</th><th>사건</th><th style="width:96px">중요도</th><th style="width:150px">변수 한 줄</th></tr>
+            <tr><td><b style="font-size:16px">MM.DD</b><br><span class="lbl">요일 · HH:MM TZ</span></td><td><b>[사건 A]</b><br><span class="lbl">일정 출처: 공식 캘린더 ↗</span></td><td><span class="chip f">major</span><br><span class="lbl">① 편 연결</span></td><td><span class="k">◆</span> 해석 · <span class="u1">조사</span></td></tr>
+            <tr><td><b style="font-size:16px">MM.DD</b><br><span class="lbl">요일 · HH:MM TZ</span></td><td><b>[사건 B]</b><br><span class="lbl">일정 출처: 공식 캘린더 ↗</span></td><td><span class="chip f">major</span><br><span class="lbl">① 편 작성 중</span></td><td><span class="k">◆</span> 해석 · <span class="u1">조사</span></td></tr>
+            <tr><td><b style="font-size:16px">MM.DD</b><br><span class="lbl">요일 · HH:MM TZ</span></td><td><b>[사건 C]</b><br><span class="lbl">일정 출처: 공식 캘린더 ↗</span></td><td><span class="chip">watch</span><br><span class="lbl">피드 편성 없음</span></td><td><span class="k">■</span> 사실 · <span class="u1">조사</span></td></tr>
+            <tr class="warn"><td><b style="font-size:16px">MM.DD</b><br><span class="lbl">일정 변경됨</span></td><td><b>[사건 D]</b><br><span class="lbl">변경 이유 입력 필요 → 수정 이력</span></td><td><span class="chip">watch</span></td><td>—</td></tr>
+          </table>
+          <div class="box" style="margin-top:10px"><b>지난 주 닫기</b> <span class="lbl">이후 편 링크로 닫거나 못 닫은 이유 기록</span>
+            <div class="row" style="margin-top:6px"><span class="chip m">[지난 사건 X]</span><span class="lbl">→ ② 이후 편 연결됨</span><span class="chip m">[지난 사건 Y]</span><span class="lbl">→ 미연결 · 이유 입력</span></div></div>
+        </div>
+        <div class="row" style="align-items:flex-start;justify-content:center">
+          <div style="width:216px;height:384px;border:2px solid var(--ink);border-radius:18px;background:#fff;padding:14px;display:flex;flex-direction:column;gap:8px">
+            <span class="lbl">[채널명 미정]</span><div class="k" style="font-size:17px">이번 주의 변수</div><span class="lbl">MM.DD – MM.DD</span>
+            <div class="card"><b>MM.DD 요일</b><div class="line m"></div></div><div class="card"><b>MM.DD 요일</b><div class="line m"></div></div><div class="card mut"><b>MM.DD 요일</b><div class="line s"></div></div>
+            <span class="lbl" style="margin-top:auto">출처 · 기준 시점 표기</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li><i>•</i><span>변수 한 줄마다 구분 표시(사실/해석 + 조사/경험)가 붙는다.</span></li>
+    <li><i>•</i><span>일정이 바뀌면 행이 강조되고 이유를 쓰지 않으면 검수로 못 간다.</span></li>
+  </ul>
+</section>
+
+<!-- ───────────── 3. 콘텐츠 3종 작성 ───────────── -->
+<section>
+  <h2>3. 콘텐츠 3종 작성 화면</h2>
+  <p class="sub">같은 틀(왼쪽 단 목록 · 가운데 폼 · 오른쪽 점검)에 종류별 단만 바뀐다. 아래는 세 종류를 나란히 놓은 것.</p>
+  <div class="grid g3">
+    <!-- ① -->
+    <div class="frame" style="height:470px">
+      <div class="bar"><span class="dot"></span><span class="title">① 이슈 이전 — 작성</span><span class="chip m">draft</span></div>
+      <div class="main" style="padding:12px">
+        <div class="row"><span class="lbl">[사건 A] · 전날 발행</span><span class="sp"></span><span class="chip f">major</span></div>
+        <div class="grid" style="grid-template-columns:100px 1fr;margin-top:8px;gap:10px">
+          <div>
+            <div class="card">1 왜 중요한가 ✓</div><div class="card" style="margin-top:6px;background:var(--fill)"><b>2 시장은 무엇을 예상</b></div><div class="card mut" style="margin-top:6px">3 시나리오 (2↑)</div><div class="card mut" style="margin-top:6px">4 영향 경로</div><div class="card mut" style="margin-top:6px">5 확인할 것</div><div class="card mut" style="margin-top:6px">운영자 해석</div>
+          </div>
+          <div>
+            <div class="lbl">2단 헤드라인</div><div class="box"><div class="line m"></div></div>
+            <div class="lbl" style="margin-top:8px">포인트</div>
+            <div class="card"><span class="k">▲</span> <span class="u1">기대 문장…</span><div class="row" style="margin-top:4px"><span class="chip m">출처 ✓</span><span class="chip m">as_of HH:MM</span><span class="chip">재확인 필요</span></div></div>
+            <div class="card dash" style="margin-top:6px">+ 포인트 추가</div>
+            <div class="lbl" style="margin-top:8px">카드 글자 수 <b>142/220</b> (잠정 상한)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ② -->
+    <div class="frame" style="height:470px">
+      <div class="bar"><span class="dot"></span><span class="title">② 이슈 이후 — 작성</span><span class="chip m">draft</span></div>
+      <div class="main" style="padding:12px">
+        <div class="row"><span class="lbl">← 연결: ① [사건 A]</span><span class="sp"></span><span class="chip f">자료 확보 3/4</span></div>
+        <div class="grid" style="grid-template-columns:100px 1fr;margin-top:8px;gap:10px">
+          <div>
+            <div class="card" style="background:var(--fill)"><b>1 결과 vs 예상</b></div><div class="card mut" style="margin-top:6px">2 시장 반응</div><div class="card mut" style="margin-top:6px">3 판단 유지/변경</div><div class="card mut" style="margin-top:6px">4 다음 변수</div><div class="card mut" style="margin-top:6px">운영자 해석</div>
+          </div>
+          <div>
+            <div class="lbl">실제 결과</div><div class="card"><span class="k">■</span> <span class="u1">결과 문장…</span><div class="row" style="margin-top:4px"><span class="chip m">1차 출처 ✓</span><span class="chip m">as_of</span></div></div>
+            <div class="lbl" style="margin-top:8px">사전 시나리오 응답 (전부 필수)</div>
+            <table class="tbl"><tr><td>○ 시나리오 1</td><td><span class="chip">partial ▾</span></td></tr><tr><td>○ 시나리오 2</td><td><span class="chip">matched ▾</span></td></tr><tr class="warn"><td>○ 시나리오 3</td><td><span class="chip m">미응답 ▾</span></td></tr></table>
+            <div class="lbl" style="margin-top:6px">확인할 것 이월: 2/3 닫음</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ③ -->
+    <div class="frame" style="height:470px">
+      <div class="bar"><span class="dot"></span><span class="title">③ 트레이딩 연구 — 작성</span><span class="chip m">draft</span></div>
+      <div class="main" style="padding:12px">
+        <div class="row"><span class="lbl">스레드 T-03 · 단계 4/5</span><span class="sp"></span><span class="chip">도구</span></div>
+        <div class="row" style="margin:8px 0"><span class="chip f">아이디어</span>—<span class="chip f">조건</span>—<span class="chip f">실패</span>—<span class="chip" style="border-width:3px">도구</span>—<span class="chip m">후속</span></div>
+        <div class="grid" style="grid-template-columns:100px 1fr;gap:10px">
+          <div><div class="card">이름·목적</div><div class="card" style="margin-top:6px;background:var(--fill)"><b>사용법 단계</b></div><div class="card" style="margin-top:6px;background:#f3f3f3;border-color:var(--ink)">한계 <span class="k">필수</span></div><div class="card" style="margin-top:6px;background:#f3f3f3;border-color:var(--ink)">검증 범위 <span class="k">필수</span></div><div class="card mut" style="margin-top:6px">배포 안내 (≤1줄)</div></div>
+          <div>
+            <div class="lbl">사용법</div>
+            <div class="card">1. <span class="k">◆</span> <span class="u2">직접 써 본 단계…</span></div><div class="card" style="margin-top:6px">2. <span class="k">■</span> <span class="u1">자료 단계…</span></div>
+            <div class="card dash" style="margin-top:6px">+ 단계 추가</div>
+            <div class="lbl" style="margin-top:8px">검증 범위</div><div class="box"><span class="lbl">무엇을·어떤 자료로·어디까지 / 확인하지 않은 것</span></div>
+            <div class="lbl" style="margin-top:8px">규칙: 도구 편은 이 게시물 안에서 사용법이 끝나야 한다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li><i>•</i><span>회색 칸 = 아직 비어 있는 단. 필수 칸이 비면 「출처·구분」 탭으로 못 넘어간다.</span></li>
+    <li><i>•</i><span>모든 문장 앞에 구분 기호(■▲◆○)와 밑줄(실선=조사, 점선=경험)이 붙는다. 한 문장에 기호는 하나.</span></li>
+  </ul>
+</section>
+
+<!-- ───────────── 4. 출처·구분 표시 편집기 ───────────── -->
+<section>
+  <h2>4. 출처·구분 표시 편집기 (G2 사실 확인)</h2>
+  <p class="sub">왼쪽은 독자가 보게 될 글에 구분 표시를 입힌 모습, 오른쪽은 선택한 문장의 claim 상세. 사람이 원문과 대조한 뒤 확인 버튼을 누른다.</p>
+  <div class="frame row" style="height:560px">
+    <div class="side"><div class="brand">[채널명 미정]<small>운영 대시보드</small></div><a>오늘</a><a>편성</a><a class="on">콘텐츠</a><a>발행</a><a>성과</a><hr><a>설정</a></div>
+    <div class="main">
+      <h3>① [사건 A] <span class="chip m">작성</span><span class="chip f">출처·구분</span><span class="chip m">연결</span><span class="chip m">이력</span><span class="chip m">미리보기</span><span class="chip m">검수</span><span class="sp"></span><span class="lbl">G2: 확인 4/9</span></h3>
+      <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:16px">
+        <div>
+          <div class="lbl">본문 (구분 표시 보기)</div>
+          <div class="card" style="line-height:2">
+            <span class="k">■</span> <span class="u1">보도된 사실 문장입니다.</span> <span class="chip m">✓ 확인</span><br>
+            <span class="k">▲</span> <span class="u1">관측된 시장 반응 문장입니다.</span> <span class="chip">재확인 필요</span><br>
+            <span class="k">◆</span> <span class="u1">운영자 해석 문장입니다.</span> <span class="chip m">based_on ■1</span><br>
+            <span class="k">◆</span> <span class="u2">직접 경험에서 나온 해석입니다.</span> <span class="chip m">경험 메모</span><br>
+            <span class="k">○</span> <span class="u1">조건이 이러하면 이렇게 읽을 수 있다.</span> <span class="chip m">시나리오 1/2</span><br>
+            <span class="k">◆</span> <span class="u1">근거 없는 해석 문장입니다.</span> <span class="chip f">⚠ based_on 없음</span>
+          </div>
+          <div class="row" style="margin-top:8px"><span class="lbl">필터</span><span class="chip f">전체</span><span class="chip">미확인</span><span class="chip">재확인 필요</span><span class="chip">경고</span></div>
+          <div class="box" style="margin-top:10px"><span class="lbl">자동 검사</span> 출처 칸 누락 0 · 링크 열림 8/9 · 수치-claim 대응 OK · 금지 표현 block 0 <span class="chip">warn 1 · 읽고 판정</span></div>
+        </div>
+        <div class="card" style="border-width:2px">
+          <div class="row"><b>claim ■1</b><span class="sp"></span><span class="chip">fact</span><span class="chip">조사</span></div>
+          <div class="lbl" style="margin-top:8px">종류 / 근거</div><div class="row"><span class="btn">사실 ▾</span><span class="btn">조사 ▾</span></div>
+          <div class="lbl" style="margin-top:8px">출처 (필수)</div>
+          <table class="tbl"><tr><td class="lbl">URL</td><td><div class="line m"></div></td></tr><tr><td class="lbl">발행처</td><td><div class="line s"></div></td></tr><tr><td class="lbl">접근일</td><td><div class="line s"></div></td></tr><tr><td class="lbl">원문 인용</td><td><div class="box">원문 그대로 붙여넣기</div></td></tr><tr><td class="lbl">등급</td><td><span class="chip">primary</span> <span class="chip m">major_media</span> <span class="chip m">other</span></td></tr></table>
+          <div class="lbl" style="margin-top:8px">기준 시점 (필수)</div><div class="row"><div class="box" style="flex:1">YYYY-MM-DD HH:MM</div><div class="box">시간대 ▾</div></div>
+          <div class="row" style="margin-top:12px"><span class="btn p">원문과 대조했음 — 확인</span><span class="btn g">나중에</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li><i>•</i><span>구분 기호는 편집기·미리보기·카드 출처 장에서 같은 모양이다.</span></li>
+    <li><i>•</i><span>「확인」은 사람만 누를 수 있다. 자동 검사는 칸·링크까지만 본다.</span></li>
+    <li><i>•</i><span>직접 경험 문장은 점선 밑줄 + 경험 메모(언제·무엇을·자료 위치)를 요구한다.</span></li>
+    <li><i>•</i><span>근거 없는 해석은 경고로 표시되고 G2 를 막는다.</span></li>
+  </ul>
+</section>
+
+<!-- ───────────── 5. 이전↔이후 연결 보기 ───────────── -->
+<section>
+  <h2>5. 이전 ↔ 이후 연결 보기</h2>
+  <p class="sub">이전 편이 한 일(시나리오 · 확인할 것 · 판단)을 이후 편이 하나씩 닫는다. 닫히지 않은 줄이 있으면 G2 를 못 넘는다.</p>
+  <div class="frame row" style="height:520px">
+    <div class="side"><div class="brand">[채널명 미정]<small>운영 대시보드</small></div><a>오늘</a><a>편성</a><a class="on">콘텐츠</a><a>발행</a><a>성과</a><hr><a>설정</a></div>
+    <div class="main">
+      <h3>② [사건 A] 이후 <span class="chip m">작성</span><span class="chip m">출처·구분</span><span class="chip f">연결</span><span class="chip m">이력</span><span class="chip m">미리보기</span><span class="chip m">검수</span></h3>
+      <div class="pair" style="margin-bottom:6px"><div class="lbl">① 이슈 이전 · 발행 MM.DD (본문 고정)</div><div></div><div class="lbl">② 이슈 이후 · 작성 중</div></div>
+      <div class="pair" style="gap:0">
+        <div class="grid" style="gap:8px">
+          <div class="card"><b>○ 시나리오 1</b> <span class="lbl">id: s1</span><div class="line m"></div></div>
+          <div class="card"><b>○ 시나리오 2</b> <span class="lbl">id: s2</span><div class="line m"></div></div>
+          <div class="card"><b>○ 시나리오 3</b> <span class="lbl">id: s3</span><div class="line m"></div></div>
+          <div class="card"><b>확인할 것 1</b> <span class="lbl">c1</span></div>
+          <div class="card"><b>확인할 것 2</b> <span class="lbl">c2</span></div>
+          <div class="card"><b>판단: 이전 2단의 기대</b> <span class="lbl">j1</span></div>
+        </div>
+        <div class="grid" style="gap:8px;align-content:start">
+          <div class="arrow" style="height:66px">→</div><div class="arrow" style="height:66px">→</div><div class="arrow" style="height:66px">→</div><div class="arrow" style="height:50px">→</div><div class="arrow" style="height:50px">→</div><div class="arrow" style="height:50px">→</div>
+        </div>
+        <div class="grid" style="gap:8px">
+          <div class="card" style="height:66px"><span class="chip">partial</span> <span class="lbl">scenario_outcome</span><div class="line m"></div></div>
+          <div class="card" style="height:66px"><span class="chip">matched</span> <span class="lbl">scenario_outcome</span><div class="line m"></div></div>
+          <div class="card dash" style="height:66px;border-color:var(--ink);color:var(--ink)"><b>미응답 — 필수</b><br><span class="btn">응답 추가</span></div>
+          <div class="card" style="height:50px"><span class="chip">done</span> <span class="lbl">check_result</span></div>
+          <div class="card" style="height:50px"><span class="chip m">not_available</span> → <span class="lbl">다음 변수로 이월</span></div>
+          <div class="card" style="height:50px"><span class="chip f">revised</span> <span class="lbl">judgment_update · 이유 입력됨 · 이전 편 이력 연결 ✓</span></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px"><span class="lbl">닫힘 5/6</span><span class="sp"></span><span class="btn g">이전 편 열기</span><span class="btn g">나란히 미리보기</span></div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li><i>•</i><span>왼쪽 열은 읽기 전용(발행된 이전 편). 바꾸려면 이력 탭에서 정정으로만.</span></li>
+    <li><i>•</i><span>이전 편이 없는 사건이면 이 탭은 「사전 시나리오 없음」 표시만 한다.</span></li>
+  </ul>
+</section>
+
+<!-- ───────────── 6. 검수 ───────────── -->
+<section>
+  <h2>6. 검수 (G3 최종 발행 판단)</h2>
+  <p class="sub">카드를 폰 크기로 넘겨 보면서 체크리스트를 채운다. 반려에는 사유가 필수.</p>
+  <div class="frame row" style="height:560px">
+    <div class="side"><div class="brand">[채널명 미정]<small>운영 대시보드</small></div><a>오늘</a><a>편성</a><a class="on">콘텐츠</a><a>발행</a><a>성과</a><hr><a>설정</a></div>
+    <div class="main">
+      <h3>① [사건 A] <span class="chip m">작성</span><span class="chip m">출처·구분</span><span class="chip m">연결</span><span class="chip m">이력</span><span class="chip m">미리보기</span><span class="chip f">검수</span></h3>
+      <div class="grid" style="grid-template-columns:260px 1fr 250px;gap:16px">
+        <div>
+          <div style="width:216px;height:270px;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:14px;display:flex;flex-direction:column;gap:8px">
+            <span class="lbl">[채널명 미정] · ① 이슈 이전</span><div class="k" style="font-size:18px;line-height:1.3">표지 제목 자리</div><div class="line m"></div><div class="line s"></div><span class="lbl" style="margin-top:auto">기준: YYYY-MM-DD HH:MM TZ</span>
+          </div>
+          <div class="row" style="margin-top:8px;width:216px;justify-content:center"><span class="btn g">◀</span><span class="k">1 / 7</span><span class="btn g">▶</span></div>
+        </div>
+        <div>
+          <div class="lbl">체크리스트 (02 문서 §5.3)</div>
+          <div class="card" style="line-height:1.9">
+            ☑ 투자 권유로 읽히는 문장 없음<br>☑ 금지 표현 검사 통과 (block 0)<br>☑ 사실/시장 반응/해석/시나리오가 구분돼 보임<br>☑ 출처 카드와 기준 시점 있음<br>☐ 일시·시간대 오늘 기준 재확인<br>☐ 자리표시자 없음 · 고지 문구 확정본<br>☐ 표지가 이전 게시물과 같은 틀<br>☐ 이 편을 내는 이유가 「채우려고」가 아님
+          </div>
+        </div>
+        <div>
+          <div class="card"><b>승인 기록</b><div class="lbl" style="margin-top:4px">승인자 / 시각 / 산출물 해시</div><div class="line m"></div><div class="lbl">승인 뒤 바뀌면 자동 무효</div></div>
+          <div class="row" style="margin-top:10px"><span class="btn p">승인</span><span class="btn">반려</span></div>
+          <div class="box" style="margin-top:8px"><span class="lbl">반려 사유 (필수)</span><div class="line m"></div><div class="line s"></div></div>
+          <div class="card mut" style="margin-top:10px">이전 편과 나란히 보기 (② 일 때)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── 7. 발행 대기열 ───────────── -->
+<section>
+  <h2>7. 발행 대기열</h2>
+  <p class="sub">MVP 는 업로드 묶음을 내려받아 사람이 올린다. 승인 해시와 게시 산출물 해시가 다르면 막힌다.</p>
+  <div class="frame row" style="height:400px">
+    <div class="side"><div class="brand">[채널명 미정]<small>운영 대시보드</small></div><a>오늘</a><a>편성</a><a>콘텐츠</a><a class="on">발행</a><a>성과</a><hr><a>설정</a></div>
+    <div class="main">
+      <h3>발행 대기열 <span class="chip f">피드</span><span class="chip m">스토리</span><span class="chip m">릴스</span></h3>
+      <table class="tbl">
+        <tr><th style="width:90px">예정</th><th>편</th><th style="width:90px">종류</th><th style="width:110px">상태</th><th style="width:120px">해시</th><th>동작</th></tr>
+        <tr><td><b>MM.DD HH:MM</b><br><span class="lbl">TZ</span></td><td><b>① [사건 A]</b> 피드</td><td><span class="chip f">① 이전</span></td><td><span class="chip">approved</span></td><td><span class="chip m">일치 ✓</span></td><td><span class="btn p">업로드 묶음 받기</span> <span class="btn">캡션 복사</span></td></tr>
+        <tr><td><b>MM.DD HH:MM</b></td><td><b>③ T-03 조건</b> 피드</td><td><span class="chip">③ 연구</span></td><td><span class="chip m">in_review</span></td><td><span class="chip m">대기</span></td><td><span class="lbl">승인 전 — 발행 불가</span></td></tr>
+        <tr class="warn"><td><b>MM.DD HH:MM</b></td><td><b>② [사건 A] 이후</b> 피드</td><td><span class="chip f">② 이후</span></td><td><span class="chip f">changes_requested</span></td><td><span class="chip f">불일치 ⚠</span></td><td><span class="lbl">승인 후 수정됨 → 재검수</span></td></tr>
+        <tr><td><b>MM.DD</b></td><td><b>이번 주의 변수</b> 스토리</td><td><span class="chip m">스토리</span></td><td><span class="chip">approved</span></td><td><span class="chip m">일치 ✓</span></td><td><span class="btn">이미지 받기</span> <span class="btn g">하이라이트 교체 체크</span></td></tr>
+        <tr><td><b>MM.DD</b></td><td><b>릴스 1</b> (← ① [사건 A])</td><td><span class="chip m">릴스</span></td><td><span class="chip m">drafted</span></td><td><span class="chip m">대기</span></td><td><span class="lbl">원본 피드 승인됨 · 새 주장 없음 검사 통과</span></td></tr>
+        <tr><td><b>MM.DD</b></td><td><b>① [지난 사건]</b> 피드</td><td><span class="chip f">① 이전</span></td><td><span class="chip">published</span></td><td><span class="chip m">일치 ✓</span></td><td><span class="lbl">게시 URL:</span> <span class="box" style="display:inline-block;padding:0 40px">붙여넣기</span> <span class="btn g">저장</span></td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer style="padding:24px 48px 48px;color:#6b6b6b">
+  이 파일은 정적 HTML 입니다(스크립트·외부 자원 없음). 같은 내용의 PNG 는 <code>wireframes.png</code>. 변경 이유와 선택지는 <code>docs/design/README.md</code>.
+</footer>
+</body>
+</html>

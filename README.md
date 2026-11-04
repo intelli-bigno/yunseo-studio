@@ -7,7 +7,8 @@
 
 ## 상태
 
-- 설계 문서는 [docs/](docs/README.md). 원문 브리프는 [docs/00-brief-original.md](docs/00-brief-original.md) (수정 금지).
+- 설계 문서는 [docs/](docs/README.md). 원문 브리프는 [docs/00-brief-original.md](docs/00-brief-original.md) (기존 문구 수정 금지, 덧붙이기만).
+- 콘텐츠 3종(이전·이후·연구)·SOP·편성 규칙·화면 설계는 확정 문서이고, 시안(와이어프레임·시각 시스템 2안)은 [docs/design/](docs/design/README.md) 에 있다. 채널명·발행 언어·최종 시각은 미정.
 - **기본 셋팅만 승인됨(2026-11-04)** — 프리셋·금지 표현 검사·모노레포 골격·콘텐츠 스키마. 게시 자동화·외부 계정 연동은 하지 않는다.
 - 브랜드 이름·캐릭터·발행 언어는 **미정**이다. 값이 `TBD` 인 항목이 남아 있으면 게시 단계에서 차단한다.
 - 비공개(private) 저장소. 비밀값·계정 정보를 커밋하지 않는다.
