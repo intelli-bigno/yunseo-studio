@@ -55,6 +55,9 @@ yunseo-studio/
 | `packages/design-tokens` | 동작 — 대시보드 디자인 토큰(색·서체·간격·컴포넌트)과 CSS 변수 변환, 대비 검사. 외부 의존 0 ([design/final-direction.md](design/final-direction.md)) |
 | `apps/dashboard` | 목업 동작 — 오늘·편성 캘린더·콘텐츠 3종(작성·출처·미리보기·검수)·발행 대기열 + `GET /api/health`. 데이터는 목업, 유스케이스 호출은 M2 |
 | `apps/worker` | 최소 진입점 — Node 상주 프로세스 + `GET /health`. 잡 큐 소비는 M3 이후 |
+| `apps/worker` (L6) | 스케줄러·작업 등록부(`registry.ts`·`jobs/`) — 일일 백업 03:30 KST·헬스 10분, `/health` 에 마지막·다음 실행, 운영 명령 `ops-cli.ts`(백업·복원) |
+| `packages/adapters/ops` (L6) | SQLite 백업·복원(`VACUUM INTO`·무결성 검사·보존 14), 실행 기록 표 `l6_job_runs`, 백업 목록·로그 꼬리, 서비스 헬스 확인 |
+| `ops/windows` (L6) | Windows 상주 서비스 — 작업 스케줄러 XML·감시 프로세스·`opsctl`(설치·제거·시작·중지·복원, `--dry-run`)·`deploy.sh`(Git 배포). [10-operations.md](10-operations.md) |
 | `templates/`, `config/` 패키지 | 아직 만들지 않음 (M1 에서 필요할 때) |
 
 ### 검사 명령

@@ -71,6 +71,9 @@
 | 어댑터 | `packages/adapters/render-html` | `CardAssets` 의 파일 구현(렌더된 카드 PNG 읽기, 이름 화이트리스트) |
 | 인프라(조립) | `apps/dashboard/src/server/studio.ts` | **어댑터를 만들고 유스케이스에 꽂는 유일한 파일**. `STUDIO_DB`(SQLite 파일 경로, 없으면 메모리 시안 모드)·`STUDIO_CLOCK=system`(KST 오늘, 기본은 시안 기준일)·`CARD_V2_DIR` 환경변수를 여기서만 읽음 |
 | 화면 | `apps/dashboard/src/app`·`components` | 서버 컴포넌트가 `studio().<유스케이스>()` 결과만 그림. 클라이언트 섬은 props 만 받음 |
+| 유스케이스 (L6) | `packages/application/src/ops` | 포트 `OpsJournal`·`OpsBackupCatalog`·`OpsLogSource`·`OpsServiceProbe`·`OpsClock`, 유스케이스 `getOpsStatus` |
+| 어댑터 (L6) | `packages/adapters/ops` | 위 포트의 SQLite(`l6_job_runs`)·파일·HTTP 구현 + 백업·복원 |
+| 인프라 (L6) | `apps/dashboard/src/server/studio.ts` 의 `// [L6]` 블록 `ops()`, `apps/worker/src/main.ts` | 상태 화면 `/status`, 워커 스케줄러. 배치는 [10-operations.md](10-operations.md) |
 
 ### 경계 강제 — 네 겹
 

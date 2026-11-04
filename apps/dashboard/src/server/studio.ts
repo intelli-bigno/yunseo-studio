@@ -29,3 +29,32 @@ const slot = globalThis as typeof globalThis & { __yunseoStudio?: StudioUseCases
 export function studio(): StudioUseCases {
   return (slot.__yunseoStudio ??= compose());
 }
+
+// [L6] 상시 운영 — 상태 화면(/status)의 조립. 서비스 헬스는 HTTP, 작업 기록은 같은 DB 의 l6_job_runs, 백업·로그는 데이터 폴더.
+// 환경변수(서비스 정의 ops/windows/lib/layout.ts 가 넣는다): STUDIO_DB · YUNSEO_DATA_DIR · YUNSEO_WORKER_URL · YUNSEO_DASHBOARD_URL
+import { join as joinPath } from "node:path";
+import { createDirBackupCatalog, createFileLogSource, createHttpServiceProbe, SqliteOpsJournal } from "@yunseo/adapters-ops";
+import { createOpsUseCases, type OpsUseCases } from "@yunseo/application";
+
+function composeOps(): OpsUseCases {
+  const env = process.env;
+  const dataDir = env.YUNSEO_DATA_DIR || null;
+  const health = (base: string | undefined, path: string) => (base ? `${base.replace(/\/+$/, "")}${path}` : null);
+  return createOpsUseCases({
+    journal: new SqliteOpsJournal(env.STUDIO_DB || undefined),
+    backups: createDirBackupCatalog(env.YUNSEO_BACKUP_DIR || (dataDir ? joinPath(dataDir, "backups") : null)),
+    logs: createFileLogSource(dataDir ? joinPath(dataDir, "logs") : null, ["worker", "dashboard"]),
+    probe: createHttpServiceProbe([
+      { name: "dashboard", url: health(env.YUNSEO_DASHBOARD_URL, "/api/health") },
+      { name: "worker", url: health(env.YUNSEO_WORKER_URL, "/health") },
+    ]),
+    clock: { now: () => new Date() },
+  });
+}
+
+const opsSlot = globalThis as typeof globalThis & { __yunseoOps?: OpsUseCases };
+
+export function ops(): OpsUseCases {
+  return (opsSlot.__yunseoOps ??= composeOps());
+}
+// [/L6]

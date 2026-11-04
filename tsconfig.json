@@ -5,6 +5,7 @@
     "packages/*/src",
     "packages/adapters/*/src",
     "tests",
+    "ops",
     "vitest.config.ts"
   ],
   "exclude": ["apps/dashboard", "packages/ui"]

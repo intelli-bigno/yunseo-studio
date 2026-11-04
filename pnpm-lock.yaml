@@ -44,6 +44,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@yunseo/adapters-ops':
+        specifier: workspace:*
+        version: link:../../packages/adapters/ops
       '@yunseo/adapters-render-html':
         specifier: workspace:*
         version: link:../../packages/adapters/render-html
@@ -79,7 +82,20 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
 
-  apps/worker: {}
+  apps/worker:
+    dependencies:
+      '@yunseo/adapters-ops':
+        specifier: workspace:*
+        version: link:../../packages/adapters/ops
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../packages/application
+
+  packages/adapters/ops:
+    dependencies:
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../application
 
   packages/adapters/publisher-manual:
     dependencies:

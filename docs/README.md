@@ -16,6 +16,7 @@
 | 07 | [roadmap.md](07-roadmap.md) | 어떤 순서로 만드나 — MVP → 자동화 |
 | 08 | [decisions.md](08-decisions.md) | 결정 항목 — D1~D3·D12 확정, 시안 선택(D13)·채널명(D5)·발행 언어(D10) 등은 사람이 정해야 함 |
 | 09 | [performance.md](09-performance.md) | 화면을 얼마나 빠르고 가볍게 내나 — 렌더 전략·캐시 정책·이미지·서체·번들·가상 목록·누수 점검과 전후 측정표 |
+| 10 | [operations.md](10-operations.md) | 어디서 어떻게 상시로 도나 — Windows 상주 서비스(작업 스케줄러·감시 프로세스)·일일 백업·복원·일정 실행·상태 화면·보안 경계 (L6) |
 | — | [design/](design/README.md) | 시안 — 와이어프레임, 시각 시스템 2안(A·B) HTML/PNG |
 
 ## 읽는 규칙
