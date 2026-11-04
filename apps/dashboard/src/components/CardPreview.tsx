@@ -3,9 +3,24 @@ import { useEffect, useState } from "react";
 import type { Piece } from "@/lib/model";
 
 // 미리보기 — 밝은 카드 표지를 「종이」 틀 위에서 폰 비율(3:4)로. ← → 로 장 넘김.
+interface CardSet {
+  id: string;
+  label: string;
+  names: string[];
+  aspect: string;
+}
+
 export function CardPreview({ piece }: { piece: Piece }) {
-  const cards = piece.cards ?? [];
+  const [set, setSet] = useState<CardSet | null>(null);
+  const cards = piece.cards?.length ? (set?.names ?? []) : [];
   const [i, setI] = useState(0);
+  useEffect(() => {
+    if (!piece.cards?.length) return;
+    fetch("/api/cards")
+      .then((r) => r.json() as Promise<CardSet>)
+      .then(setSet)
+      .catch(() => setSet(null));
+  }, [piece.cards]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -24,7 +39,7 @@ export function CardPreview({ piece }: { piece: Piece }) {
           <>
             <div className="card-stage">
               <button className="round" aria-label="이전 장" disabled={i === 0} onClick={() => setI(i - 1)}>←</button>
-              <div className="card-frame">
+              <div className="card-frame" style={{ aspectRatio: set?.aspect ?? "3 / 4" }}>
                 <img src={`/api/cards/${cards[i]}`} alt={`카드 ${i + 1}장`} />
               </div>
               <button className="round" aria-label="다음 장" disabled={i === cards.length - 1} onClick={() => setI(i + 1)}>→</button>
@@ -52,12 +67,12 @@ export function CardPreview({ piece }: { piece: Piece }) {
           </div>
         </div>
         <div className="checklist">
-          <div className="check"><span className="accent">✓</span><span>3:4 · 1080×1440</span></div>
+          <div className="check"><span className="accent">✓</span><span>{set?.id === "v2" ? "4:5 · 1080×1350" : "3:4 · 1080×1440"}</span></div>
           <div className="check"><span className="accent">✓</span><span>출처 장 포함 (마지막 장)</span></div>
           <div className="check"><span className="alert">×</span><span>브랜드 자리표시자 `TBD` 남음 — 이름 확정 전</span></div>
         </div>
         <p className="mute" style={{ fontSize: "var(--fs-xs)", margin: 0 }}>
-          카드 이미지: 카드 템플릿 사양 예시 렌더(docs/design/card-reference, 시각 시스템 A). 카드 v2 렌더가 생기면 같은 경로로 바뀐다.
+          {set ? `카드 이미지: ${set.label}. 자리표시 예시 — 발행 불가.` : "카드 묶음을 불러오는 중…"}
         </p>
         <div style={{ display: "flex", gap: 6 }}><kbd className="kbd">←</kbd><kbd className="kbd">→</kbd><span className="mute">장 넘김</span></div>
       </aside>

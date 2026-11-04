@@ -170,7 +170,7 @@ a.row:hover, button.row:hover { background: var(--c-surface); }
 .card-frame { width: min(420px, 100%); aspect-ratio: 3 / 4; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.08), 0 24px 48px -24px rgba(0,0,0,.45); overflow: hidden; }
 .card-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumbs { display: flex; gap: var(--sp-3); justify-content: center; margin-top: var(--sp-6); }
-.thumbs button { width: 48px; aspect-ratio: 3/4; padding: 0; border: 1px solid var(--c-paper-line); background: #fff; cursor: pointer; opacity: 0.55; overflow: hidden; }
+.thumbs button { width: 48px; aspect-ratio: 4/5; padding: 0; border: 1px solid var(--c-paper-line); background: #fff; cursor: pointer; opacity: 0.55; overflow: hidden; }
 .thumbs button[aria-current="true"] { opacity: 1; outline: 1px solid var(--c-paper-ink); outline-offset: 2px; }
 .thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .round { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--c-paper-line); background: transparent; color: var(--c-paper-ink); cursor: pointer; }
