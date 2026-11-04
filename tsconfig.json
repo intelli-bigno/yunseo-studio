@@ -6,5 +6,6 @@
     "packages/adapters/*/src",
     "tests",
     "vitest.config.ts"
-  ]
+  ],
+  "exclude": ["apps/dashboard"]
 }

@@ -1,6 +1,6 @@
 # 03. 모노레포 구조
 
-스택은 확정 전이다([결정 필요 D1]). 구조는 언어 중립으로 적었고, 기본 셋팅은 추천안인 TypeScript(pnpm workspace)로 만들었다.
+스택은 **TypeScript 단일**로 확정했다(D1, 2026-11-04 사용자 — Next.js 대시보드 + Node 워커, pnpm workspace). 아래 구조도 이 스택 기준이다.
 
 ```
 yunseo-studio/
@@ -40,7 +40,7 @@ yunseo-studio/
 | `templates/` 는 프리셋 키만 참조, 브랜드 이름 하드코딩 금지 | 이름 확정 시 교체만으로 반영 (01 문서) |
 | 비밀값은 저장소에 두지 않고 실행 환경에서 주입 | 개인 저장소라도 Git 이력은 영구 |
 
-- 경계는 CI 의 의존 검사 도구로 강제한다(예: dependency-cruiser 또는 ESLint boundaries). [결정 필요 D1 에 종속]
+- 경계는 CI 에서 ESLint `no-restricted-imports` + `tests/boundaries.test.ts` 로 강제한다(D1 확정).
 - 패키지는 처음부터 다 만들지 않는다. MVP 는 `domain`·`application`·`presets-schema`·`render-html`·`publisher-manual`·`storage`·`apps/dashboard` 만 (07 로드맵).
 
 ## 현재 골격 (기본 셋팅, 2026-11-04)
@@ -52,7 +52,8 @@ yunseo-studio/
 | `packages/presets-schema` | 동작 — 프리셋 스키마·로더·자리표시자(`TBD`) 탐지 |
 | `packages/adapters/{render-html,publisher-manual,storage}` | 빈 모듈 (MVP 어댑터 3개 자리) |
 | `apps/cli` | 동작 — `pnpm run validate [--publish]` (프리셋·콘텐츠·금지 표현 검증) |
-| `apps/{dashboard,worker}` | 빈 모듈 |
+| `apps/dashboard` | 최소 진입점 — Next.js(App Router) 빈 화면 + `GET /api/health`. 화면·유스케이스 호출은 아직 없음 |
+| `apps/worker` | 최소 진입점 — Node 상주 프로세스 + `GET /health`. 잡 큐 소비는 M3 이후 |
 | `templates/`, `config/` 패키지 | 아직 만들지 않음 (M1 에서 필요할 때) |
 
 ### 검사 명령
@@ -60,8 +61,16 @@ yunseo-studio/
 ```
 pnpm run lint        eslint — import 단위 경계(04 의존 규칙)
 pnpm run typecheck   tsc --noEmit
-pnpm run test        vitest — 도메인·프리셋·CLI + tests/boundaries (선언 의존 경계)
-pnpm run check       위 셋을 차례로
+pnpm run test        vitest — 도메인·프리셋·CLI·워커·대시보드 헬스 + tests/boundaries (선언 의존 경계)
+pnpm run build       대시보드 `next build` (워커는 tsx 로 소스 실행 — 빌드 산출물 없음)
+pnpm run check       lint·typecheck·test 를 차례로
+
+실행 진입점(헬스 체크만, 기능 없음):
+
+```
+pnpm run dev:dashboard   Next.js 개발 서버 (기본 3000) — /api/health
+pnpm run dev:worker      Node 워커 (기본 4010, PORT 로 변경) — /health
+```
 ```
 
 경계는 두 겹으로 강제한다: ESLint `no-restricted-imports`(import 문)와 `tests/boundaries.test.ts`(package.json 선언 의존).

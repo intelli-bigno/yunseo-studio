@@ -8,9 +8,12 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm -r --if-present run typecheck",
     "test": "vitest run",
+    "build": "pnpm -r --if-present run build",
     "validate": "tsx apps/cli/src/main.ts validate",
+    "dev:dashboard": "pnpm --filter @yunseo/app-dashboard run dev",
+    "dev:worker": "pnpm --filter @yunseo/app-worker run dev",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test"
   },
   "devDependencies": {
