@@ -8,6 +8,7 @@
 | [wireframes.html](wireframes.html) · [wireframes.png](wireframes.png) | 대시보드 정보구조·화면 흐름, 편성 캘린더, 이번 주의 변수, 콘텐츠 3종 작성, 출처·구분 편집기, 이전↔이후 연결 보기, 검수, 발행 대기열 (저충실도, 무채색) | 1440 px 폭 |
 | [visual-a.html](visual-a.html) · [visual-a.png](visual-a.png) | **시안 A — Paper & Ink**: 세리프 제목 · 종이색 바탕 · 청록 1색 | 1600 px 폭 |
 | [visual-b.html](visual-b.html) · [visual-b.png](visual-b.png) | **시안 B — Signal**: 굵은 산세리프 · 흰 바탕+검정 블록 · 번트오렌지 1색 | 1600 px 폭 |
+| [card-reference/](card-reference/README.md) | **카드뉴스 레퍼런스 분해(내부 참고 전용) + 카드 템플릿 사양 + 예시 한 세트(포맷 ① 7장, A·B 렌더)** — 사용자 지정 캐러셀의 구조만 차용 | 1080×1350 |
 
 시각 시안은 둘 다 같은 구성이다: 기본 요소 → 세 종류가 같은 틀인 표지 → 본문·차트·출처 카드 → 스토리·릴스 표지·프로필 격자 → 구분 표시 규칙.
 카드는 실제 1080×1350 의 1/3(360×450), 세로 영상은 1080×1920 의 1/4(270×480)로 그렸다.
