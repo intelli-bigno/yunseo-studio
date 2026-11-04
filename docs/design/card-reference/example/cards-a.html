@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Card template sample — pre-issue-5 · visual system A (Paper &amp; Ink) — channel name TBD</title><meta name="viewport" content="width=1080">
+<style>
+  /* 카드 템플릿 예시 — 포맷 ① pre-issue-5, 7장, 1080×1350(4:5). 정적 HTML(스크립트·외부 자원 없음).
+     시각 시스템 A·B 는 같은 마크업에 body 클래스(th-a / th-b)만 바꿔 얹는다 — cards-b.html 은 이 파일에서 클래스만 바꾼 사본.
+     서체는 시스템 서체 자리표시(결정 D5 전). 채널명·운영자·고지 문구·사실 수치는 모두 자리표시. */
+  .th-a { --bg:#F7F4EE; --ink:#151515; --mut:#6A655C; --rule:#D9D3C7; --acc:#1F5F5B; --onacc:#F7F4EE;
+          --disp:"Iowan Old Style","Palatino","Georgia","AppleMyungjo",serif; --dw:700; --dls:-.015em; }
+  .th-b { --bg:#FFFFFF; --ink:#0E0E0E; --mut:#666666; --rule:#E2E2E2; --acc:#C2410C; --onacc:#FFFFFF;
+          --disp:"Helvetica Neue","Apple SD Gothic Neo","Arial",sans-serif; --dw:800; --dls:-.03em; }
+  * { box-sizing:border-box; }
+  body::after { content:""; display:block; height:1500px; }
+  body { margin:0; width:1080px; background:#8d8b86; font-family:"Helvetica Neue","Apple SD Gothic Neo","Noto Sans KR","Arial",sans-serif; color:var(--ink); }
+  .card { width:1080px; height:1350px; position:relative; overflow:hidden; background:var(--bg); color:var(--ink); margin:0 0 40px; }
+  .hd { position:absolute; left:72px; right:72px; top:56px; height:64px; display:flex; justify-content:space-between; align-items:center; font-size:26px; }
+  .kind { display:flex; align-items:center; gap:14px; font-weight:700; }
+  .kind .k-b { display:none; }
+  .kind .k-a { color:var(--acc); font-size:34px; line-height:1; }
+  .pg { color:var(--mut); font-variant-numeric:tabular-nums; display:flex; gap:16px; align-items:center; }
+  .sample { border:2px solid var(--mut); padding:0 10px; font-size:20px; letter-spacing:.08em; color:var(--mut); text-decoration:none; }
+  .th-a .hd { border-bottom:3px solid var(--ink); padding-bottom:12px; height:76px; align-items:flex-end; }
+  .ft { white-space:nowrap; position:absolute; left:72px; right:72px; bottom:56px; display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-size:24px; color:var(--mut); border-top:2px solid var(--rule); padding-top:18px; }
+  .ft b { color:var(--ink); letter-spacing:.04em; }
+  .ft .nx { color:var(--ink); font-weight:700; }
+  .main { position:absolute; left:72px; right:72px; top:150px; bottom:150px; display:flex; flex-direction:column; }
+  .fig { height:440px; position:relative; margin-bottom:24px; }
+  .fig svg { width:100%; height:100%; display:block; }
+  .fig .cap { position:absolute; left:0; right:0; bottom:0; font-size:24px; color:var(--mut); }
+  .q { align-self:flex-start; border:3px solid var(--ink); padding:12px 26px; font-size:38px; font-weight:700; line-height:1.2; background:var(--bg); }
+  .a { align-self:flex-end; margin-top:16px; background:var(--acc); color:var(--onacc); padding:12px 26px; font-size:38px; font-weight:700; line-height:1.2; }
+  .txt { margin-top:44px; font-size:36px; line-height:1.5; }
+  .pt { display:grid; grid-template-columns:44px 1fr; margin:0 0 14px; }
+  .mk { font-weight:700; color:var(--acc); }
+  .u1 { text-decoration:underline; text-decoration-thickness:3px; text-underline-offset:7px; font-weight:700; }
+  .u2 { text-decoration:underline dashed; text-decoration-thickness:3px; text-underline-offset:7px; font-weight:700; }
+  .mut { color:var(--mut); }
+  .disp { font-family:var(--disp); font-weight:var(--dw); letter-spacing:var(--dls); }
+  /* 표지 */
+  .cover { justify-content:flex-end; }
+  .cover .fig { height:440px; margin-bottom:30px; }
+  .cover h1 { margin:0; font-size:92px; line-height:1.12; font-family:var(--disp); font-weight:var(--dw); letter-spacing:var(--dls); }
+  .cover .hook { margin:26px 0 0; font-size:36px; line-height:1.4; color:var(--mut); }
+  .cover .by { margin-top:22px; font-size:26px; color:var(--mut); }
+  /* 닫는 강조 상자(반전) */
+  .close { margin-top:8px; background:var(--ink); color:var(--bg); padding:22px 30px; font-size:36px; line-height:1.35; font-weight:700; }
+  /* 출처 카드 */
+  .src h2 { margin:0 0 20px; font-size:64px; line-height:1.1; font-family:var(--disp); font-weight:var(--dw); letter-spacing:var(--dls); }
+  .row { display:grid; grid-template-columns:52px 1fr; gap:10px; border-top:2px solid var(--rule); padding:18px 0; font-size:30px; line-height:1.4; }
+  .row small { display:block; font-size:24px; color:var(--mut); margin-top:4px; }
+  .ph { border:3px dashed var(--mut); padding:16px 22px; font-size:28px; line-height:1.4; margin-top:12px; }
+  /* SVG 의 색 속성을 테마 토큰으로 바꾼다(CSS 가 속성값보다 우선) */
+  svg [stroke="#1F5F5B"] { stroke:var(--acc); } svg [fill="#1F5F5B"] { fill:var(--acc); }
+  svg [stroke="#151515"] { stroke:var(--ink); } svg [fill="#151515"] { fill:var(--ink); }
+  svg [stroke="#6A655C"] { stroke:var(--mut); } svg [fill="#6A655C"] { fill:var(--mut); }
+  svg [stroke="#D9D3C7"] { stroke:var(--rule); } svg [fill="#D9D3C7"] { fill:var(--rule); }
+  svg [fill="#F7F4EE"] { fill:var(--onacc); }
+  /* B 안: 번호 블록 + 검정 하단 띠 */
+  .th-b .hd { left:0; top:0; right:72px; height:96px; }
+  .th-b .kind { gap:22px; }
+  .th-b .kind .k-a { display:none; }
+  .th-b .kind .k-b { display:flex; width:96px; height:96px; background:var(--acc); color:var(--onacc); font-weight:800; font-size:46px; align-items:center; justify-content:center; letter-spacing:-.03em; }
+  .th-b .ft { left:0; right:0; bottom:0; height:104px; background:var(--ink); color:#fff; border-top:0; padding:0 72px; align-items:center; }
+  .th-b .ft b, .th-b .ft .nx { color:#fff; }
+  .th-b .main { top:150px; bottom:150px; }
+  .th-b .q { border-width:4px; }
+  .th-b .sample { border-color:var(--mut); }
+  .th-b .close { background:var(--ink); color:#fff; }
+</style></head>
+<body class="th-a">
+
+<!-- 1 / 7 · 표지 -->
+<article class="card" id="c1">
+  <header class="hd"><span class="kind"><span class="k-a">①</span><span class="k-b">01</span><span>Before the event</span></span><span class="pg">01 / 07 <u class="sample">SAMPLE</u></span></header>
+  <div class="main cover">
+    <div class="fig">
+      <svg viewBox="0 0 936 440" role="img" aria-label="Concept mark: one path splits at the announcement into three (no data)">
+        <g stroke="#D9D3C7" stroke-width="2"><line x1="0" y1="412" x2="936" y2="412"/></g>
+        <path d="M0 226 L420 226" stroke="#6A655C" stroke-width="8" fill="none"/>
+        <path d="M420 226 C560 210 700 130 936 70" stroke="#151515" stroke-width="8" fill="none"/>
+        <path d="M420 226 C560 226 700 226 936 226" stroke="#151515" stroke-width="8" fill="none" stroke-dasharray="22 16"/>
+        <path d="M420 226 C560 242 700 320 936 380" stroke="#6A655C" stroke-width="8" fill="none"/>
+        <line x1="420" y1="30" x2="420" y2="412" stroke="#1F5F5B" stroke-width="8"/>
+        <text x="440" y="66" font-size="30" font-weight="700" fill="#1F5F5B" font-family="Helvetica Neue,Arial,sans-serif">the result</text>
+      </svg>
+    </div>
+    <h1>Three things markets will re&#8209;price after the US midterms</h1>
+    <p class="hook">The result matters less than what it changes about what comes next.</p>
+    <div class="by">Edited by [operator — TBD]</div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="nx">Swipe ›</span></footer>
+</article>
+
+<!-- 2 / 7 · why_it_matters -->
+<article class="card" id="c2">
+  <header class="hd"><span class="kind"><span class="k-a">①</span><span class="k-b">01</span><span>Before the event</span></span><span class="pg">02 / 07 <u class="sample">SAMPLE</u></span></header>
+  <div class="main">
+    <div class="fig">
+      <svg viewBox="0 0 936 440" role="img" aria-label="Concept: result changes expectations, expectations move prices (no data)">
+        <g font-family="Helvetica Neue,Arial,sans-serif" font-size="34" font-weight="700" fill="#151515">
+          <rect x="6" y="70" width="250" height="130" fill="none" stroke="#151515" stroke-width="4"/><text x="131" y="146" text-anchor="middle">Result</text>
+          <rect x="343" y="70" width="250" height="130" fill="none" stroke="#151515" stroke-width="4"/><text x="468" y="146" text-anchor="middle">Expectations</text>
+          <rect x="680" y="70" width="250" height="130" fill="#1F5F5B"/><text x="805" y="146" text-anchor="middle" fill="#F7F4EE">Prices</text>
+        </g>
+        <g stroke="#151515" stroke-width="4" fill="none"><path d="M262 135 L337 135"/><path d="M599 135 L674 135"/></g>
+        <g fill="#151515"><path d="M337 123 L355 135 L337 147Z"/><path d="M674 123 L692 135 L674 147Z"/></g>
+        <text x="6" y="330" font-size="24" fill="#6A655C" font-family="Helvetica Neue,Arial,sans-serif">Concept only — no data</text>
+      </svg>
+    </div>
+    <div class="q">Why does this matter?</div>
+    <div class="a">A result is a change in expectations</div>
+    <div class="txt">
+      <div class="pt"><span class="mk">◆</span><span>Markets trade on what they expect to happen next, and an election can change which policies are realistic.</span></div>
+      <div class="pt"><span class="mk">◆</span><span>The useful question is not who wins, but <span class="u1">which expectations a surprise would actually move.</span></span></div>
+    </div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="nx">Next › Expectations</span></footer>
+</article>
+
+<!-- 3 / 7 · market_expectation -->
+<article class="card" id="c3">
+  <header class="hd"><span class="kind"><span class="k-a">①</span><span class="k-b">01</span><span>Before the event</span></span><span class="pg">03 / 07 <u class="sample">SAMPLE</u></span></header>
+  <div class="main">
+    <div class="fig">
+      <svg viewBox="0 0 936 440" role="img" aria-label="Chart placeholder: baseline band and today marker (no data)">
+        <g font-family="Helvetica Neue,Arial,sans-serif" fill="#151515">
+          <text x="0" y="34" font-size="28" font-weight="700">▲ Implied expectation — [series name, unit]</text>
+          <rect x="250" y="80" width="330" height="230" fill="#D9D3C7"/>
+          <line x1="0" y1="310" x2="936" y2="310" stroke="#151515" stroke-width="4"/>
+          <line x1="0" y1="80" x2="0" y2="310" stroke="#151515" stroke-width="4"/>
+          <line x1="470" y1="64" x2="470" y2="310" stroke="#1F5F5B" stroke-width="6" stroke-dasharray="18 12"/>
+          <text x="486" y="100" font-size="28" font-weight="700" fill="#1F5F5B">today</text>
+          <text x="250" y="352" font-size="26" fill="#6A655C">[low]</text>
+          <text x="580" y="352" font-size="26" text-anchor="end" fill="#6A655C">[high]</text>
+          <text x="26" y="150" font-size="28" font-weight="700">most-likely band</text>
+          <text x="26" y="188" font-size="26" fill="#6A655C">[value] — placeholder</text>
+          <text x="0" y="412" font-size="24" fill="#6A655C">Source: [publisher] · as of [YYYY-MM-DD HH:MM TZ] — required before publishing</text>
+        </g>
+      </svg>
+    </div>
+    <div class="q">What does the market assume now?</div>
+    <div class="a">The baseline is already in prices</div>
+    <div class="txt">
+      <div class="pt"><span class="mk">◆</span><span>Before the result, prices already reflect a most-likely outcome. <span class="u1">Reading that baseline comes first.</span></span></div>
+      <div class="pt"><span class="mk">◆</span><span>A surprise matters most where the baseline is widely shared.</span></div>
+    </div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="nx">Next › Scenarios</span></footer>
+</article>
+
+<!-- 4 / 7 · scenarios -->
+<article class="card" id="c4">
+  <header class="hd"><span class="kind"><span class="k-a">①</span><span class="k-b">01</span><span>Before the event</span></span><span class="pg">04 / 07 <u class="sample">SAMPLE</u></span></header>
+  <div class="main">
+    <div class="fig" style="height:400px">
+      <svg viewBox="0 0 936 400" role="img" aria-label="Concept: three branches after the result (no probabilities)">
+        <g font-family="Helvetica Neue,Arial,sans-serif" font-weight="700" fill="#151515">
+          <path d="M0 200 L250 200" stroke="#6A655C" stroke-width="7" fill="none"/>
+          <path d="M250 200 C430 190 560 90 690 70" stroke="#151515" stroke-width="7" fill="none"/>
+          <path d="M250 200 C430 200 560 200 690 200" stroke="#151515" stroke-width="7" fill="none" stroke-dasharray="20 14"/>
+          <path d="M250 200 C430 210 560 310 690 330" stroke="#6A655C" stroke-width="7" fill="none"/>
+          <line x1="250" y1="30" x2="250" y2="380" stroke="#1F5F5B" stroke-width="7"/>
+          <text x="266" y="52" font-size="28" fill="#1F5F5B">the result</text>
+          <text x="706" y="82" font-size="30">○ More change</text>
+          <text x="706" y="212" font-size="30">○ Baseline</text>
+          <text x="706" y="342" font-size="30">○ Slow, unclear</text>
+        </g>
+      </svg>
+    </div>
+    <div class="q">What if the result differs?</div>
+    <div class="a">Three readings, not predictions</div>
+    <div class="txt" style="font-size:34px;margin-top:30px">
+      <div class="pt"><span class="mk">○</span><span><span class="u1">Close to the baseline</span> — little is re-priced, and attention moves to the details of what comes next. ◆</span></div>
+      <div class="pt"><span class="mk">○</span><span><span class="u1">More room for policy change</span> — sectors tied to those policies may need a new set of assumptions. ◆</span></div>
+      <div class="pt"><span class="mk">○</span><span><span class="u1">A slow, unclear result</span> — uncertainty itself becomes the story until it clears. ◆</span></div>
+    </div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="nx">Next › Paths</span></footer>
+</article>
+
+<!-- 5 / 7 · transmission -->
+<article class="card" id="c5">
+  <header class="hd"><span class="kind"><span class="k-a">①</span><span class="k-b">01</span><span>Before the event</span></span><span class="pg">05 / 07 <u class="sample">SAMPLE</u></span></header>
+  <div class="main">
+    <div class="fig">
+      <svg viewBox="0 0 936 440" role="img" aria-label="Concept: three channels from result to what they touch (no data)">
+        <g font-family="Helvetica Neue,Arial,sans-serif" font-size="30" fill="#151515">
+          <g font-weight="700">
+            <rect x="0" y="20" width="360" height="110" fill="none" stroke="#151515" stroke-width="4"/><text x="24" y="86">Policy path</text>
+            <rect x="0" y="165" width="360" height="110" fill="none" stroke="#151515" stroke-width="4"/><text x="24" y="231">Fiscal outlook &amp; rates</text>
+            <rect x="0" y="310" width="360" height="110" fill="none" stroke="#151515" stroke-width="4"/><text x="24" y="376">Sector exposure</text>
+          </g>
+          <g stroke="#1F5F5B" stroke-width="6" fill="none"><path d="M370 75 L520 75"/><path d="M370 220 L520 220"/><path d="M370 365 L520 365"/></g>
+          <g fill="#1F5F5B"><path d="M520 61 L542 75 L520 89Z"/><path d="M520 206 L542 220 L520 234Z"/><path d="M520 351 L542 365 L520 379Z"/></g>
+          <text x="560" y="64" font-weight="700">sectors tied to</text><text x="560" y="100" font-weight="700">those policies</text>
+          <text x="560" y="209" font-weight="700">bond yields,</text><text x="560" y="245" font-weight="700">the dollar</text>
+          <text x="560" y="354" font-weight="700">energy, health care,</text><text x="560" y="390" font-weight="700">technology</text>
+        </g>
+      </svg>
+    </div>
+    <div class="q">How does it reach prices?</div>
+    <div class="a">Three paths, result to prices</div>
+    <div class="txt" style="font-size:34px;margin-top:30px">
+      <div class="pt"><span class="mk">◆</span><span><span class="u1">Policy path</span> — which proposals become more or less likely.</span></div>
+      <div class="pt"><span class="mk">◆</span><span><span class="u1">Fiscal outlook and rates</span> — expectations for spending and borrowing.</span></div>
+      <div class="pt"><span class="mk">◆</span><span><span class="u1">Sector exposure</span> — expectations for regulation, trade and tax.</span></div>
+    </div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="nx">Next › Checks</span></footer>
+</article>
+
+<!-- 6 / 7 · after_checks -->
+<article class="card" id="c6">
+  <header class="hd"><span class="kind"><span class="k-a">①</span><span class="k-b">01</span><span>Before the event</span></span><span class="pg">06 / 07 <u class="sample">SAMPLE</u></span></header>
+  <div class="main">
+    <div class="fig" style="height:440px">
+      <svg viewBox="0 0 936 440" role="img" aria-label="Checklist: three things to verify after the result">
+        <g font-family="Helvetica Neue,Arial,sans-serif" fill="#151515">
+          <g stroke="#151515" stroke-width="4" fill="none"><rect x="4" y="14" width="46" height="46"/><rect x="4" y="160" width="46" height="46"/><rect x="4" y="306" width="46" height="46"/></g>
+          <g font-size="31" font-weight="700">
+            <text x="78" y="48">Was the result a surprise against</text><text x="78" y="86">the baseline you noted?</text>
+            <text x="78" y="194">How did rate expectations move?</text>
+            <text x="78" y="340">Which sectors moved most?</text>
+          </g>
+          <g font-size="26" fill="#6A655C">
+            <text x="78" y="122">Where: your notes vs. the first official results</text>
+            <text x="78" y="232">Where: central bank communication, market-implied rates</text>
+            <text x="78" y="378">Where: sector performance from a data source you trust</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="q">What do I check afterwards?</div>
+    <div class="a">Three signals you can verify yourself</div>
+    <div class="txt" style="margin-top:30px">
+      <div class="close">Write down your baseline first. Then compare it with the first official results.</div>
+    </div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="nx">Next › Sources</span></footer>
+</article>
+
+<!-- 7 / 7 · sources -->
+<article class="card" id="c7">
+  <header class="hd"><span class="kind"><span class="k-a">①</span><span class="k-b">01</span><span>Before the event</span></span><span class="pg">07 / 07 <u class="sample">SAMPLE</u></span></header>
+  <div class="main src">
+    <h2>Sources &amp; as-of</h2>
+    <div class="row"><span class="mk" style="color:var(--ink)">■</span><div><span class="u1">Reported facts</span> — [publisher] · accessed [date]<small>None used in this sample — add a primary source and a quote for every figure</small></div></div>
+    <div class="row"><span class="mk" style="color:var(--ink)">▲</span><div><span class="u1">Market reaction</span> — [publisher] · observed [HH:MM TZ]<small>Observation time to the minute; re-check just before posting</small></div></div>
+    <div class="row"><span class="mk" style="color:var(--ink)">◆</span><div><span class="u1">Operator's view</span> — built on the facts above · <span class="u2" style="white-space:nowrap">dashed = first-hand</span><small>Solid underline = researched · dashed underline = first-hand experience</small></div></div>
+    <div class="row"><span class="mk" style="color:var(--ink)">○</span><div><span class="u1">Scenarios</span> — conditions → readings, no probabilities<small>Two or more per post; never a one-way forecast</small></div></div>
+    <div class="ph">◆ Operator's view — <b>not written yet</b> [required before review]</div>
+    <div class="ph" style="margin-top:14px">[Disclosure text — TBD] · Status: <b>draft, cannot be published</b></div>
+  </div>
+  <footer class="ft"><b>[Channel TBD]</b><span>As of [YYYY-MM-DD HH:MM TZ]</span><span class="nx">Follow-up › ②</span></footer>
+</article>
+
+</body></html>
