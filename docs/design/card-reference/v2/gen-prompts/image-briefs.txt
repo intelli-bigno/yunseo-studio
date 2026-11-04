@@ -1,0 +1,15 @@
+
+IMAGES TO GENERATE:
+1. Filename s1_cover.png - The US Capitol dome seen from far across a calm reflecting pool and wide dark lawn, blue hour, thin mist at the base, the dome softly lit in warm amber against a slate-blue sky. Wide, symmetrical, serene. Dome in the upper half; foreground water and lawn quiet and dark.
+2. Filename s1_why.png - Close side view of a bare hand lowering a plain blank paper ballot into a slot of a simple ballot box, warm amber window light from the left, softly blurred empty polling place behind. Hand only, no face, nothing printed on the ballot. Subject in the upper-middle; lower third dark and quiet.
+
+IMAGES TO GENERATE:
+1. Filename s2_expect.png - A quiet analyst desk at dusk: several dark monitors out of focus with only soft abstract glows of light (no readable shapes, no numbers), one warm amber desk lamp, glass desk surface with soft reflections. Nobody in frame. Subject in the upper two-thirds; lower third dark.
+2. Filename s2_doors.png - Three identical tall arched stone doorways side by side in a long quiet corridor, each lit slightly differently: the left one warm amber, the middle one neutral dim, the right one cool blue. Symmetrical, calm, no people, no signs. Subject in the upper two-thirds; floor in the lower third quiet and dark.
+
+IMAGES TO GENERATE:
+1. Filename s3_paper.png - A folded newspaper and a ceramic coffee cup on a small cafe table by a window at early morning, seen at a slight angle; the newspaper text is completely out of focus and unreadable, only soft grey texture. Cool morning light with a faint warm amber glow. No people. Subject in the upper two-thirds; table edge and shadow in the lower third.
+2. Filename s3_delta.png - Aerial view of a single wide river splitting into three calm channels across a dusk landscape, slate-blue water catching a thin amber light from the horizon, soft mist, no buildings, no boats. Cinematic, quiet. The split happens in the upper two-thirds; the lower third is dark, low-detail water or land.
+
+IMAGES TO GENERATE:
+1. Filename s4_notebook.png - An open blank notebook with a plain pen resting on it, on a dark wooden desk beside a window in early morning; a laptop and a mug softly out of focus behind it; cool blue window light with a warm amber desk-lamp accent. The notebook pages are empty (no writing, no lines of text). No people. Subject in the upper two-thirds; desk surface in the lower third quiet and dark.

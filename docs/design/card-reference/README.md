@@ -134,3 +134,5 @@
 | `example/cards-a.html` · `cards-b.html` | 예시 한 세트(포맷 ① 7장) — 정적 HTML, 두 파일은 body 클래스만 다름 |
 | `example/render/a-01.png` … `b-07.png` | 렌더 결과 14장 (1080×1350) |
 | `compare.html` | 레퍼런스 ↔ A ↔ B 나란히 보기 |
+
+> **v2(2026-11-04 반려 반영)**: 이 문서의 v1 예시는 사진·말풍선을 버린 판이라 반려됐다. 레퍼런스 룩에 가깝게 다시 만든 [v2/](v2/README.md)(생성형 사진 배경 8장 · 장별 비교 [v2/compare.html](v2/compare.html))를 기본안으로 제안한다. v1 시안 A·B 는 그대로 둔다.
