@@ -1,75 +1,47 @@
 // 오늘 — 시작 화면(안 B 벤토). 칸 크기 = 우선순위. 모든 항목은 클릭 1번에 해당 작업 탭으로 간다.
+// 렌더 전략: 정적(서버 컴포넌트, 클라이언트 JS 없음) + 60초 재검증. 요청별 입력이 없고 데이터는 읽기 캐시가 받쳐 준다(docs/09-performance.md §2).
 import Link from "next/link";
-import {
-  Badge,
-  Button,
-  Calendar,
-  CalendarDay,
-  Card,
-  CardHeader,
-  Cell,
-  DateTile,
-  EmptySlot,
-  EmptyState,
-  Glyph,
-  Grid,
-  List,
-  ListItem,
-  Metric,
-  MetricRow,
-  Page,
-  PageHeader,
-  Slot,
-  Stack,
-  Text,
-  TextLink,
-} from "@yunseo/ui";
+import { weekday } from "@yunseo/domain";
+import { Badge, Button, Calendar, CalendarDay, Card, CardHeader, Cell, DateTile, EmptySlot, EmptyState, Glyph, Grid, List, ListItem, Metric, MetricRow, Page, PageHeader, Slot, Stack, Text, TextLink } from "@yunseo/ui";
 import { GateTrack, KindMark, Pipeline, QueueChip } from "@/components/ui";
-import { awaitingMe, blocked, claimIssues, currentGate, queueState, queueSummary, weekDates, weekday } from "@/lib/logic";
-import { GATE_LABEL, MARK_GLYPH, type Piece } from "@/lib/model";
-import { PIECES, QUEUE, TODAY, WEEK_START, WEEK_VARIABLES } from "@/lib/mock";
 import { fmtSlot } from "@/lib/format";
+import { emptyMedia, heroMedia } from "@/lib/media";
+import { GATE_LABEL, MARK_GLYPH } from "@/lib/labels";
+import { pieceHref } from "@/lib/nav";
+import { studio } from "@/server/studio";
 
-const tabFor = (p: Piece) => {
-  const g = currentGate(p);
-  if (p.status === "evidence_wait") return "write";
-  return g === "G2" ? "sources" : g === "G3" ? "review" : "write";
-};
-const href = (p: Piece) => `/content/${p.id}?tab=${tabFor(p)}`;
+export const revalidate = 60;
 
-export default function TodayPage() {
-  const mine = awaitingMe(PIECES);
-  const stuck = blocked(PIECES);
-  const q = queueSummary(QUEUE);
-  const focus = mine[0] ?? stuck[0];
-  const checked = focus ? focus.claims.filter((c) => claimIssues(c).length === 0).length : 0;
-  const g = focus ? currentGate(focus) : null;
+export default async function TodayPage() {
+  const board = await studio().getTodayBoard();
+  const { focus, mine, stuck, queueSummary: q } = board;
+  const empty = emptyMedia();
 
   return (
     <Page>
       <PageHeader title="오늘" actions={<Button as={Link} href="/content" variant="primary">＋ 새 편</Button>} />
       <Grid>
         <Cell span={8} rows={2}>
-          <Card tone="feature" image="/img/hero.jpg">
+          <Card tone="feature" media={heroMedia("/img/hero.jpg", { width: 1600, height: 1066 }, true)}>
             {focus ? (
               <Stack gap={5} justify="between" grow>
                 <Stack gap={3}>
                   <Stack direction="row" gap={2}>
-                    <KindMark kind={focus.kind} />
-                    {g && <Badge tone="brass">{g} {GATE_LABEL[g]}</Badge>}
+                    <KindMark kind={focus.piece.kind} />
+                    {focus.gate && <Badge tone="brass">{focus.gate} {GATE_LABEL[focus.gate]}</Badge>}
                   </Stack>
-                  <Text as="h2" size="heading" block>{focus.title}</Text>
-                  <Text tone="dim" mono>{fmtSlot(focus.slot)}</Text>
+                  <Text as="h2" size="heading" block>{focus.piece.title}</Text>
+                  <Text tone="dim" mono>{fmtSlot(focus.piece.slot)}</Text>
                 </Stack>
-                <Metric size="hero" value={checked} unit={`/ ${focus.claims.length}`} label="확인한 문장" />
-                <Pipeline status={focus.status} />
+                <Metric size="hero" value={board.focusChecked} unit={`/ ${focus.piece.claims.length}`} label="확인한 문장" />
+                <Pipeline status={focus.piece.status} />
                 <Stack direction="row" gap={3}>
-                  <Button as={Link} href={href(focus)} variant="primary">열기</Button>
-                  <Button as={Link} href={`/content/${focus.id}?tab=preview`}>미리보기</Button>
+                  <Button as={Link} href={pieceHref(focus)} variant="primary">열기</Button>
+                  <Button as={Link} href={`/content/${focus.piece.id}?tab=preview`}>미리보기</Button>
                 </Stack>
               </Stack>
             ) : (
-              <EmptyState image="/img/empty.jpg" title="오늘 할 게이트 없음" />
+              <EmptyState media={empty} title="오늘 할 게이트 없음" />
             )}
           </Card>
         </Cell>
@@ -90,12 +62,12 @@ export default function TodayPage() {
             <CardHeader title="막힌 편" action={<TextLink as={Link} href="/content">전체 →</TextLink>} />
             {stuck.length ? (
               <List>
-                {stuck.map((p) => (
-                  <ListItem key={p.id} as={Link} href={href(p)} title={p.title} meta={<Text size="label" tone="alert">{p.blocker}</Text>} trailing={<GateTrack piece={p} />} />
+                {stuck.map((r) => (
+                  <ListItem key={r.piece.id} as={Link} href={pieceHref(r)} title={r.piece.title} meta={<Text size="label" tone="alert">{r.piece.blocker}</Text>} trailing={<GateTrack piece={r.piece} />} />
                 ))}
               </List>
             ) : (
-              <EmptyState image="/img/empty.jpg" title="막힌 편 없음" />
+              <EmptyState media={empty} title="막힌 편 없음" />
             )}
           </Card>
         </Cell>
@@ -104,10 +76,9 @@ export default function TodayPage() {
           <Card>
             <CardHeader title="내 게이트" />
             <List>
-              {mine.map((p) => {
-                const pg = currentGate(p);
-                return <ListItem key={p.id} as={Link} href={href(p)} leading={<KindMark kind={p.kind} />} title={p.title} trailing={pg && <Badge tone="solid">{pg}</Badge>} />;
-              })}
+              {mine.map((r) => (
+                <ListItem key={r.piece.id} as={Link} href={pieceHref(r)} leading={<KindMark kind={r.piece.kind} />} title={r.piece.title} trailing={r.gate && <Badge tone="solid">{r.gate}</Badge>} />
+              ))}
             </List>
           </Card>
         </Cell>
@@ -116,7 +87,7 @@ export default function TodayPage() {
           <Card>
             <CardHeader title="이번 주 변수" action={<TextLink as={Link} href="/schedule">편성 →</TextLink>} />
             <List>
-              {WEEK_VARIABLES.map((v) => (
+              {board.variables.map((v) => (
                 <ListItem
                   key={v.label}
                   leading={<DateTile day={v.date.slice(8, 10)} sub={weekday(v.date)} />}
@@ -133,11 +104,9 @@ export default function TodayPage() {
           <Card>
             <CardHeader title="발행 대기열" action={<TextLink as={Link} href="/publish">전체 →</TextLink>} />
             <List>
-              {QUEUE.map((item) => {
-                const p = PIECES.find((x) => x.id === item.pieceId)!;
-                const s = queueState(item);
-                return <ListItem key={item.pieceId + item.channel} as={Link} href={s === "needs_g3" ? `/content/${p.id}?tab=review` : "/publish"} title={p.title} meta={item.channel} trailing={<QueueChip s={s} />} />;
-              })}
+              {board.queue.map(({ item, piece, state }) => (
+                <ListItem key={item.pieceId + item.channel} as={Link} href={state === "needs_g3" ? `/content/${piece.id}?tab=review` : "/publish"} title={piece.title} meta={item.channel} trailing={<QueueChip s={state} />} />
+              ))}
             </List>
           </Card>
         </Cell>
@@ -146,17 +115,14 @@ export default function TodayPage() {
           <Card>
             <CardHeader title="이번 주" action={<TextLink as={Link} href="/schedule">캘린더 →</TextLink>} />
             <Calendar compact>
-              {weekDates(WEEK_START).map((d) => {
-                const ps = PIECES.filter((p) => p.slot.startsWith(d));
-                return (
-                  <CalendarDay key={d} num={Number(d.slice(8, 10))} dow={weekday(d)} state={d === TODAY ? "today" : d < TODAY ? "past" : "default"}>
-                    {ps.map((p) => (
-                      <Slot key={p.id} as={Link} href={href(p)} time={p.slot.slice(11, 16)} gate={currentGate(p) ?? ""} solid={p.kind === "pre" || p.kind === "post"} />
-                    ))}
-                    {ps.length === 0 && d >= TODAY && <EmptySlot>빈 날</EmptySlot>}
-                  </CalendarDay>
-                );
-              })}
+              {board.week.map((d) => (
+                <CalendarDay key={d.date} num={Number(d.date.slice(8, 10))} dow={weekday(d.date)} state={d.state}>
+                  {d.pieces.map((r) => (
+                    <Slot key={r.piece.id} as={Link} href={pieceHref(r)} time={r.piece.slot.slice(11, 16)} gate={r.gate ?? ""} solid={r.piece.kind === "pre" || r.piece.kind === "post"} />
+                  ))}
+                  {d.pieces.length === 0 && d.date >= board.today && <EmptySlot>빈 날</EmptySlot>}
+                </CalendarDay>
+              ))}
             </Calendar>
           </Card>
         </Cell>

@@ -1,17 +1,17 @@
 "use client";
 import { useState } from "react";
-import { Button, Card, CardHeader, Check, CheckList, EmptyState, Glyph, List, ListItem, Metric, Split, Stack, Text, Textarea } from "@yunseo/ui";
-import type { Piece } from "@/lib/model";
+import type { Piece } from "@yunseo/domain";
+import { Button, Card, CardHeader, Check, CheckList, EmptyState, Glyph, List, ListItem, Metric, Split, Stack, Text, Textarea, type Media } from "@yunseo/ui";
 
 // 작성 — 단 목록 · 가운데 쓰기 · 오른쪽 점검. 종류마다 단만 바뀐다.
-export function ComposeEditor({ piece }: { piece: Piece }) {
+export function ComposeEditor({ piece, art }: { piece: Piece; art: Media }) {
   const [stages, setStages] = useState(piece.stages);
   const [i, setI] = useState(0);
   const [saved, setSaved] = useState<string | null>(null);
   const cur = stages[i];
   const empty = stages.filter((s) => !s.body.trim()).length;
 
-  if (!cur) return <Card><EmptyState image="/img/empty.jpg" title="스토리 편은 단이 없음" /></Card>;
+  if (!cur) return <Card><EmptyState media={art} title="스토리 편은 단이 없음" /></Card>;
 
   return (
     <Split

@@ -1,17 +1,17 @@
-import { weekday } from "./logic";
+import { weekday } from "@yunseo/domain";
 
 /** 2026-11-04T21:00 → 11.04 수 21:00 */
 export function fmtSlot(iso: string): string {
   return `${iso.slice(5, 7)}.${iso.slice(8, 10)} ${weekday(iso)} ${iso.slice(11, 16)}`.trim();
 }
+
 export function fmtDay(iso: string): string {
   return `${iso.slice(5, 7)}.${iso.slice(8, 10)} ${weekday(iso)}`;
 }
-/** ISO 주차 */
-export function isoWeek(iso: string): number {
-  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
-  const day = (d.getUTCDay() + 6) % 7;
-  d.setUTCDate(d.getUTCDate() - day + 3);
-  const firstThu = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
-  return 1 + Math.round(((d.getTime() - firstThu.getTime()) / 86400000 - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7);
+
+/** 2026-11-02 ~ 2026-11-08 → 11월 2일 — 8일 (달이 넘어가면 양쪽 달을 쓴다) */
+export function fmtWeekRange(from: string, to: string): string {
+  const m = (iso: string) => Number(iso.slice(5, 7));
+  const d = (iso: string) => Number(iso.slice(8, 10));
+  return m(from) === m(to) ? `${m(from)}월 ${d(from)}일 — ${d(to)}일` : `${m(from)}월 ${d(from)}일 — ${m(to)}월 ${d(to)}일`;
 }

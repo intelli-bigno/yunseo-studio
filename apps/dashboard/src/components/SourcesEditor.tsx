@@ -1,14 +1,14 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Badge, Button, Card, CardHeader, Check, CheckList, EmptyState, Field, FieldRow, Glyph, Input, List, ListItem, Metric, Segmented, SegmentedItem, Select, Split, Stack, Textarea } from "@yunseo/ui";
-import { claimIssues } from "@/lib/logic";
-import { MARK_GLYPH, MARK_LABEL, type Claim, type Mark, type Piece } from "@/lib/model";
+import { claimIssues, type Mark, type Piece, type PieceClaim } from "@yunseo/domain";
+import { Badge, Button, Card, CardHeader, Check, CheckList, EmptyState, Field, FieldRow, Glyph, Input, List, ListItem, Metric, Segmented, SegmentedItem, Select, Split, Stack, Textarea, type Media } from "@yunseo/ui";
+import { MARK_GLYPH, MARK_LABEL } from "@/lib/labels";
 
 // 출처·기준 시점 편집기 (G2) — 문장 목록 + 선택 문장 상세. 「확인」은 사람만.
 type Filter = "all" | "open" | "done";
 
-export function SourcesEditor({ piece }: { piece: Piece }) {
-  const [claims, setClaims] = useState<Claim[]>(piece.claims);
+export function SourcesEditor({ piece, art }: { piece: Piece; art: Media }) {
+  const [claims, setClaims] = useState<PieceClaim[]>(piece.claims);
   const [sel, setSel] = useState(0);
   const [filter, setFilter] = useState<Filter>("all");
   const open = claims.filter((c) => claimIssues(c).length > 0).length;
@@ -17,9 +17,9 @@ export function SourcesEditor({ piece }: { piece: Piece }) {
     [claims, filter],
   );
   const cur = claims[sel];
-  const set = (patch: Partial<Claim>) => setClaims((xs) => xs.map((c, i) => (i === sel ? { ...c, ...patch, verified: patch.verified ?? false } : c)));
+  const set = (patch: Partial<PieceClaim>) => setClaims((xs) => xs.map((c, i) => (i === sel ? { ...c, ...patch, verified: patch.verified ?? false } : c)));
 
-  if (claims.length === 0) return <Card><EmptyState image="/img/empty.jpg" title="출처 붙일 문장 없음" /></Card>;
+  if (claims.length === 0) return <Card><EmptyState media={art} title="출처 붙일 문장 없음" /></Card>;
 
   return (
     <Split
@@ -42,7 +42,7 @@ export function SourcesEditor({ piece }: { piece: Piece }) {
                 <Input value={cur.publisher ?? ""} onChange={(e) => set({ publisher: e.target.value || null })} />
               </Field>
               <Field label="근거">
-                <Select value={cur.basis} onChange={(e) => set({ basis: e.target.value as Claim["basis"] })}>
+                <Select value={cur.basis} onChange={(e) => set({ basis: e.target.value as PieceClaim["basis"] })}>
                   <option value="research">조사</option>
                   <option value="experienced">직접 경험</option>
                 </Select>

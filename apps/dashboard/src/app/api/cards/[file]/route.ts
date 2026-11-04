@@ -1,17 +1,11 @@
-// 카드 미리보기 이미지 — 카드 렌더 폴더를 읽기만 한다(화이트리스트 이름만).
-import { readFile } from "node:fs/promises";
-import { cardPaths } from "@/lib/cards";
+// 카드 미리보기 이미지 — 유스케이스가 화이트리스트 이름만 읽는다. 내용이 같으면 304(ETag) 로 본문을 다시 보내지 않는다.
+import { studio } from "@/server/studio";
 
-export async function GET(_req: Request, ctx: { params: Promise<{ file: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ file: string }> }): Promise<Response> {
   const { file } = await ctx.params;
-  const paths = cardPaths(file, process.cwd(), process.env.CARD_V2_DIR);
-  for (const p of paths ?? []) {
-    try {
-      const buf = await readFile(p);
-      return new Response(new Uint8Array(buf), { headers: { "content-type": "image/png", "cache-control": "private, max-age=300" } });
-    } catch {
-      // 다음 후보 경로
-    }
-  }
-  return new Response("not found", { status: 404 });
+  const image = await studio().readCardImage(file);
+  if (!image) return new Response("not found", { status: 404 });
+  const headers = { "content-type": image.contentType, etag: image.etag, "cache-control": "private, max-age=3600, stale-while-revalidate=86400" };
+  if (req.headers.get("if-none-match") === image.etag) return new Response(null, { status: 304, headers });
+  return new Response(new Uint8Array(image.bytes), { headers });
 }
