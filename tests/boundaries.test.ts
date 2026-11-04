@@ -44,6 +44,11 @@ describe("의존 경계 (선언 의존)", () => {
     expect(read("packages/design-tokens")?.deps).toEqual([]);
   });
 
+  it("ui 는 workspace 에서 design-tokens 만 안다", () => {
+    const ui = read("packages/ui");
+    expect(ui && workspace(ui)).toEqual(["@yunseo/design-tokens"]);
+  });
+
   it("application 은 domain 만 안다", () => {
     const application = read("packages/application");
     expect(application && workspace(application)).toEqual(["@yunseo/domain"]);

@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
+import { Badge, Button, Input, List, Stack, Text } from "@yunseo/ui";
 import type { EventCandidate } from "@/lib/model";
 
-const Q_LABEL = { a: "가격 영향", b: "예정 일정", c: "독자 관심", d: "직접 경험", e: "시나리오 가능" } as const;
+const Q_LABEL = { a: "가격 영향", b: "예정 일정", c: "독자 관심", d: "직접 경험", e: "시나리오" } as const;
 
 export function CandidateList({ initial }: { initial: EventCandidate[] }) {
   const [items, setItems] = useState(initial);
@@ -11,36 +12,34 @@ export function CandidateList({ initial }: { initial: EventCandidate[] }) {
   const decide = (id: string, d: EventCandidate["decision"]) => setItems((xs) => xs.map((x) => (x.id === id ? { ...x, decision: d } : x)));
 
   return (
-    <div className="rows">
+    <List>
       {items.map((c) => (
-        <div key={c.id} className="row" style={{ gridTemplateColumns: "1fr", gap: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-            <span>
-              <span className="mono mute">{c.date.slice(5).replace("-", ".")}</span> {c.label}
-            </span>
-            {c.decision && <span className={`chip${c.decision === "major" ? " chip-accent" : ""}`}>{c.decision}</span>}
-          </div>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {(Object.keys(Q_LABEL) as (keyof typeof Q_LABEL)[]).map((k) => (
-              <span key={k} className="chip" style={{ opacity: c.questions[k] ? 1 : 0.4 }} title={c.questions[k] ? "예" : "아니오"}>
-                {k} {Q_LABEL[k]}
-              </span>
-            ))}
-          </div>
+        <Stack key={c.id} gap={2}>
+          <Stack direction="row" justify="between" align="center" gap={2}>
+            <Text size="title">{c.label}</Text>
+            {c.decision ? <Badge tone={c.decision === "major" ? "accent" : "neutral"}>{c.decision}</Badge> : <Text size="label" tone="mute" mono>{c.date.slice(5).replace("-", ".")}</Text>}
+          </Stack>
+          <Stack direction="row" gap={1} wrap>
+            {(Object.keys(Q_LABEL) as (keyof typeof Q_LABEL)[])
+              .filter((k) => c.questions[k])
+              .map((k) => (
+                <Badge key={k}>{Q_LABEL[k]}</Badge>
+              ))}
+          </Stack>
           {reasonFor === c.id ? (
-            <div style={{ display: "flex", gap: 6 }}>
-              <input className="input" autoFocus placeholder="major 로 올리는 이유 (필수)" value={reason} onChange={(e) => setReason(e.target.value)} />
-              <button className="btn btn-primary" disabled={!reason.trim()} onClick={() => { decide(c.id, "major"); setReasonFor(null); setReason(""); }}>확정</button>
-            </div>
+            <Stack direction="row" gap={2}>
+              <Input autoFocus placeholder="major 이유" value={reason} onChange={(e) => setReason(e.target.value)} />
+              <Button variant="primary" disabled={!reason.trim()} onClick={() => { decide(c.id, "major"); setReasonFor(null); setReason(""); }}>확정</Button>
+            </Stack>
           ) : (
-            <div style={{ display: "flex", gap: 6 }}>
-              <button className="btn" onClick={() => setReasonFor(c.id)}>major</button>
-              <button className="btn" onClick={() => decide(c.id, "watch")}>watch</button>
-              <button className="btn btn-ghost" onClick={() => decide(c.id, "skip")}>skip</button>
-            </div>
+            <Stack direction="row" gap={2}>
+              <Button onClick={() => setReasonFor(c.id)}>major</Button>
+              <Button onClick={() => decide(c.id, "watch")}>watch</Button>
+              <Button variant="ghost" onClick={() => decide(c.id, "skip")}>skip</Button>
+            </Stack>
           )}
-        </div>
+        </Stack>
       ))}
-    </div>
+    </List>
   );
 }

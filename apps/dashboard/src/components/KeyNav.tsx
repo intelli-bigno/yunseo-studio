@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button, CommandInput, CommandItem, CommandList, Dialog, DialogBody, DialogHeader, EmptyState, Kbd, KeyHint, List, ListItem, Stack } from "@yunseo/ui";
 import { goTarget, SHORTCUTS } from "@/lib/shortcuts";
 
 export interface PaletteEntry {
@@ -84,77 +85,63 @@ export function KeyNav({ entries }: { entries: PaletteEntry[] }) {
 
   if (mode === "none") return null;
   return (
-    <div className="overlay" onMouseDown={() => setMode("none")}>
-      <div className="dialog" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
-        {mode === "palette" ? (
-          <>
-            <input
-              autoFocus
-              className="input"
-              placeholder="편 · 화면 이름으로 이동…"
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setSel(0);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setSel((s) => Math.min(s + 1, results.length - 1));
-                } else if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setSel((s) => Math.max(s - 1, 0));
-                } else if (e.key === "Enter" && results[sel]) {
-                  go(results[sel].href);
-                }
-              }}
-            />
-            <div className="palette-list" role="listbox">
-              {results.map((r, i) => (
-                <a key={r.href + r.label} href={r.href} aria-selected={i === sel} onMouseEnter={() => setSel(i)} onClick={(e) => { e.preventDefault(); go(r.href); }}>
-                  <span className="mono mute">{r.tag}</span>
-                  <span>{r.label}</span>
-                  <span className="mute" style={{ fontSize: "var(--fs-xs)" }}>{r.hint}</span>
-                </a>
-              ))}
-              {results.length === 0 && <div className="mute" style={{ padding: "12px 16px" }}>찾는 항목이 없습니다</div>}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="dialog-head">
-              <span className="h3">단축키</span>
-              <span className="kbd">esc</span>
-            </div>
-            <div style={{ padding: "8px 16px 16px" }}>
+    <Dialog onClose={() => setMode("none")} label={mode === "palette" ? "빠른 이동" : "단축키"}>
+      {mode === "palette" ? (
+        <>
+          <CommandInput
+            autoFocus
+            placeholder="편 · 화면 이름"
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setSel(0);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSel((s) => Math.min(s + 1, results.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSel((s) => Math.max(s - 1, 0));
+              } else if (e.key === "Enter" && results[sel]) {
+                go(results[sel].href);
+              }
+            }}
+          />
+          <CommandList>
+            {results.map((r, i) => (
+              <CommandItem key={r.href + r.label} href={r.href} selected={i === sel} tag={r.tag} hint={r.hint} onMouseEnter={() => setSel(i)} onClick={(e) => { e.preventDefault(); go(r.href); }}>
+                {r.label}
+              </CommandItem>
+            ))}
+            {results.length === 0 && <EmptyState title="없음" />}
+          </CommandList>
+        </>
+      ) : (
+        <>
+          <DialogHeader title="단축키" aside={<Kbd>esc</Kbd>} />
+          <DialogBody>
+            <List>
               {SHORTCUTS.map((s) => (
-                <div key={s.keys} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid var(--c-line)" }}>
-                  <span className="dim">{s.label}</span>
-                  <span style={{ display: "flex", gap: 4 }}>
-                    {s.keys.split(" ").map((k) => (
-                      <kbd key={k} className="kbd">{k}</kbd>
-                    ))}
-                  </span>
-                </div>
+                <ListItem key={s.keys} title={s.label} trailing={<KeyHint keys={s.keys.split(" ")} />} />
               ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            </List>
+          </DialogBody>
+        </>
+      )}
+    </Dialog>
   );
 }
 
 export function TopTools() {
   return (
-    <div className="top-tools">
-      <button className="btn btn-ghost" onClick={() => window.dispatchEvent(new Event("ys:palette"))}>
-        빠른 이동 <kbd className="kbd">⌘</kbd>
-        <kbd className="kbd">K</kbd>
-      </button>
-      <button className="btn btn-ghost" aria-label="단축키" onClick={() => window.dispatchEvent(new Event("ys:help"))}>
-        <kbd className="kbd">?</kbd>
-      </button>
-    </div>
+    <Stack direction="row" gap={2} align="center">
+      <Button variant="ghost" onClick={() => window.dispatchEvent(new Event("ys:palette"))}>
+        빠른 이동 <KeyHint keys={["⌘", "K"]} />
+      </Button>
+      <Button variant="ghost" aria-label="단축키" onClick={() => window.dispatchEvent(new Event("ys:help"))}>
+        <Kbd>?</Kbd>
+      </Button>
+    </Stack>
   );
 }

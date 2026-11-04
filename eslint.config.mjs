@@ -42,6 +42,23 @@ export default tseslint.config(
     ),
   },
   {
+    // 대시보드 화면은 @yunseo/ui 컴포넌트만 쓴다 — 클래스·인라인 스타일·임의 px 금지(규격 통일).
+    files: ["apps/dashboard/src/**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        { selector: "JSXAttribute[name.name='style']", message: "인라인 스타일 금지 — @yunseo/ui 컴포넌트 props 를 쓴다" },
+        { selector: "JSXAttribute[name.name='className']", message: "className 금지 — @yunseo/ui 컴포넌트 props(variant·size·tone)를 쓴다" },
+        { selector: "Literal[value=/\\d+px/]", message: "임의 px 금지 — 디자인 토큰을 쓴다" },
+      ],
+    },
+  },
+  {
+    // ui 패키지는 디자인 토큰과 react 만 import 한다.
+    files: ["packages/ui/src/**/*.{ts,tsx}"],
+    rules: restrict("^(?!\\.{1,2}/|react$|react/|@yunseo/design-tokens$).*", "ui 는 react 와 design-tokens 만 import 할 수 있다"),
+  },
+  {
     // apps 끼리 import 금지 (03 경계 규칙).
     files: ["apps/*/src/**/*.{ts,tsx}"],
     rules: restrict("^@yunseo/app-", "apps 끼리 import 할 수 없다 (03 경계 규칙)"),
