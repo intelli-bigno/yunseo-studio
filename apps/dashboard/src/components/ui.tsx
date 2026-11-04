@@ -1,39 +1,53 @@
+// 도메인 표시 — 편 종류·상태·게이트·대기열 상태를 @yunseo/ui 컴포넌트로 그린다.
+import { Badge, Progress, Steps, type StepState } from "@yunseo/ui";
 import { GATES, type QueueState } from "@/lib/logic";
-import { GATE_LABEL, KIND_LABEL, KIND_NO, STATUS_LABEL, type Kind, type Piece, type Status } from "@/lib/model";
+import { GATE_LABEL, KIND_LABEL, type GateState, type Kind, type Piece, type Status } from "@/lib/model";
 
 export function KindMark({ kind }: { kind: Kind }) {
   return (
-    <span className={`kind kind-${kind}`} title={KIND_LABEL[kind]} aria-label={KIND_LABEL[kind]}>
-      {KIND_NO[kind]}
-    </span>
+    <Badge tone={kind === "pre" || kind === "post" ? "solid" : "neutral"} title={KIND_LABEL[kind]}>
+      {KIND_LABEL[kind]}
+    </Badge>
   );
 }
 
 const SOLID: Status[] = ["idea", "evidence_wait", "in_review"];
+const STATUS_LABEL_SHORT: Record<Status, string> = {
+  idea: "후보",
+  selected: "선정",
+  evidence_wait: "자료 대기",
+  drafted: "작성 중",
+  verified: "확인됨",
+  in_review: "검수 중",
+  approved: "승인",
+  published: "발행",
+};
 export function StatusChip({ status }: { status: Status }) {
-  return <span className={`chip${SOLID.includes(status) ? " chip-solid" : ""}`}>{STATUS_LABEL[status]}</span>;
+  return <Badge tone={SOLID.includes(status) ? "solid" : "neutral"}>{STATUS_LABEL_SHORT[status]}</Badge>;
 }
 
+const STEP: Record<GateState, StepState> = { passed: "done", waiting: "wait", blocked: "block", todo: "todo" };
 export function GateTrack({ piece, large = false }: { piece: Piece; large?: boolean }) {
   return (
-    <span className={`gates${large ? " gates-lg" : ""}`} aria-label="사람 게이트">
-      {GATES.map((g) => (
-        <span key={g} className={`gate gate-${piece.gates[g]}`} title={`${g} ${GATE_LABEL[g]} — ${piece.gates[g]}`}>
-          {g}
-          {large && <span>{GATE_LABEL[g]}</span>}
-        </span>
-      ))}
-    </span>
+    <Steps
+      label="사람 게이트"
+      size={large ? "md" : "sm"}
+      items={GATES.map((g) => ({ key: g, label: large ? `${g} ${GATE_LABEL[g]}` : g, state: STEP[piece.gates[g]], title: `${g} ${GATE_LABEL[g]}` }))}
+    />
   );
 }
 
-export function Kbd({ children }: { children: string }) {
-  return <kbd className="kbd">{children}</kbd>;
+export function QueueChip({ s }: { s: QueueState }) {
+  if (s === "ready") return <Badge tone="accent">준비됨</Badge>;
+  if (s === "needs_g3") return <Badge tone="solid">G3 대기</Badge>;
+  if (s === "mismatch") return <Badge tone="alert">해시 불일치</Badge>;
+  return <Badge>게시됨</Badge>;
 }
 
-export function QueueChip({ s }: { s: QueueState }) {
-  if (s === "ready") return <span className="chip chip-accent">준비됨</span>;
-  if (s === "needs_g3") return <span className="chip chip-solid">G3 대기</span>;
-  if (s === "mismatch") return <span className="chip chip-solid">해시 불일치</span>;
-  return <span className="chip">게시됨</span>;
+/** 한 편의 길: 선정 → 작성 → 출처 → 검수 → 발행 */
+const PIPE = ["선정", "작성", "출처", "검수", "발행"] as const;
+const AT: Record<Status, number> = { idea: 0, selected: 1, evidence_wait: 1, drafted: 2, verified: 3, in_review: 3, approved: 4, published: 5 };
+export function Pipeline({ status }: { status: Status }) {
+  const at = AT[status];
+  return <Progress items={PIPE.map((label, i) => ({ label, state: i < at ? "done" : i === at ? "now" : "todo" }))} />;
 }

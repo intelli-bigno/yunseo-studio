@@ -1,174 +1,166 @@
-// 오늘 — 시작 화면. 지금 내가 할 일만(06 §2). 모든 항목은 클릭 1번에 해당 작업 탭으로 간다.
+// 오늘 — 시작 화면(안 B 벤토). 칸 크기 = 우선순위. 모든 항목은 클릭 1번에 해당 작업 탭으로 간다.
 import Link from "next/link";
-import { GateTrack, KindMark, QueueChip, StatusChip } from "@/components/ui";
-import { addDays, awaitingMe, blocked, currentGate, queueState, queueSummary } from "@/lib/logic";
+import {
+  Badge,
+  Button,
+  Calendar,
+  CalendarDay,
+  Card,
+  CardHeader,
+  Cell,
+  DateTile,
+  EmptySlot,
+  EmptyState,
+  Glyph,
+  Grid,
+  List,
+  ListItem,
+  Metric,
+  MetricRow,
+  Page,
+  PageHeader,
+  Slot,
+  Stack,
+  Text,
+  TextLink,
+} from "@yunseo/ui";
+import { GateTrack, KindMark, Pipeline, QueueChip } from "@/components/ui";
+import { awaitingMe, blocked, claimIssues, currentGate, queueState, queueSummary, weekDates, weekday } from "@/lib/logic";
 import { GATE_LABEL, MARK_GLYPH, type Piece } from "@/lib/model";
-import { PIECES, QUEUE, TODAY, WEEK_VARIABLES } from "@/lib/mock";
-import { fmtDay, fmtSlot } from "@/lib/format";
+import { PIECES, QUEUE, TODAY, WEEK_START, WEEK_VARIABLES } from "@/lib/mock";
+import { fmtSlot } from "@/lib/format";
 
 const tabFor = (p: Piece) => {
   const g = currentGate(p);
   if (p.status === "evidence_wait") return "write";
   return g === "G2" ? "sources" : g === "G3" ? "review" : "write";
 };
-
-function PieceRow({ p, note }: { p: Piece; note?: string | null }) {
-  return (
-    <Link href={`/content/${p.id}?tab=${tabFor(p)}`} className="row cols-piece">
-      <span className="mono mute">{fmtSlot(p.slot).slice(0, 8)}</span>
-      <KindMark kind={p.kind} />
-      <span style={{ minWidth: 0 }}>
-        <div className="row-title">{p.title}</div>
-        {note && <div className="row-sub alert">{note}</div>}
-      </span>
-      <GateTrack piece={p} />
-      <StatusChip status={p.status} />
-    </Link>
-  );
-}
+const href = (p: Piece) => `/content/${p.id}?tab=${tabFor(p)}`;
 
 export default function TodayPage() {
   const mine = awaitingMe(PIECES);
   const stuck = blocked(PIECES);
-  const todaySlots = PIECES.filter((p) => p.slot.startsWith(TODAY));
-  const next3 = [1, 2, 3].map((n) => addDays(TODAY, n));
   const q = queueSummary(QUEUE);
-  const day = TODAY.slice(8, 10);
+  const focus = mine[0] ?? stuck[0];
+  const checked = focus ? focus.claims.filter((c) => claimIssues(c).length === 0).length : 0;
+  const g = focus ? currentGate(focus) : null;
 
   return (
-    <main className="page">
-      <section className="masthead">
-        <div className="display day">{day}</div>
-        <div className="meta">
-          <span className="eyebrow">Today · {fmtDay(TODAY)}</span>
-          <h1 className="h1">오늘 통과시킬 게이트 {mine.length}, 막힌 편 {stuck.length}.</h1>
-          <span className="dim">채우려고 내지 않는다 — 빈 날은 쉬는 날로 둬도 된다.</span>
-        </div>
-        <div className="stats">
-          <div className="stat">
-            <div className="stat-n">{mine.length}</div>
-            <div className="stat-l">내 게이트</div>
-          </div>
-          <div className="stat">
-            <div className="stat-n alert">{stuck.length}</div>
-            <div className="stat-l">막힌 편</div>
-          </div>
-          <div className="stat">
-            <div className="stat-n accent">{q.ready}</div>
-            <div className="stat-l">내보낼 준비</div>
-          </div>
-        </div>
-      </section>
+    <Page>
+      <PageHeader title="오늘" actions={<Button as={Link} href="/content" variant="primary">＋ 새 편</Button>} />
+      <Grid>
+        <Cell span={8} rows={2}>
+          <Card tone="feature" image="/img/hero.jpg">
+            {focus ? (
+              <Stack gap={5} justify="between" grow>
+                <Stack gap={3}>
+                  <Stack direction="row" gap={2}>
+                    <KindMark kind={focus.kind} />
+                    {g && <Badge tone="brass">{g} {GATE_LABEL[g]}</Badge>}
+                  </Stack>
+                  <Text as="h2" size="heading" block>{focus.title}</Text>
+                  <Text tone="dim" mono>{fmtSlot(focus.slot)}</Text>
+                </Stack>
+                <Metric size="hero" value={checked} unit={`/ ${focus.claims.length}`} label="확인한 문장" />
+                <Pipeline status={focus.status} />
+                <Stack direction="row" gap={3}>
+                  <Button as={Link} href={href(focus)} variant="primary">열기</Button>
+                  <Button as={Link} href={`/content/${focus.id}?tab=preview`}>미리보기</Button>
+                </Stack>
+              </Stack>
+            ) : (
+              <EmptyState image="/img/empty.jpg" title="오늘 할 게이트 없음" />
+            )}
+          </Card>
+        </Cell>
 
-      <div className="split">
-        <div>
-          <section className="section">
-            <div className="section-head">
-              <h2 className="h2">막힌 편</h2>
-              <span className="eyebrow">어느 게이트에서 무엇이 비었나</span>
-            </div>
-            <div className="rows">
-              {stuck.map((p) => (
-                <PieceRow key={p.id} p={p} note={p.blocker} />
-              ))}
-            </div>
-          </section>
+        <Cell span={4}>
+          <Card>
+            <CardHeader title="지금" />
+            <MetricRow>
+              <Metric value={mine.length} label="내 게이트" />
+              <Metric value={stuck.length} label="막힘" tone={stuck.length ? "alert" : "default"} />
+              <Metric value={q.ready} label="내보낼 것" tone="accent" />
+            </MetricRow>
+          </Card>
+        </Cell>
 
-          <section className="section">
-            <div className="section-head">
-              <h2 className="h2">내가 통과시킬 게이트</h2>
-              <span className="eyebrow">사람만 누른다</span>
-            </div>
-            <div className="rows">
+        <Cell span={4}>
+          <Card>
+            <CardHeader title="막힌 편" action={<TextLink as={Link} href="/content">전체 →</TextLink>} />
+            {stuck.length ? (
+              <List>
+                {stuck.map((p) => (
+                  <ListItem key={p.id} as={Link} href={href(p)} title={p.title} meta={<Text size="label" tone="alert">{p.blocker}</Text>} trailing={<GateTrack piece={p} />} />
+                ))}
+              </List>
+            ) : (
+              <EmptyState image="/img/empty.jpg" title="막힌 편 없음" />
+            )}
+          </Card>
+        </Cell>
+
+        <Cell span={4}>
+          <Card>
+            <CardHeader title="내 게이트" />
+            <List>
               {mine.map((p) => {
-                const g = currentGate(p);
-                return <PieceRow key={p.id} p={p} note={g ? `${g} · ${GATE_LABEL[g]} 대기` : null} />;
+                const pg = currentGate(p);
+                return <ListItem key={p.id} as={Link} href={href(p)} leading={<KindMark kind={p.kind} />} title={p.title} trailing={pg && <Badge tone="solid">{pg}</Badge>} />;
               })}
-            </div>
-          </section>
+            </List>
+          </Card>
+        </Cell>
 
-          <section className="section">
-            <div className="section-head">
-              <h2 className="h2">오늘 슬롯 · 다음 3일</h2>
-              <Link href="/schedule">편성 캘린더 →</Link>
-            </div>
-            <div className="rows">
-              {todaySlots.map((p) => (
-                <PieceRow key={p.id} p={p} />
-              ))}
-              {next3.map((d) => {
-                const ps = PIECES.filter((p) => p.slot.startsWith(d));
-                return ps.length ? (
-                  ps.map((p) => <PieceRow key={p.id} p={p} />)
-                ) : (
-                  <Link key={d} href="/schedule" className="row cols-piece">
-                    <span className="mono mute">{fmtDay(d)}</span>
-                    <span />
-                    <span className="mute">빈 날 — 쉬는 날로 두기 · 연구 배정</span>
-                    <span />
-                    <span />
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        </div>
-
-        <aside>
-          <section className="section">
-            <div className="section-head">
-              <h2 className="h2">이번 주의 변수</h2>
-              <Link href="/schedule">주 보기 →</Link>
-            </div>
-            <div className="rows">
+        <Cell span={4}>
+          <Card>
+            <CardHeader title="이번 주 변수" action={<TextLink as={Link} href="/schedule">편성 →</TextLink>} />
+            <List>
               {WEEK_VARIABLES.map((v) => (
-                <div key={v.label} className="row cols-var">
-                  <div>
-                    <div className="display" style={{ fontSize: 26 }}>{v.date.slice(8, 10)}</div>
-                    <div className="mute" style={{ fontSize: "var(--fs-xs)" }}>{fmtDay(v.date).slice(6)} {v.time}</div>
-                  </div>
-                  <div>
-                    <div>
-                      <span className="mark" title={v.mark}>{MARK_GLYPH[v.mark]}</span>
-                      {v.label}
-                      {v.importance === "major" && <span className="chip chip-accent" style={{ marginLeft: 6 }}>major</span>}
-                    </div>
-                    <div className="row-sub">
-                      {v.source}
-                      {v.closedBy && (
-                        <>
-                          {" "}· 닫음 <Link className="accent" href={`/content/${v.closedBy}`}>{v.closedBy}</Link>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <ListItem
+                  key={v.label}
+                  leading={<DateTile day={v.date.slice(8, 10)} sub={weekday(v.date)} />}
+                  title={<><Glyph title={v.mark}>{MARK_GLYPH[v.mark]}</Glyph>{v.label}</>}
+                  meta={`${v.time} · ${v.source}`}
+                  trailing={v.importance === "major" ? <Badge tone="accent">major</Badge> : undefined}
+                />
               ))}
-            </div>
-          </section>
+            </List>
+          </Card>
+        </Cell>
 
-          <section className="section">
-            <div className="section-head">
-              <h2 className="h2">발행 대기열</h2>
-              <Link href="/publish">전체 →</Link>
-            </div>
-            <div className="rows">
+        <Cell span={4}>
+          <Card>
+            <CardHeader title="발행 대기열" action={<TextLink as={Link} href="/publish">전체 →</TextLink>} />
+            <List>
               {QUEUE.map((item) => {
                 const p = PIECES.find((x) => x.id === item.pieceId)!;
                 const s = queueState(item);
+                return <ListItem key={item.pieceId + item.channel} as={Link} href={s === "needs_g3" ? `/content/${p.id}?tab=review` : "/publish"} title={p.title} meta={item.channel} trailing={<QueueChip s={s} />} />;
+              })}
+            </List>
+          </Card>
+        </Cell>
+
+        <Cell span={12}>
+          <Card>
+            <CardHeader title="이번 주" action={<TextLink as={Link} href="/schedule">캘린더 →</TextLink>} />
+            <Calendar compact>
+              {weekDates(WEEK_START).map((d) => {
+                const ps = PIECES.filter((p) => p.slot.startsWith(d));
                 return (
-                  <Link key={item.pieceId + item.channel} href={s === "needs_g3" ? `/content/${p.id}?tab=review` : "/publish"} className="row" style={{ gridTemplateColumns: "30px minmax(0,1fr) auto" }}>
-                    <span className="mono mute" style={{ fontSize: "var(--fs-micro)" }}>{item.channel}</span>
-                    <span className="row-title">{p.title}</span>
-                    <QueueChip s={s} />
-                  </Link>
+                  <CalendarDay key={d} num={Number(d.slice(8, 10))} dow={weekday(d)} state={d === TODAY ? "today" : d < TODAY ? "past" : "default"}>
+                    {ps.map((p) => (
+                      <Slot key={p.id} as={Link} href={href(p)} time={p.slot.slice(11, 16)} gate={currentGate(p) ?? ""} solid={p.kind === "pre" || p.kind === "post"} />
+                    ))}
+                    {ps.length === 0 && d >= TODAY && <EmptySlot>빈 날</EmptySlot>}
+                  </CalendarDay>
                 );
               })}
-            </div>
-          </section>
-        </aside>
-      </div>
-    </main>
+            </Calendar>
+          </Card>
+        </Cell>
+      </Grid>
+    </Page>
   );
 }
-
