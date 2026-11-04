@@ -40,6 +40,10 @@ describe("의존 경계 (선언 의존)", () => {
     expect(read("packages/domain")?.deps).toEqual([]);
   });
 
+  it("design-tokens 는 어떤 패키지에도 의존하지 않는다", () => {
+    expect(read("packages/design-tokens")?.deps).toEqual([]);
+  });
+
   it("application 은 domain 만 안다", () => {
     const application = read("packages/application");
     expect(application && workspace(application)).toEqual(["@yunseo/domain"]);
