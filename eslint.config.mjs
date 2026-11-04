@@ -14,7 +14,13 @@ export default tseslint.config(
   {
     // 규칙 1: domain 은 어떤 패키지도 import 하지 않는다(상대 경로만).
     files: ["packages/domain/src/**/*.ts"],
+    ignores: ["**/*.test.ts"],
     rules: restrict("^(?!\\.{1,2}/).*", "domain 은 외부·다른 패키지를 import 할 수 없다 (04 규칙 1)"),
+  },
+  {
+    // 도메인 테스트는 테스트 러너(vitest)만 추가로 쓴다.
+    files: ["packages/domain/src/**/*.test.ts"],
+    rules: restrict("^(?!\\.{1,2}/|vitest$).*", "domain 테스트는 vitest 와 상대 경로만 import 할 수 있다 (04 규칙 1)"),
   },
   {
     // 규칙 2: application 은 domain 만 import 한다.

@@ -32,7 +32,7 @@ export interface ExpressionHit {
   matched: string;
 }
 
-const ZERO_WIDTH = /[​-‍⁠﻿]/g;
+const ZERO_WIDTH = /[\u200B-\u200D\u2060\uFEFF]/g;
 
 /** NFKC + 소문자 + 제로폭 문자 제거. 전각·호환 문자로 검사를 피하지 못하게 한다. */
 export function normalizeForScan(text: string): string {
