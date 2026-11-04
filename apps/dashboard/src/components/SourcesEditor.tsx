@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { claimIssues, type Mark, type Piece, type PieceClaim } from "@yunseo/domain";
-import { Badge, Button, Card, CardHeader, Check, CheckList, EmptyState, Field, FieldRow, Glyph, Input, List, ListItem, Metric, Segmented, SegmentedItem, Select, Split, Stack, Textarea, type Media } from "@yunseo/ui";
+import { Badge, Button, Card, CardHeader, Check, CheckList, Done, EmptyState, Field, FieldRow, Glyph, Input, List, ListItem, Metric, Segmented, SegmentedItem, Select, Split, Stack, Textarea, type Media } from "@yunseo/ui";
 import { MARK_GLYPH, MARK_LABEL } from "@/lib/labels";
 
 // 출처·기준 시점 편집기 (G2) — 문장 목록 + 선택 문장 상세. 「확인」은 사람만.
@@ -67,14 +67,18 @@ export function SourcesEditor({ piece, art }: { piece: Piece; art: Media }) {
                 <Check key={m} ok={false}>{m}</Check>
               ))}
             </CheckList>
-            <Button
-              variant="primary"
-              block
-              disabled={claimIssues({ ...cur, verified: true }).length > 0 || cur.verified}
-              onClick={() => setClaims((xs) => xs.map((c, i) => (i === sel ? { ...c, verified: true } : c)))}
-            >
-              {cur.verified ? "확인됨" : "원문 대조 — 확인"}
-            </Button>
+            {cur.verified ? (
+              <Done key={sel}>원문 대조 확인됨</Done>
+            ) : (
+              <Button
+                variant="primary"
+                block
+                disabled={claimIssues({ ...cur, verified: true }).length > 0}
+                onClick={() => setClaims((xs) => xs.map((c, i) => (i === sel ? { ...c, verified: true } : c)))}
+              >
+                원문 대조 — 확인
+              </Button>
+            )}
           </Card>
         )
       }

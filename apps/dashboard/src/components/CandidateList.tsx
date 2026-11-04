@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { EventCandidate } from "@yunseo/domain";
-import { Badge, Button, Input, List, Stack, Text } from "@yunseo/ui";
+import { Badge, Button, Done, Input, List, Stack, Text } from "@yunseo/ui";
 
 const Q_LABEL = { a: "가격 영향", b: "예정 일정", c: "독자 관심", d: "직접 경험", e: "시나리오" } as const;
 
@@ -17,7 +17,7 @@ export function CandidateList({ initial }: { initial: EventCandidate[] }) {
         <Stack key={c.id} gap={2}>
           <Stack direction="row" justify="between" align="center" gap={2}>
             <Text size="title">{c.label}</Text>
-            {c.decision ? <Badge tone={c.decision === "major" ? "accent" : "neutral"}>{c.decision}</Badge> : <Text size="label" tone="mute" mono>{c.date.slice(5).replace("-", ".")}</Text>}
+            {c.decision === "major" ? <Done>major 확정</Done> : c.decision ? <Badge>{c.decision}</Badge> : <Text size="label" tone="mute" mono>{c.date.slice(5).replace("-", ".")}</Text>}
           </Stack>
           <Stack direction="row" gap={1} wrap>
             {(Object.keys(Q_LABEL) as (keyof typeof Q_LABEL)[])

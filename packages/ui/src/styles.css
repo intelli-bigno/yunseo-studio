@@ -252,3 +252,50 @@ img { display: block; max-width: 100%; }
 .ui-vlist-body { position: relative; height: calc(var(--n) * var(--l-row)); }
 .ui-vlist-window { position: absolute; top: calc(var(--y) * var(--l-row)); left: 0; right: 0; }
 .ui-vlist .ui-command-item { height: var(--l-row); box-sizing: border-box; }
+
+/* ── 모션 — 값은 --m-* 토큰. 움직이는 속성은 transform·opacity 뿐(합성 단계만) ── */
+/* 호버: 그리드 카드·일정 칸은 살짝 떠오르고, 카드 테두리에 황동이 번지고, 빛이 한 번 스쳐 간다 */
+.ui-card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1px var(--c-brass); opacity: 0; transition: opacity var(--m-base) var(--m-ease); }
+.ui-card:hover::after { opacity: 0.5; }
+.ui-cell > .ui-card, .ui-slot { transition: transform var(--m-base) var(--m-spring); }
+.ui-cell > .ui-card:hover, .ui-slot:hover { transform: translateY(var(--m-lift)); }
+.ui-cell > .ui-card:not(.ui-card-has-media)::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--c-text) 6%, transparent) 50%, transparent 65%); transform: translateX(-100%); }
+.ui-cell > .ui-card:not(.ui-card-has-media):hover::before { transform: translateX(100%); transition: transform var(--m-scene) var(--m-ease-out); }
+.ui-btn { transition: background var(--m-fast) var(--m-ease), border-color var(--m-fast) var(--m-ease), transform var(--m-fast) var(--m-spring); }
+.ui-btn:not([disabled]):hover { transform: translateY(var(--m-lift)); }
+.ui-btn-secondary:not([disabled]):hover { border-color: var(--c-brass); }
+.ui-thumb { transition: opacity var(--m-base) var(--m-ease), transform var(--m-fast) var(--m-spring); }
+.ui-thumb:hover { opacity: 0.85; }
+/* 눌림: 작아졌다 튀어 돌아오고, 누른 자리에서 물결이 퍼진다(::after — motion.ts 가 재생) */
+.ui-btn:not([disabled]):active, .ui-seg-item:active, .ui-thumb:active, .ui-slot:active { transform: scale(var(--m-press)); transition-duration: var(--m-fast); }
+.ui-seg-item, .ui-nav-item, .ui-tab, .ui-li, .ui-tr, .ui-slot, .ui-thumb, .ui-command-item, .ui-btn { position: relative; overflow: hidden; }
+.ui-seg-item { transition: transform var(--m-fast) var(--m-spring); }
+.ui-btn::after, .ui-seg-item::after, .ui-nav-item::after, .ui-tab::after, .ui-li::after, .ui-tr::after, .ui-slot::after, .ui-thumb::after, .ui-command-item::after {
+  content: ""; position: absolute; left: var(--rx); top: var(--ry); width: var(--rs); height: var(--rs); border-radius: var(--r-pill); background: currentColor; opacity: 0; transform: translate(-50%, -50%) scale(0); pointer-events: none;
+}
+/* 완료 표시: 원이 튀어 오르며 체크가 서고, 고리가 한 번 퍼진다 */
+.ui-done { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--c-accent); }
+.ui-done-mark { position: relative; display: inline-grid; place-items: center; width: var(--chip-height); height: var(--chip-height); border-radius: var(--r-pill); background: var(--c-accent); color: var(--c-accent-ink); font-size: var(--fs-label); font-weight: var(--fw-label); animation: ui-pop var(--m-slow) var(--m-spring) both; }
+.ui-done-mark::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 2px var(--c-accent); animation: ui-ring var(--m-scene) var(--m-ease-out) both; }
+.ui-done-text { animation: ui-slide-in var(--m-slow) var(--m-ease-out) both; animation-delay: var(--m-fast); }
+.ui-toast { animation: ui-rise var(--m-base) var(--m-ease-out) both; }
+.ui-overlay { animation: ui-fade var(--m-base) var(--m-ease) both; }
+.ui-dialog { animation: ui-rise var(--m-slow) var(--m-spring) both; }
+@keyframes ui-pop { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ui-ring { from { transform: scale(1); opacity: 0.7; } to { transform: scale(2.2); opacity: 0; } }
+@keyframes ui-slide-in { from { transform: translateX(calc(var(--sp-2) * -1)); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ui-rise { from { transform: translateY(var(--sp-3)) scale(0.98); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ui-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* 화면 전환(View Transitions) — 조각(.ui-piece)은 motion.ts 가 하나씩 움직인다. 바탕은 짧게 겹쳐 바뀌고, 제목은 새 자리로 옮겨 간다 */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--m-base); animation-timing-function: var(--m-ease); }
+::view-transition-group(.ui-piece), ::view-transition-old(.ui-piece), ::view-transition-new(.ui-piece) { animation: none; }
+::view-transition-group(ui-title) { animation-duration: var(--m-scene); animation-timing-function: var(--m-spring); }
+::view-transition-old(ui-title), ::view-transition-new(ui-title) { animation-duration: var(--m-slow); }
+
+/* 움직임 줄이기 설정 — 전환·물결은 motion.ts 가 건너뛰고, 여기서는 CSS 움직임을 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
+  .ui-cell > .ui-card:hover, .ui-slot:hover, .ui-btn:not([disabled]):hover, .ui-btn:not([disabled]):active, .ui-seg-item:active, .ui-thumb:active, .ui-slot:active { transform: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
