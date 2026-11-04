@@ -44,6 +44,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@yunseo/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       next:
         specifier: ^16.4.4
         version: 16.4.4(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -95,6 +98,8 @@ importers:
       '@yunseo/domain':
         specifier: workspace:*
         version: link:../domain
+
+  packages/design-tokens: {}
 
   packages/domain: {}
 

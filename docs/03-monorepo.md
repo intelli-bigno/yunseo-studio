@@ -52,7 +52,8 @@ yunseo-studio/
 | `packages/presets-schema` | 동작 — 프리셋 스키마·로더·자리표시자(`TBD`) 탐지 |
 | `packages/adapters/{render-html,publisher-manual,storage}` | 빈 모듈 (MVP 어댑터 3개 자리) |
 | `apps/cli` | 동작 — `pnpm run validate [--publish]` (프리셋·콘텐츠·금지 표현 검증) |
-| `apps/dashboard` | 최소 진입점 — Next.js(App Router) 빈 화면 + `GET /api/health`. 화면·유스케이스 호출은 아직 없음 |
+| `packages/design-tokens` | 동작 — 대시보드 디자인 토큰(색·서체·간격·컴포넌트)과 CSS 변수 변환, 대비 검사. 외부 의존 0 ([design/final-direction.md](design/final-direction.md)) |
+| `apps/dashboard` | 목업 동작 — 오늘·편성 캘린더·콘텐츠 3종(작성·출처·미리보기·검수)·발행 대기열 + `GET /api/health`. 데이터는 목업, 유스케이스 호출은 M2 |
 | `apps/worker` | 최소 진입점 — Node 상주 프로세스 + `GET /health`. 잡 큐 소비는 M3 이후 |
 | `templates/`, `config/` 패키지 | 아직 만들지 않음 (M1 에서 필요할 때) |
 
@@ -62,7 +63,7 @@ yunseo-studio/
 pnpm run lint        eslint — import 단위 경계(04 의존 규칙)
 pnpm run typecheck   tsc --noEmit
 pnpm run test        vitest — 도메인·프리셋·CLI·워커·대시보드 헬스 + tests/boundaries (선언 의존 경계)
-pnpm run build       대시보드 `next build` (워커는 tsx 로 소스 실행 — 빌드 산출물 없음)
+pnpm run build       대시보드 `next build --webpack` (실행기 스레드 상한 때문 — next.config.ts 주석) (워커는 tsx 로 소스 실행 — 빌드 산출물 없음)
 pnpm run check       lint·typecheck·test 를 차례로
 
 실행 진입점(헬스 체크만, 기능 없음):
