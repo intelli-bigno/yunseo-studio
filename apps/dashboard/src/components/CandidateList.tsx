@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
+import type { EventCandidate } from "@yunseo/domain";
 import { Badge, Button, Input, List, Stack, Text } from "@yunseo/ui";
-import type { EventCandidate } from "@/lib/model";
 
 const Q_LABEL = { a: "가격 영향", b: "예정 일정", c: "독자 관심", d: "직접 경험", e: "시나리오" } as const;
 

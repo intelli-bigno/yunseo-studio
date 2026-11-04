@@ -1,39 +1,28 @@
 "use client";
+// 전역 키 입력과 상단 도구. 대화상자(빠른 이동·단축키 도움말)는 처음 열 때 내려받는다(KeyDialog) —
+// 모든 화면이 대화상자·가상 목록 코드를 미리 싣지 않는다.
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, CommandInput, CommandItem, CommandList, Dialog, DialogBody, DialogHeader, EmptyState, Kbd, KeyHint, List, ListItem, Stack } from "@yunseo/ui";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Button, Kbd, KeyHint, Stack } from "@yunseo/ui";
 import { goTarget, SHORTCUTS } from "@/lib/shortcuts";
+import type { DialogMode } from "./KeyDialog";
 
-export interface PaletteEntry {
-  href: string;
-  label: string;
-  tag: string;
-  hint?: string;
-}
+// next/dynamic 이 아니라 React.lazy — 같은 코드 분리인데 next/dynamic 은 런타임이 gzip 5KB 라 이 크기 코드에서는 분리 이득을 넘는다(실측)
+const KeyDialog = lazy(() => import("./KeyDialog").then((m) => ({ default: m.KeyDialog })));
 
 function typing(e: KeyboardEvent): boolean {
   const t = e.target as HTMLElement | null;
   return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
 }
 
-export function KeyNav({ entries }: { entries: PaletteEntry[] }) {
+export function KeyNav() {
   const router = useRouter();
-  const [mode, setMode] = useState<"none" | "palette" | "help">("none");
-  const [q, setQ] = useState("");
-  const [sel, setSel] = useState(0);
+  const [mode, setMode] = useState<DialogMode>("none");
   const pendingG = useRef<number>(0);
-
-  const results = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return s ? entries.filter((e) => `${e.label} ${e.tag} ${e.hint ?? ""}`.toLowerCase().includes(s)) : entries;
-  }, [q, entries]);
+  const warmed = useRef(false);
 
   useEffect(() => {
-    const open = (m: "palette" | "help") => {
-      setMode(m);
-      setQ("");
-      setSel(0);
-    };
+    const open = (m: "palette" | "help") => setMode(m);
     const onOpen = () => open("palette");
     const onHelp = () => open("help");
     window.addEventListener("ys:palette", onOpen);
@@ -62,6 +51,11 @@ export function KeyNav({ entries }: { entries: PaletteEntry[] }) {
       const now = Date.now();
       if (e.key === "g") {
         pendingG.current = now;
+        // 「g」 다음에 거의 확실히 이동 키가 온다 — 이동 후보 화면을 이 틈에 미리 받아 둔다(한 번만)
+        if (!warmed.current) {
+          warmed.current = true;
+          for (const s of SHORTCUTS) if (s.href) router.prefetch(s.href);
+        }
         return;
       }
       if (now - pendingG.current < 900) {
@@ -78,58 +72,20 @@ export function KeyNav({ entries }: { entries: PaletteEntry[] }) {
     };
   }, [router]);
 
-  const go = (href: string) => {
-    setMode("none");
-    router.push(href);
-  };
+  const close = useCallback(() => setMode("none"), []);
+  const go = useCallback(
+    (href: string) => {
+      setMode("none");
+      router.push(href);
+    },
+    [router],
+  );
+  const prefetch = useCallback((href: string) => router.prefetch(href), [router]);
 
-  if (mode === "none") return null;
-  return (
-    <Dialog onClose={() => setMode("none")} label={mode === "palette" ? "빠른 이동" : "단축키"}>
-      {mode === "palette" ? (
-        <>
-          <CommandInput
-            autoFocus
-            placeholder="편 · 화면 이름"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setSel(0);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowDown") {
-                e.preventDefault();
-                setSel((s) => Math.min(s + 1, results.length - 1));
-              } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                setSel((s) => Math.max(s - 1, 0));
-              } else if (e.key === "Enter" && results[sel]) {
-                go(results[sel].href);
-              }
-            }}
-          />
-          <CommandList>
-            {results.map((r, i) => (
-              <CommandItem key={r.href + r.label} href={r.href} selected={i === sel} tag={r.tag} hint={r.hint} onMouseEnter={() => setSel(i)} onClick={(e) => { e.preventDefault(); go(r.href); }}>
-                {r.label}
-              </CommandItem>
-            ))}
-            {results.length === 0 && <EmptyState title="없음" />}
-          </CommandList>
-        </>
-      ) : (
-        <>
-          <DialogHeader title="단축키" aside={<Kbd>esc</Kbd>} />
-          <DialogBody>
-            <List>
-              {SHORTCUTS.map((s) => (
-                <ListItem key={s.keys} title={s.label} trailing={<KeyHint keys={s.keys.split(" ")} />} />
-              ))}
-            </List>
-          </DialogBody>
-        </>
-      )}
-    </Dialog>
+  return mode === "none" ? null : (
+    <Suspense fallback={null}>
+      <KeyDialog mode={mode} onClose={close} onGo={go} onPrefetch={prefetch} />
+    </Suspense>
   );
 }
 

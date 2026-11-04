@@ -90,7 +90,9 @@ img { display: block; max-width: 100%; }
 .ui-card { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-5); background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-lg); min-width: 0; }
 .ui-card-feature { background: linear-gradient(160deg, var(--c-brand) 0%, var(--c-surface) 60%); }
 .ui-card-inset { background: var(--c-sunken); border-radius: var(--r-md); padding: var(--sp-4); }
-.ui-card-image { background-image: linear-gradient(90deg, var(--c-bg) 0%, color-mix(in srgb, var(--c-bg) 72%, transparent) 45%, transparent 100%), var(--card-image); background-size: cover; background-position: center right; }
+.ui-card-has-media { isolation: isolate; }
+.ui-card-media { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center right; }
+.ui-card-has-media::before { content: ""; position: absolute; inset: 0; z-index: -1; background-image: linear-gradient(90deg, var(--c-bg) 0%, color-mix(in srgb, var(--c-bg) 72%, transparent) 45%, transparent 100%); }
 .ui-card-head, .ui-section-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-4); }
 .ui-section { display: flex; flex-direction: column; gap: var(--sp-3); }
 .ui-section-head { padding-bottom: var(--sp-2); border-bottom: 1px solid var(--c-line); }
@@ -168,6 +170,8 @@ img { display: block; max-width: 100%; }
 .ui-tr.is-link:hover, .ui-li.is-link:hover { background: var(--c-hover); }
 .ui-tr.is-current { background: var(--c-hover); }
 .ui-list { display: flex; flex-direction: column; }
+/* 긴 목록: 화면 밖 행은 배치·그리기를 건너뛴다(스크롤하면 그린다) — 행 높이 토큰이 자리 크기 */
+.ui-tr:not(.ui-thead), .ui-li { content-visibility: auto; contain-intrinsic-size: auto var(--l-row); }
 .ui-li { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-2); border-top: 1px solid var(--c-line); width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; cursor: default; color: inherit; border-radius: 0; }
 .ui-list > .ui-li:first-child { border-top: 0; }
 .ui-li.is-link { cursor: pointer; }
@@ -220,11 +224,11 @@ img { display: block; max-width: 100%; }
 .ui-paper { display: flex; flex-direction: column; gap: var(--sp-5); padding: var(--sp-6); border-radius: var(--r-lg); background: var(--c-paper); color: var(--c-paper-ink); }
 .ui-card-stage { display: flex; justify-content: center; align-items: center; gap: var(--sp-5); }
 .ui-card-frame { width: min(calc(var(--sp-8) * 7), 100%); overflow: hidden; border-radius: var(--r-sm); background: var(--c-paper); box-shadow: var(--shadow-card); }
-.ui-card-frame img { width: 100%; height: 100%; object-fit: cover; }
+.ui-card-frame-img { width: 100%; height: 100%; object-fit: cover; }
 .ui-thumbs { display: flex; gap: var(--sp-2); justify-content: center; flex-wrap: wrap; }
 .ui-thumb { width: var(--sp-7); aspect-ratio: 4 / 5; padding: 0; overflow: hidden; border-radius: var(--r-sm); border: 1px solid var(--c-paper-line); background: var(--c-paper); cursor: pointer; opacity: 0.55; }
 .ui-thumb[aria-current="true"] { opacity: 1; outline: 2px solid var(--c-paper-ink); outline-offset: 2px; }
-.ui-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ui-thumb-img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ── 반응형 (경계 = design-tokens breakpoint) ── */
 @media (max-width: 1184px) {
@@ -242,3 +246,9 @@ img { display: block; max-width: 100%; }
   .ui-field-row { grid-template-columns: minmax(0, 1fr); }
 }
 .ui-slot > .ui-badge, .ui-stack > .ui-badge, .ui-card > .ui-badge { align-self: flex-start; }
+
+/* ── 가상 목록 — 행 높이는 layout.row 토큰 하나(virtual.tsx 와 같은 값) ── */
+.ui-vlist { max-height: 50vh; overflow: auto; padding: var(--sp-2) 0; overscroll-behavior: contain; }
+.ui-vlist-body { position: relative; height: calc(var(--n) * var(--l-row)); }
+.ui-vlist-window { position: absolute; top: calc(var(--y) * var(--l-row)); left: 0; right: 0; }
+.ui-vlist .ui-command-item { height: var(--l-row); box-sizing: border-box; }

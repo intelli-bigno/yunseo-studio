@@ -76,3 +76,15 @@ describe("의존 경계 (선언 의존)", () => {
     }
   });
 });
+
+describe("번들 크기 (트리 셰이킹)", () => {
+  // 브라우저 번들에 실리는 패키지가 sideEffects 를 선언하지 않으면 안 쓰는 export 까지 통째로 실린다(2026-11-04 실측: gzip 5KB).
+  it.each([
+    ["packages/domain", false],
+    ["packages/design-tokens", false],
+    ["packages/ui", ["**/*.css"]],
+  ])("%s 는 sideEffects 를 선언한다", (dir, expected) => {
+    const json = JSON.parse(readFileSync(join(root, dir, "package.json"), "utf8")) as { sideEffects?: unknown };
+    expect(json.sideEffects).toEqual(expected);
+  });
+});

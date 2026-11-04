@@ -1,5 +1,6 @@
 // 버튼·탭·세그먼트·표·목록·입력·대화상자·캘린더·카드 미리보기.
 import type { ComponentPropsWithoutRef, ElementType, MouseEventHandler, ReactNode } from "react";
+import { Img, type Media } from "./media";
 import { cx, vars, type Poly } from "./poly";
 
 type NoStyle<E extends ElementType> = Omit<ComponentPropsWithoutRef<E>, "className" | "style">;
@@ -268,10 +269,10 @@ export function CardStage({ children }: { children: ReactNode }) {
   return <div className="ui-card-stage">{children}</div>;
 }
 
-export function CardFrame({ src, alt, aspect = "4 / 5" }: { src: string; alt: string; aspect?: string }) {
+export function CardFrame({ media, alt, aspect = "4 / 5" }: { media: Media; alt: string; aspect?: string }) {
   return (
     <div className="ui-card-frame" style={{ aspectRatio: aspect }}>
-      <img src={src} alt={alt} />
+      <Img media={media} alt={alt} className="ui-card-frame-img" />
     </div>
   );
 }
@@ -280,10 +281,10 @@ export function Thumbs({ children }: { children: ReactNode }) {
   return <div className="ui-thumbs">{children}</div>;
 }
 
-export function Thumb({ src, current, label, onClick }: { src: string; current: boolean; label: string; onClick: () => void }) {
+export function Thumb({ media, current, label, onClick }: { media: Media; current: boolean; label: string; onClick: () => void }) {
   return (
     <button className="ui-thumb" aria-current={current} aria-label={label} onClick={onClick}>
-      <img src={src} alt="" loading="lazy" />
+      <Img media={media} className="ui-thumb-img" />
     </button>
   );
 }

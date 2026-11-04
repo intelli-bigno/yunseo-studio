@@ -1,6 +1,7 @@
 // 글자·카드·지표·배지·진행 표시·빈 상태.
 import type { ElementType, ReactNode } from "react";
 import type { TypeStep } from "@yunseo/design-tokens";
+import { Img, type Media } from "./media";
 import { cx, vars, type Poly, type Tone } from "./poly";
 
 /** 글자 — 크기는 토큰 6단계(label·body·title·heading·metric·hero)만. */
@@ -43,13 +44,14 @@ export function PageHeader({ title, meta, actions }: { title: ReactNode; meta?: 
 export function Card<E extends ElementType = "section">({
   as,
   tone = "default",
-  image,
+  media,
   children,
   ...rest
-}: Poly<E, { tone?: "default" | "feature" | "inset"; image?: string | undefined; children: ReactNode }>) {
+}: Poly<E, { tone?: "default" | "feature" | "inset"; media?: Media | undefined; children: ReactNode }>) {
   const C = (as ?? "section") as ElementType;
   return (
-    <C className={cx("ui-card", `ui-card-${tone}`, image && "ui-card-image")} style={image ? vars({ "--card-image": `url(${image})` }) : undefined} {...rest}>
+    <C className={cx("ui-card", `ui-card-${tone}`, media && "ui-card-has-media")} {...rest}>
+      {media && <Img media={media} className="ui-card-media" />}
       {children}
     </C>
   );
@@ -131,10 +133,10 @@ export function Progress({ items }: { items: { label: string; state: "done" | "n
   );
 }
 
-export function EmptyState({ image, title, action }: { image?: string; title: ReactNode; action?: ReactNode }) {
+export function EmptyState({ media, title, action }: { media?: Media | undefined; title: ReactNode; action?: ReactNode }) {
   return (
     <div className="ui-empty">
-      {image && <img className="ui-empty-image" src={image} alt="" loading="lazy" />}
+      {media && <Img media={media} className="ui-empty-image" />}
       <div className="ui-t-title">{title}</div>
       {action}
     </div>

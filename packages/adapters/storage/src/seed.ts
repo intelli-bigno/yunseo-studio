@@ -1,8 +1,9 @@
-// 목업 데이터 — 화면 확인용 자리표시. 수치·출처는 실제 사실이 아니다(발행에 쓰지 않는다).
-import type { Claim, EventCandidate, Piece, QueueItem, Stage, WeekVariable } from "./model";
+// 시안 데이터 — 화면 확인용 자리표시. 수치·출처는 실제 사실이 아니다(발행에 쓰지 않는다).
+// 빈 저장소를 처음 열 때 한 번만 채운다(sqlite-studio-repository.ts). 실제 데이터가 들어오면 이 파일은 시험용으로만 남는다.
+import type { EventCandidate, Piece, PieceClaim, QueueItem, Stage, WeekVariable } from "@yunseo/domain";
 
-export const TODAY = "2026-11-04";
-export const WEEK_START = "2026-11-02"; // 월요일
+/** 시안 데이터의 기준 「오늘」 — 날짜가 이 값 둘레로 짜여 있다 */
+export const SEED_TODAY = "2026-11-04";
 
 const preStages = (why: string): Stage[] => [
   { key: "why_it_matters", title: "왜 중요한가", question: "이 사건이 왜 지금 중요한가", body: why },
@@ -27,21 +28,21 @@ const researchStages: Stage[] = [
   { key: "follow_up", title: "후속", question: "후속 검증에서 확인된 것", body: "" },
 ];
 
-const midtermClaims: Claim[] = [
+const midtermClaims: PieceClaim[] = [
   { id: "c1", mark: "fact", basis: "research", text: "중간선거 투표일은 11월 3일(현지)이다.", publisher: "연방선거위원회(자리표시)", url: "https://example.org/fec-calendar", quote: "General Election: November 3", accessedAt: "2026-11-02", asOf: "2026-11-02T09:00", verified: true },
   { id: "c2", mark: "reaction", basis: "research", text: "투표 전 주 10년물 금리는 [수치] 범위에서 움직였다.", publisher: "재무부 수익률 곡선(자리표시)", url: "https://example.org/treasury-yields", quote: "10 Yr — [value]", accessedAt: "2026-11-03", asOf: "2026-11-03T16:00", verified: true },
   { id: "c3", mark: "view", basis: "experienced", text: "의회 구성이 갈리면 재정 확장 속도가 먼저 달라진다고 본다.", publisher: null, url: null, quote: null, accessedAt: null, asOf: "2026-11-03T22:00", verified: true },
   { id: "c4", mark: "scenario", basis: "research", text: "상·하원 모두 한쪽 — 재정 확대 기대가 금리에 먼저 반영될 수 있다.", publisher: null, url: null, quote: null, accessedAt: null, asOf: "2026-11-03T22:00", verified: true },
 ];
 
-const fomcClaims: Claim[] = [
+const fomcClaims: PieceClaim[] = [
   { id: "f1", mark: "fact", basis: "research", text: "의사록 공개 시각은 [일시] 이다.", publisher: "연준 일정(자리표시)", url: "https://example.org/fomc-calendar", quote: "Minutes of the FOMC — [date]", accessedAt: "2026-11-04", asOf: "2026-11-04T08:00", verified: true },
   { id: "f2", mark: "fact", basis: "research", text: "직전 회의에서 정책금리를 [수치]로 결정했다.", publisher: null, url: null, quote: null, accessedAt: null, asOf: null, verified: false },
   { id: "f3", mark: "reaction", basis: "research", text: "선물 시장은 다음 회의 인하 확률을 [수치]로 반영한다.", publisher: "선물 확률 집계(자리표시)", url: "https://example.org/fedwatch", quote: null, accessedAt: "2026-11-04", asOf: null, verified: false },
   { id: "f4", mark: "view", basis: "experienced", text: "의사록의 「인내」 표현이 빠지면 시장은 경로를 다시 그린다고 본다.", publisher: null, url: null, quote: null, accessedAt: null, asOf: "2026-11-04T09:30", verified: false },
 ];
 
-export const PIECES: Piece[] = [
+export const SEED_PIECES: Piece[] = [
   {
     id: "P-1104",
     kind: "pre",
@@ -145,20 +146,20 @@ export const PIECES: Piece[] = [
   },
 ];
 
-export const WEEK_VARIABLES: WeekVariable[] = [
+export const SEED_WEEK_VARIABLES: WeekVariable[] = [
   { date: "2026-11-03", time: "06:00", tz: "KST", label: "미국 중간선거 투표", mark: "fact", source: "선거 일정(자리표시)", importance: "major", closedBy: "A-1106" },
   { date: "2026-11-05", time: "04:00", tz: "KST", label: "FOMC 의사록 공개", mark: "fact", source: "연준 일정(자리표시)", importance: "major" },
   { date: "2026-11-06", time: "22:30", tz: "KST", label: "미국 신규 실업수당 청구", mark: "fact", source: "노동부 일정(자리표시)", importance: "watch" },
   { date: "2026-11-07", time: "—", tz: "", label: "달러 강세 지속 여부", mark: "view", source: "운영자 해석", importance: "watch" },
 ];
 
-export const EVENT_CANDIDATES: EventCandidate[] = [
+export const SEED_EVENT_CANDIDATES: EventCandidate[] = [
   { id: "E-31", date: "2026-11-10", label: "미국 CPI 발표", questions: { a: true, b: true, c: true, d: false, e: true }, decision: null },
   { id: "E-32", date: "2026-11-11", label: "중국 무역수지", questions: { a: false, b: true, c: false, d: false, e: false }, decision: null },
   { id: "E-33", date: "2026-11-12", label: "OPEC 월간 보고서", questions: { a: false, b: true, c: true, d: false, e: false }, decision: "watch" },
 ];
 
-export const QUEUE: QueueItem[] = [
+export const SEED_QUEUE: QueueItem[] = [
   { pieceId: "P-1104", channel: "feed", approvedHash: null, currentHash: "7ab2e019", postedUrl: null },
   { pieceId: "A-1102", channel: "feed", approvedHash: "c07d55e1", currentHash: "c07d55e1", postedUrl: null },
   { pieceId: "P-1103", channel: "reels", approvedHash: "41be0d92", currentHash: "52aa9013", postedUrl: null },

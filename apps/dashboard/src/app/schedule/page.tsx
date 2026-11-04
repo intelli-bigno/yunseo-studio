@@ -1,21 +1,25 @@
 // 편성 캘린더 — 주(기본)·월. 오른쪽 레일: 이번 주 변수 + 사건 후보함(G1).
+// 렌더 전략: 서버 렌더(요청마다) — 주/월이 쿼리(?view)라 정적 생성이 안 된다. 데이터는 읽기 캐시라 요청당 비용이 작다.
+// 사건 후보함만 클라이언트 섬(판정 버튼). 나머지는 JS 가 없다.
 import Link from "next/link";
+import { weekday } from "@yunseo/domain";
 import { Badge, Calendar, CalendarDay, Card, CardHeader, DateTile, EmptySlot, Glyph, List, ListItem, Page, PageHeader, SegmentedItem, Segmented, Slot, Split, TextLink } from "@yunseo/ui";
 import { CandidateList } from "@/components/CandidateList";
 import { KindMark } from "@/components/ui";
-import { addDays, currentGate, weekDates, weekday } from "@/lib/logic";
-import { MARK_GLYPH, STATUS_LABEL } from "@/lib/model";
-import { EVENT_CANDIDATES, PIECES, TODAY, WEEK_START, WEEK_VARIABLES } from "@/lib/mock";
+import { fmtWeekRange } from "@/lib/format";
+import { heroMedia } from "@/lib/media";
+import { MARK_GLYPH, STATUS_LABEL } from "@/lib/labels";
+import { studio } from "@/server/studio";
 
 export default async function SchedulePage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
-  const { view } = await searchParams;
-  const month = view === "month";
-  const days = month ? Array.from({ length: 35 }, (_, i) => addDays("2026-10-26", i)) : weekDates(WEEK_START);
+  const { view: raw } = await searchParams;
+  const view = await studio().getSchedule(raw === "month" ? "month" : "week");
+  const month = view.mode === "month";
 
   return (
     <Page>
       <PageHeader
-        title={month ? "11월" : "11월 2일 — 8일"}
+        title={month ? `${Number(view.today.slice(5, 7))}월` : fmtWeekRange(view.from, view.to)}
         actions={
           <Segmented label="보기">
             <SegmentedItem as={Link} href="/schedule" current={!month}>주</SegmentedItem>
@@ -26,10 +30,10 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       <Split
         rail={
           <>
-            <Card tone="feature" image="/img/schedule.jpg">
+            <Card tone="feature" media={heroMedia("/img/schedule.jpg", { width: 1600, height: 900 })}>
               <CardHeader title="이번 주 변수" action={<TextLink as={Link} href="/content/S-W45">스토리 →</TextLink>} />
               <List>
-                {WEEK_VARIABLES.map((v) => (
+                {view.variables.map((v) => (
                   <ListItem
                     key={v.label}
                     leading={<DateTile day={v.date.slice(8, 10)} sub={weekday(v.date)} />}
@@ -42,33 +46,30 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
             </Card>
             <Card>
               <CardHeader title="사건 후보 · G1" />
-              <CandidateList initial={EVENT_CANDIDATES} />
+              <CandidateList initial={view.candidates} />
             </Card>
           </>
         }
       >
         <Calendar compact={month}>
-          {days.map((d) => {
-            const ps = PIECES.filter((p) => p.slot.startsWith(d)).sort((a, b) => a.slot.localeCompare(b.slot));
-            return (
-              <CalendarDay key={d} num={Number(d.slice(8, 10))} dow={weekday(d)} state={d === TODAY ? "today" : d < TODAY ? "past" : "default"}>
-                {ps.map((p) => (
-                  <Slot
-                    key={p.id}
-                    as={Link}
-                    href={`/content/${p.id}`}
-                    time={p.slot.slice(11, 16)}
-                    gate={currentGate(p) ?? STATUS_LABEL[p.status]}
-                    title={month ? undefined : p.title}
-                    solid={p.kind === "pre" || p.kind === "post"}
-                  >
-                    {!month && <KindMark kind={p.kind} />}
-                  </Slot>
-                ))}
-                {!month && ps.length === 0 && d >= TODAY && <EmptySlot>빈 날</EmptySlot>}
-              </CalendarDay>
-            );
-          })}
+          {view.days.map((d) => (
+            <CalendarDay key={d.date} num={Number(d.date.slice(8, 10))} dow={weekday(d.date)} state={d.state}>
+              {d.pieces.map((r) => (
+                <Slot
+                  key={r.piece.id}
+                  as={Link}
+                  href={`/content/${r.piece.id}`}
+                  time={r.piece.slot.slice(11, 16)}
+                  gate={r.gate ?? STATUS_LABEL[r.piece.status]}
+                  title={month ? undefined : r.piece.title}
+                  solid={r.piece.kind === "pre" || r.piece.kind === "post"}
+                >
+                  {!month && <KindMark kind={r.piece.kind} />}
+                </Slot>
+              ))}
+              {!month && d.pieces.length === 0 && d.date >= view.today && <EmptySlot>빈 날</EmptySlot>}
+            </CalendarDay>
+          ))}
         </Calendar>
       </Split>
     </Page>

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
+import type { Piece } from "@yunseo/domain";
 import { Badge, Button, Card, CardHeader, Checkbox, Input, List, Metric, Notice, Split, Text } from "@yunseo/ui";
-import type { Piece } from "@/lib/model";
 
 // 검수 (G3) — 전 항목 체크 뒤 승인, 반려는 사유 필수.
 const ITEMS = [

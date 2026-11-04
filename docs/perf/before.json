@@ -1,0 +1,701 @@
+{
+  "label": "before",
+  "at": "2026-11-04T15:02:54.140Z",
+  "node": "v22.23.3",
+  "staticBuild": {
+    "js": 955206,
+    "css": 163134,
+    "media": 2531984,
+    "jsFiles": 27
+  },
+  "rssKb": {
+    "idle": 128072,
+    "afterRoutes": 184896,
+    "afterLoad": 236208,
+    "afterLoad2": 263344
+  },
+  "checks": {
+    "cardImage": {
+      "status": 200,
+      "etag": false,
+      "cacheControl": "private, max-age=300"
+    },
+    "palette": {
+      "status": 404
+    },
+    "originalHero": {
+      "bytes": 152121
+    }
+  },
+  "routes": {
+    "/": {
+      "status": 200,
+      "cache": "HIT",
+      "cacheControl": "s-maxage=31536000",
+      "html": {
+        "raw": 48626,
+        "gzip": 7924,
+        "inlineScript": 31924,
+        "inlineStyle": 2397,
+        "links": 5
+      },
+      "js": {
+        "n": 8,
+        "raw": 469115,
+        "gzip": 139781,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-cf3bb39d01f8d8f3.js",
+            "gzip": 167
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 50,
+        "bytes": 389676,
+        "faces": 294,
+        "preloaded": 2
+      },
+      "image": {
+        "n": 1,
+        "bytes": 152121,
+        "types": [
+          "image/jpeg"
+        ],
+        "slowestMs": 1.4
+      },
+      "initialTransfer": 736060,
+      "latencyMs": {
+        "p50": 2.3,
+        "p95": 2.9,
+        "ttfbP50": 2.1
+      }
+    },
+    "/schedule": {
+      "status": 200,
+      "cache": null,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "html": {
+        "raw": 36766,
+        "gzip": 7017,
+        "inlineScript": 23212,
+        "inlineStyle": 2397,
+        "links": 3
+      },
+      "js": {
+        "n": 8,
+        "raw": 470561,
+        "gzip": 140482,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-31722175c5ceff18.js",
+            "gzip": 868
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 44,
+        "bytes": 352136,
+        "faces": 294,
+        "preloaded": 0
+      },
+      "image": {
+        "n": 1,
+        "bytes": 121063,
+        "types": [
+          "image/jpeg"
+        ],
+        "slowestMs": 0.9
+      },
+      "initialTransfer": 667256,
+      "latencyMs": {
+        "p50": 5.3,
+        "p95": 7.5,
+        "ttfbP50": 4.8
+      }
+    },
+    "/schedule?view=month": {
+      "status": 200,
+      "cache": null,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "html": {
+        "raw": 47062,
+        "gzip": 7533,
+        "inlineScript": 30605,
+        "inlineStyle": 2397,
+        "links": 3
+      },
+      "js": {
+        "n": 8,
+        "raw": 470561,
+        "gzip": 140482,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-31722175c5ceff18.js",
+            "gzip": 868
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 29,
+        "bytes": 236620,
+        "faces": 294,
+        "preloaded": 0
+      },
+      "image": {
+        "n": 1,
+        "bytes": 121063,
+        "types": [
+          "image/jpeg"
+        ],
+        "slowestMs": 0.9
+      },
+      "initialTransfer": 552256,
+      "latencyMs": {
+        "p50": 5.1,
+        "p95": 6.1,
+        "ttfbP50": 4.5
+      }
+    },
+    "/content": {
+      "status": 200,
+      "cache": null,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "html": {
+        "raw": 32508,
+        "gzip": 6242,
+        "inlineScript": 20983,
+        "inlineStyle": 2397,
+        "links": 3
+      },
+      "js": {
+        "n": 8,
+        "raw": 469115,
+        "gzip": 139781,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-cf3bb39d01f8d8f3.js",
+            "gzip": 167
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 38,
+        "bytes": 309084,
+        "faces": 294,
+        "preloaded": 0
+      },
+      "image": {
+        "n": 0,
+        "bytes": 0
+      },
+      "initialTransfer": 501665,
+      "latencyMs": {
+        "p50": 4.5,
+        "p95": 5.2,
+        "ttfbP50": 4
+      }
+    },
+    "/content/P-1104?tab=write": {
+      "status": 200,
+      "cache": null,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "html": {
+        "raw": 28284,
+        "gzip": 7350,
+        "inlineScript": 17089,
+        "inlineStyle": 2397,
+        "links": 3
+      },
+      "js": {
+        "n": 8,
+        "raw": 479171,
+        "gzip": 143282,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-d7a435cb3636ef7e.js",
+            "gzip": 3668
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 44,
+        "bytes": 354828,
+        "faces": 294,
+        "preloaded": 0
+      },
+      "image": {
+        "n": 0,
+        "bytes": 0
+      },
+      "initialTransfer": 552018,
+      "latencyMs": {
+        "p50": 4.5,
+        "p95": 6,
+        "ttfbP50": 4
+      }
+    },
+    "/content/P-1104?tab=sources": {
+      "status": 200,
+      "cache": null,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "html": {
+        "raw": 28777,
+        "gzip": 7495,
+        "inlineScript": 17092,
+        "inlineStyle": 2397,
+        "links": 3
+      },
+      "js": {
+        "n": 8,
+        "raw": 479171,
+        "gzip": 143282,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-d7a435cb3636ef7e.js",
+            "gzip": 3668
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 44,
+        "bytes": 354828,
+        "faces": 294,
+        "preloaded": 0
+      },
+      "image": {
+        "n": 0,
+        "bytes": 0
+      },
+      "initialTransfer": 552163,
+      "latencyMs": {
+        "p50": 4.3,
+        "p95": 5.5,
+        "ttfbP50": 3.7
+      }
+    },
+    "/content/P-1104?tab=preview": {
+      "status": 200,
+      "cache": null,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "html": {
+        "raw": 25382,
+        "gzip": 7001,
+        "inlineScript": 17091,
+        "inlineStyle": 2397,
+        "links": 3
+      },
+      "js": {
+        "n": 8,
+        "raw": 479171,
+        "gzip": 143282,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-d7a435cb3636ef7e.js",
+            "gzip": 3668
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 38,
+        "bytes": 306120,
+        "faces": 294,
+        "preloaded": 0
+      },
+      "image": {
+        "n": 8,
+        "bytes": 1023338,
+        "types": [
+          "image/jpeg",
+          "image/png"
+        ],
+        "slowestMs": 4.4
+      },
+      "initialTransfer": 1526299,
+      "latencyMs": {
+        "p50": 3.9,
+        "p95": 4.9,
+        "ttfbP50": 3.5
+      }
+    },
+    "/content/P-1104?tab=review": {
+      "status": 200,
+      "cache": null,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "html": {
+        "raw": 26529,
+        "gzip": 7200,
+        "inlineScript": 17087,
+        "inlineStyle": 2397,
+        "links": 3
+      },
+      "js": {
+        "n": 8,
+        "raw": 479171,
+        "gzip": 143282,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-d7a435cb3636ef7e.js",
+            "gzip": 3668
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 38,
+        "bytes": 311872,
+        "faces": 294,
+        "preloaded": 0
+      },
+      "image": {
+        "n": 0,
+        "bytes": 0
+      },
+      "initialTransfer": 508912,
+      "latencyMs": {
+        "p50": 3.9,
+        "p95": 4.8,
+        "ttfbP50": 3.3
+      }
+    },
+    "/publish": {
+      "status": 200,
+      "cache": "HIT",
+      "cacheControl": "s-maxage=31536000",
+      "html": {
+        "raw": 25227,
+        "gzip": 5927,
+        "inlineScript": 16182,
+        "inlineStyle": 2397,
+        "links": 5
+      },
+      "js": {
+        "n": 8,
+        "raw": 469115,
+        "gzip": 139781,
+        "files": [
+          {
+            "url": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzip": 64057
+          },
+          {
+            "url": "106-601ab51c78297659.js",
+            "gzip": 66312
+          },
+          {
+            "url": "main-app-2d46522f1098734a.js",
+            "gzip": 221
+          },
+          {
+            "url": "350-45d9550490291108.js",
+            "gzip": 3252
+          },
+          {
+            "url": "658-93651755d9815a41.js",
+            "gzip": 2088
+          },
+          {
+            "url": "layout-9ec8bab3448db308.js",
+            "gzip": 2002
+          },
+          {
+            "url": "page-cf3bb39d01f8d8f3.js",
+            "gzip": 167
+          },
+          {
+            "url": "webpack-81621ddc68709a5c.js",
+            "gzip": 1682
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "raw": 163134,
+        "gzip": 46558
+      },
+      "font": {
+        "n": 41,
+        "bytes": 332844,
+        "faces": 294,
+        "preloaded": 2
+      },
+      "image": {
+        "n": 1,
+        "bytes": 121719,
+        "types": [
+          "image/jpeg"
+        ],
+        "slowestMs": 0.7
+      },
+      "initialTransfer": 646829,
+      "latencyMs": {
+        "p50": 1.5,
+        "p95": 2.1,
+        "ttfbP50": 1.4
+      }
+    }
+  }
+}

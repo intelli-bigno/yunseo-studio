@@ -44,9 +44,21 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@yunseo/adapters-render-html':
+        specifier: workspace:*
+        version: link:../../packages/adapters/render-html
+      '@yunseo/adapters-storage':
+        specifier: workspace:*
+        version: link:../../packages/adapters/storage
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../packages/application
       '@yunseo/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@yunseo/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@yunseo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
