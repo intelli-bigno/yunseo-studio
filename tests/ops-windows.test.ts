@@ -30,7 +30,7 @@ describe("배치·서비스 정의", () => {
   it("대시보드 = next start -H <Tailnet IP> -p 8930, 워커 주소를 환경변수로 안다", () => {
     const d = serviceDef("dashboard", l, { nodeExe: ctx.nodeExe, revision: "abc" });
     expect(d.args).toEqual(["D:\\Services\\yunseo-studio\\app\\apps\\dashboard\\node_modules\\next\\dist\\bin\\next", "start", "-H", "100.84.73.107", "-p", "8930"]);
-    expect(d.env).toMatchObject({ STUDIO_DB: l.db, YUNSEO_WORKER_URL: "http://100.84.73.107:8931", NODE_ENV: "production", YUNSEO_REVISION: "abc" });
+    expect(d.env).toMatchObject({ STUDIO_DB: l.db, YUNSEO_WORKER_URL: "http://100.84.73.107:8931", NODE_ENV: "production", STUDIO_CLOCK: "system", YUNSEO_REVISION: "abc" });
     expect(d.healthUrl).toBe("http://100.84.73.107:8930/api/health");
     expect(d.taskName).toBe("\\YunseoStudio\\Dashboard");
   });
@@ -39,7 +39,7 @@ describe("배치·서비스 정의", () => {
     const w = serviceDef("worker", l, { nodeExe: ctx.nodeExe });
     expect(w.cwd).toBe("D:\\Services\\yunseo-studio\\app\\apps\\worker");
     expect(w.args).toEqual(["--import", "tsx", "src/main.ts"]);
-    expect(w.env).toMatchObject({ HOST: TAILNET_HOST, PORT: "8931", YUNSEO_BACKUP_KEEP: "14", YUNSEO_DATA_DIR: l.data });
+    expect(w.env).toMatchObject({ HOST: TAILNET_HOST, PORT: "8931", YUNSEO_BACKUP_KEEP: "14", YUNSEO_DATA_DIR: l.data, STUDIO_CLOCK: "system" });
     expect(w.env).not.toHaveProperty("YUNSEO_REVISION");
   });
 

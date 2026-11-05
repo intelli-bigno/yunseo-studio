@@ -29,8 +29,9 @@ export function defs(ctx: PlanContext, only?: ServiceName): ServiceDef[] {
 
 export function firewallSteps(host: string = TAILNET_HOST): Step[] {
   const name = `'${FIREWALL_RULE}'`;
+  // -DisplayName 으로 찾으면 규칙이 없을 때(첫 설치) 오류로 종료 1 이 된다(SilentlyContinue 로도) — 전체 목록을 걸러 없으면 조용히 넘어간다
   return [
-    ps(`Get-NetFirewallRule -DisplayName ${name} -ErrorAction SilentlyContinue | Remove-NetFirewallRule`),
+    ps(`Get-NetFirewallRule -All | Where-Object { $_.DisplayName -eq ${name} } | Remove-NetFirewallRule`),
     ps(
       `New-NetFirewallRule -DisplayName ${name} -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${PORTS.dashboard},${PORTS.worker} -LocalAddress ${host} -RemoteAddress 100.64.0.0/10 -Profile Any | Out-Null`,
     ),
@@ -73,7 +74,7 @@ export function uninstallPlan(ctx: PlanContext): Step[] {
   return [
     ...stopSteps(ds),
     ...ds.map((d) => schtasks(["/Delete", "/TN", d.taskName, "/F"], true)),
-    ps(`Get-NetFirewallRule -DisplayName '${FIREWALL_RULE}' -ErrorAction SilentlyContinue | Remove-NetFirewallRule`),
+    ps(`Get-NetFirewallRule -All | Where-Object { $_.DisplayName -eq '${FIREWALL_RULE}' } | Remove-NetFirewallRule`),
     // 데이터(DB·백업·로그)는 남긴다 — 지우는 단계는 두지 않는다
   ];
 }
