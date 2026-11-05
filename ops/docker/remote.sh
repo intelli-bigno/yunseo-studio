@@ -25,10 +25,14 @@ compose() { docker compose -p "$PROJECT" -f "$ROOT/current/compose.yaml" "$@"; }
 
 health_of() { docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$1" 2>/dev/null || echo missing; }
 
+# wait_healthy [컨테이너...] — 기본은 둘 다 healthy 가 될 때까지(최대 180초)
 wait_healthy() {
-  local i=0
+  local names=("$@") n i=0 ok
+  [ "${#names[@]}" -gt 0 ] || names=(yunseo-dashboard yunseo-worker)
   while [ "$i" -lt 90 ]; do
-    if [ "$(health_of yunseo-dashboard)" = healthy ] && [ "$(health_of yunseo-worker)" = healthy ]; then return 0; fi
+    ok=1
+    for n in "${names[@]}"; do [ "$(health_of "$n")" = healthy ] || ok=0; done
+    [ "$ok" = 1 ] && return 0
     sleep 2; i=$((i + 1))
   done
   echo "헬스 대기 시간 초과: dashboard=$(health_of yunseo-dashboard) worker=$(health_of yunseo-worker)" >&2
@@ -68,7 +72,7 @@ case "$cmd" in
     ;;
   status) status ;;
   stop) docker stop yunseo-worker yunseo-dashboard; status ;;
-  start) docker start yunseo-dashboard; wait_healthy; docker start yunseo-worker 2>/dev/null || true; wait_healthy; status ;;
+  start) docker start yunseo-dashboard; wait_healthy yunseo-dashboard; docker start yunseo-worker; wait_healthy; status ;;
   restart) docker restart yunseo-dashboard yunseo-worker; wait_healthy; status ;;
   logs)
     n="${1:-80}"
