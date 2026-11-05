@@ -12,13 +12,14 @@ case "${1:-}" in
     win_out="C:/Users/yjh99/AppData/Local/Temp/yunseo-apps-$stamp"
     scp -q "$here/collect-windows.ps1" "$host:C:/Users/yjh99/AppData/Local/Temp/yunseo-collect-apps.ps1"
     ssh "$host" "powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:/Users/yjh99/AppData/Local/Temp/yunseo-collect-apps.ps1 -Out $win_out"
-    ssh "$host" "wsl.exe -d Ubuntu -- bash -lc 'src=\$(wslpath \"$win_out\") && docker exec yunseo-studio mkdir -p /data/apps/windows-desktop && tar -C \"\$src\" -cf - . | docker exec -i yunseo-studio tar -C /data/apps/windows-desktop -xf -'"
+    wsl_out="/mnt/c/Users/yjh99/AppData/Local/Temp/yunseo-apps-$stamp"
+    ssh "$host" "MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu -- bash -lc 'docker exec yunseo-studio mkdir -p /data/apps/windows-desktop && tar -C $wsl_out -cf - . | docker exec -i yunseo-studio tar -C /data/apps/windows-desktop -xf -'"
     ;;
   mac)
     tmp=$(mktemp -d)
     machine=$(hostname -s | tr 'A-Z' 'a-z' | tr -c 'a-z0-9-\n' '-')
     bash "$here/collect-mac.sh" "$tmp" "$machine"
-    tar -C "$tmp" -cf - . | ssh "$host" "wsl.exe -d Ubuntu -- bash -lc 'docker exec yunseo-studio mkdir -p /data/apps/$machine && docker exec -i yunseo-studio tar -C /data/apps/$machine -xf -'"
+    tar -C "$tmp" -cf - . | ssh "$host" "MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu -- bash -lc 'docker exec yunseo-studio mkdir -p /data/apps/$machine && docker exec -i yunseo-studio tar -C /data/apps/$machine -xf -'"
     ;;
   *) echo "사용: $0 windows|mac" >&2; exit 2 ;;
 esac
