@@ -11,7 +11,7 @@
 | 02 | [sop.md](02-sop.md) | 어떤 순서로 만들고 언제 내나 — 공정·사람 게이트 3곳·편성 규칙(피드·스토리·릴스)·체크리스트·자동화 책임 경계 |
 | 03 | [monorepo.md](03-monorepo.md) | 코드를 어디에 두나 — `apps/`·`packages/` 경계 |
 | 04 | [architecture.md](04-architecture.md) | 코드끼리 무엇을 알아도 되나 — 클린 아키텍처 계층과 의존 규칙 |
-| 05 | [automation.md](05-automation.md) | 무엇을 자동화할 수 있나 — 일정 실행·이벤트 감지·게시 API 의 근본 제약 |
+| 05 | [automation.md](05-automation.md) | 무엇을 자동화할 수 있나 — 일정 실행·이벤트 감지·게시 API 의 근본 제약, **플랫폼 규격 실측(§5.8, 2026-11-05)**·성과 지표 이름(§5.9) |
 | 06 | [dashboard.md](06-dashboard.md) | 운영자는 어떤 화면을 쓰나 — 정보구조·화면 흐름·화면 명세 |
 | 07 | [roadmap.md](07-roadmap.md) | 어떤 순서로 만드나 — MVP → 자동화 |
 | 08 | [decisions.md](08-decisions.md) | 결정 항목 — D1~D3·D12 확정, 시안 선택(D13)·채널명(D5)·발행 언어(D10) 등은 사람이 정해야 함 |

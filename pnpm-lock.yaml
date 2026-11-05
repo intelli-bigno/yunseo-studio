@@ -44,9 +44,18 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@yunseo/adapters-metrics':
+        specifier: workspace:*
+        version: link:../../packages/adapters/metrics
       '@yunseo/adapters-ops':
         specifier: workspace:*
         version: link:../../packages/adapters/ops
+      '@yunseo/adapters-publisher-instagram':
+        specifier: workspace:*
+        version: link:../../packages/adapters/publisher-instagram
+      '@yunseo/adapters-publisher-youtube':
+        specifier: workspace:*
+        version: link:../../packages/adapters/publisher-youtube
       '@yunseo/adapters-render-html':
         specifier: workspace:*
         version: link:../../packages/adapters/render-html
@@ -62,6 +71,9 @@ importers:
       '@yunseo/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@yunseo/presets-schema':
+        specifier: workspace:*
+        version: link:../../packages/presets-schema
       '@yunseo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -91,13 +103,40 @@ importers:
         specifier: workspace:*
         version: link:../../packages/application
 
+  packages/adapters/metrics:
+    dependencies:
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../application
+      '@yunseo/domain':
+        specifier: workspace:*
+        version: link:../../domain
+
   packages/adapters/ops:
     dependencies:
       '@yunseo/application':
         specifier: workspace:*
         version: link:../../application
 
+  packages/adapters/publisher-instagram:
+    dependencies:
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../application
+      '@yunseo/domain':
+        specifier: workspace:*
+        version: link:../../domain
+
   packages/adapters/publisher-manual:
+    dependencies:
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../application
+      '@yunseo/domain':
+        specifier: workspace:*
+        version: link:../../domain
+
+  packages/adapters/publisher-youtube:
     dependencies:
       '@yunseo/application':
         specifier: workspace:*

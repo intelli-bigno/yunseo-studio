@@ -51,9 +51,13 @@ yunseo-studio/
 | `packages/application` | 빈 모듈 (유스케이스·포트 자리) |
 | `packages/presets-schema` | 동작 — 프리셋 스키마·로더·자리표시자(`TBD`) 탐지 |
 | `packages/adapters/{render-html,publisher-manual,storage}` | 빈 모듈 (MVP 어댑터 3개 자리) |
+| `packages/adapters/publisher-instagram` | 동작(**dry-run 전용**, L5) — Graph API 게시 계획(캐러셀: 컨테이너 생성 → 묶음 → 상태 확인 → 게시 / 단일 이미지 / 릴스)과 규격 위반. 호출 코드·토큰 저장소 없음. 카드 PNG 를 읽는 임시 `PublishSource` 포함 |
+| `packages/adapters/publisher-youtube` | 동작(**dry-run 전용**, L5) — `videos.insert` 재개 가능 업로드 계획(비공개 업로드 → 사람이 공개)과 규격 위반. 호출 코드·토큰 저장소 없음 |
+| `packages/adapters/metrics` | 동작(L5) — 성과 스냅샷·CSV 열 매핑 기억·가져오기 기록을 SQLite 레인 전용 테이블 `l5_*` 로 저장(같은 `STUDIO_DB` 파일). 수동 입력·CSV 만, API 수집 없음 |
 | `apps/cli` | 동작 — `pnpm run validate [--publish]` (프리셋·콘텐츠·금지 표현 검증) |
 | `packages/design-tokens` | 동작 — 대시보드 디자인 토큰(색·서체·간격·컴포넌트)과 CSS 변수 변환, 대비 검사. 외부 의존 0 ([design/final-direction.md](design/final-direction.md)) |
 | `apps/dashboard` | 목업 동작 — 오늘·편성 캘린더·콘텐츠 3종(작성·출처·미리보기·검수)·발행 대기열 + `GET /api/health`. 데이터는 목업, 유스케이스 호출은 M2 |
+| `apps/dashboard` (L5 화면) | 동작 — **성과**(`/performance`: 주별·편별·종별 표, 수동 입력, CSV 가져오기 3단계(열 매핑 확인), 최근 입력 지우기)와 **발행 dry-run 미리보기**(`/publish/[pieceId]?channel=feed\|reels`: 요청 순서·파라미터·예상 할당량·규격 위반·규격 근거). 조립은 `server/studio.ts` 의 `[L5]` 블록 하나 |
 | `apps/worker` | 최소 진입점 — Node 상주 프로세스 + `GET /health`. 잡 큐 소비는 M3 이후 |
 | `apps/worker` (L6) | 스케줄러·작업 등록부(`registry.ts`·`jobs/`) — 일일 백업 03:30 KST·헬스 10분, `/health` 에 마지막·다음 실행, 운영 명령 `ops-cli.ts`(백업·복원) |
 | `packages/adapters/ops` (L6) | SQLite 백업·복원(`VACUUM INTO`·무결성 검사·보존 14), 실행 기록 표 `l6_job_runs`, 백업 목록·로그 꼬리, 서비스 헬스 확인 |

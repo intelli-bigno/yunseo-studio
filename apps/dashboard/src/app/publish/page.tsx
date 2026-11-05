@@ -1,9 +1,10 @@
 // 발행 대기열 — 승인본을 내보내고 기록. MVP 는 수동 게시 — 자동 게시 없음.
 // 렌더 전략: 정적 + 60초 재검증(요청별 입력 없음). 클라이언트 JS 없음.
 import Link from "next/link";
-import { Card, Cell, Grid, Metric, MetricRow, Page, PageHeader, Table, TableHead, TableRow, Text } from "@yunseo/ui";
+import { Card, CardHeader, Cell, Grid, List, ListItem, Metric, MetricRow, Page, PageHeader, Table, TableHead, TableRow, Text } from "@yunseo/ui";
 import { KindMark, QueueChip } from "@/components/ui";
 import { fmtSlot } from "@/lib/format";
+import { CHANNEL_LABEL } from "@/lib/l5";
 import { heroMedia } from "@/lib/media";
 import { studio } from "@/server/studio";
 
@@ -48,6 +49,19 @@ export default async function PublishPage() {
                 </TableRow>
               ))}
             </Table>
+          </Card>
+        </Cell>
+        {/* [L5] 게시 계획(dry-run) 미리보기 — 호출 없이 순서·규격 위반·예상 할당량만 본다 */}
+        <Cell span={12}>
+          <Card>
+            <CardHeader title="dry-run 미리보기" />
+            <List>
+              {rows
+                .filter(({ item }) => item.channel !== "story")
+                .map(({ item, piece }) => (
+                  <ListItem key={`dry-${item.pieceId}-${item.channel}`} as={Link} href={`/publish/${piece.id}?channel=${item.channel}`} title={piece.title} meta={`${CHANNEL_LABEL[item.channel]} · 게시 계획과 규격 위반 보기 (실제 호출 없음)`} />
+                ))}
+            </List>
           </Card>
         </Cell>
       </Grid>
