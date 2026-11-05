@@ -71,8 +71,8 @@ export const typeSteps = Object.keys(type) as TypeStep[];
 export const space = { 0: 0, 1: 4, 2: 8, 3: 12, 4: 16, 5: 24, 6: 32, 7: 48, 8: 64 } as const;
 export type SpaceStep = keyof typeof space;
 
-/** 모서리 — 8 배수 */
-export const radius = { none: 0, sm: 8, md: 16, lg: 24, pill: 999 } as const;
+/** 모서리 — 4 배수, 작게(2026-11-05 「라운드 조금 줄이고」). pill 은 점·원형 버튼·진행 막대에만(라벨 캡슐 금지) */
+export const radius = { none: 0, sm: 4, md: 8, lg: 12, pill: 999 } as const;
 
 /** 정렬 그리드 — 12단, 홈 벤토는 단 수로만 나눈다 */
 export const grid = { columns: 12, gutter: space[5], margin: space[6] } as const;
@@ -85,6 +85,9 @@ export const layout = {
   rail: 360,
   row: 48,
   contentMax: 1440,
+  tile: 216, // 레퍼런스 그리드 한 칸
+  story: 360, // 9:16 플레이어 폭
+  appIcon: 40,
 } as const;
 
 /** 반응형 경계(px) — CSS @media 는 변수를 못 써서 ui 스타일과 테스트가 같은 값을 쓴다 */
@@ -137,7 +140,7 @@ export const motion = {
 
 /** 컴포넌트 치수 — 전부 4 배수 */
 export const component = {
-  chip: { height: 24, padX: 8, radius: radius.sm },
+  chip: { height: 24, padX: 0, radius: radius.none }, // 캡슐 없음 — 점+글자
   button: { height: 40, padX: 16, radius: radius.sm },
   input: { height: 40, padX: 12, radius: radius.sm },
   kbd: { height: 20, padX: 4, radius: 4 },

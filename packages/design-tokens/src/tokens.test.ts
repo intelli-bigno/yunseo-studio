@@ -31,7 +31,7 @@ describe("디자인 토큰 (Club Green)", () => {
 
   it("레이아웃·컴포넌트 치수는 4 배수다", () => {
     for (const v of Object.values(layout)) expect(v % 8).toBe(0);
-    for (const v of Object.values(radius)) if (v !== 999) expect(v % 8).toBe(0);
+    for (const v of Object.values(radius)) if (v !== 999) expect(v % 4).toBe(0);
     for (const spec of Object.values(component)) for (const v of Object.values(spec)) if (typeof v === "number" && v > 2) expect(v % 4).toBe(0);
   });
 

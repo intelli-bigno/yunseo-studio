@@ -34,7 +34,7 @@ export function Outcome({ result }: { result: { outcome: ActionOutcome; n: numbe
           ))}
         </CheckList>
       )}
-      {outcome.conflict && <Text size="label" tone="mute">화면을 새로 고치면 최신 버전을 읽는다 — 고친 내용은 다시 입력해야 한다</Text>}
+      {outcome.conflict && <Text size="label" tone="mute">새로 고치면 최신본 — 고친 내용은 다시 입력</Text>}
     </Stack>
   );
 }

@@ -66,8 +66,20 @@ const transformOf = (dx: number, dy: number, rot: number, scale: number) => `tra
  * 화면 전환 — update 가 새 화면을 그리는 동안 이전 화면은 조각나 흩어지고, 새 화면 조각이 모여든다.
  * origin: 누른 자리(없으면 화면 가운데). 지원하지 않는 브라우저·움직임 줄이기 설정이면 update 만 한다.
  */
+/** 진행 중인 전환 — 다음 이동이 오면 즉시 끊는다(연타·다른 탭 누름이 기다리지 않게) */
+let active: ViewTransition | null = null;
+
+/** 진행 중인 전환을 끊는다. 끊었으면 true */
+export function interruptScene(): boolean {
+  if (!active) return false;
+  active.skipTransition();
+  active = null;
+  return true;
+}
+
 export async function sceneTransition(update: () => Promise<void> | void, origin?: { x: number; y: number }): Promise<void> {
-  if (!canTransition()) {
+  // 전환 중에 또 이동하면 연출을 버리고 새 화면으로 바로 간다
+  if (interruptScene() || !canTransition()) {
     await update();
     return;
   }
@@ -80,10 +92,12 @@ export async function sceneTransition(update: () => Promise<void> | void, origin
     await update();
     fresh = collect("ui-n");
   });
+  active = vt;
   try {
     await vt.ready;
   } catch {
-    // 전환이 건너뛰어졌다(이름 중복·숨은 탭 등) — 화면은 update 로 바뀐다. 붙인 이름은 모두 돌려준다
+    // 전환이 건너뛰어졌다(이름 중복·숨은 탭·다음 이동이 끊음) — 화면은 update 로 바뀐다. 붙인 이름은 모두 돌려준다
+    if (active === vt) active = null;
     await vt.updateCallbackDone.catch(() => undefined);
     release([...old.els, old.title, ...fresh.els, fresh.title]);
     return;
@@ -111,6 +125,7 @@ export async function sceneTransition(update: () => Promise<void> | void, origin
     );
   });
   await vt.finished.catch(() => undefined);
+  if (active === vt) active = null;
   release([...fresh.els, fresh.title]);
 }
 
@@ -118,7 +133,11 @@ export async function sceneTransition(update: () => Promise<void> | void, origin
  * 주소가 target 이 될 때까지(= 새 화면이 그려질 때까지) 기다린다. 상한 후 포기.
  * requestAnimationFrame 은 쓸 수 없다 — 전환의 update 단계에서는 화면 갱신이 멈춰 rAF 가 오지 않는다(2026-11-05 실측: 전환이 멈춤).
  */
-export function waitForUrl(target: string, limitMs = 3000): Promise<void> {
+/**
+ * 상한을 짧게(300ms) 둔다 — 그동안 이전 화면 사진이 멈춰 있으므로, 서버 렌더가 늦으면 기다리지 않고
+ * 새 화면의 자리 표시(loading.tsx 스켈레톤)로 넘어가 전환을 끝낸다.
+ */
+export function waitForUrl(target: string, limitMs = 300): Promise<void> {
   const want = new URL(target, location.href);
   const t0 = performance.now();
   return new Promise((resolve) => {

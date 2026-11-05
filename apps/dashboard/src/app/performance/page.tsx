@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CORE_METRIC_KEYS, METRIC_DEFS, addDays, metricKeysFor, type MetricKey, type MetricPlatform, type MetricValues, type WeekSummary } from "@yunseo/domain";
 import { Badge, Button, Card, CardHeader, Cell, EmptyState, Field, FieldRow, Grid, Input, List, ListItem, Metric, MetricRow, Notice, Page, PageHeader, Segmented, SegmentedItem, Select, Stack, Table, TableHead, TableRow, Text, Textarea, TextLink } from "@yunseo/ui";
+import { PlatformIcon } from "@yunseo/ui";
 import { CsvImport } from "@/components/CsvImport";
 import { KindMark } from "@/components/ui";
 import { fmtDay, fmtWeekRange } from "@/lib/format";
@@ -25,7 +26,7 @@ function WeekCard({ summary }: { summary: WeekSummary }) {
   const { platform, totals, missing } = summary;
   return (
     <Card>
-      <CardHeader title={PLATFORM_LABEL[platform]} action={<Badge tone={totals.pieces > 0 ? "accent" : "neutral"}>{totals.pieces}편 입력</Badge>} />
+      <CardHeader title={<PlatformIcon platform={platform} label />} action={<Badge tone={totals.pieces > 0 ? "accent" : "neutral"}>{totals.pieces}편 입력</Badge>} />
       {totals.pieces === 0 ? (
         <Text tone="mute" block>이 주에 입력된 성과가 없다</Text>
       ) : (
@@ -78,7 +79,7 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
       <Grid>
         {!persisted && (
           <Cell span={12}>
-            <Notice>STUDIO_DB 가 없어 입력한 성과가 메모리에만 있다 — 서버를 끄면 사라진다.</Notice>
+            <Notice>STUDIO_DB 없음 — 메모리에만 저장</Notice>
           </Cell>
         )}
         {q.saved && (
@@ -112,7 +113,7 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
               (["instagram", "youtube"] as const).map((p) =>
                 platformRows(p).length === 0 ? null : (
                   <Stack key={p} gap={2}>
-                    <Text size="title" block>{PLATFORM_LABEL[p]}</Text>
+                    <PlatformIcon platform={p} label />
                     <Table columns={["fill", "sm", ...TABLE_KEYS[p].map(() => "xs" as const), "sm"]}>
                       <TableHead>
                         <span>편</span>
@@ -158,7 +159,7 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
                 {v.kinds.map((k) => (
                   <TableRow key={`${k.kind}-${k.platform}`}>
                     <KindMark kind={k.kind} />
-                    <Text>{PLATFORM_LABEL[k.platform]}</Text>
+                    <PlatformIcon platform={k.platform} label />
                     <Text mono>{k.totals.pieces}</Text>
                     <Text mono>{fmtNum(k.totals.sums.views)}</Text>
                     <Text mono>{fmtNum(k.totals.sums.saved)}</Text>
@@ -168,7 +169,6 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
                   </TableRow>
                 ))}
               </Table>
-              <Text size="label" tone="mute" block>합계는 편별 값을 더한 것이다. 도달·평균 값은 더하면 중복이 생겨 합계에서 뺐다.</Text>
             </Card>
           </Cell>
         )}

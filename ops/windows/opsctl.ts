@@ -144,7 +144,14 @@ async function status(): Promise<number> {
   return bad ? 1 : 0;
 }
 
+/** 2026-11-05 은퇴 — 상주는 WSL Docker(ops/docker). 등록·시작은 YUNSEO_ALLOW_NATIVE=1 일 때만(데이터가 두 곳으로 갈라지지 않게) */
+const RETIRED = ["install", "start", "restart"];
+
 async function main(): Promise<number> {
+  if (RETIRED.includes(cmd) && !dry && process.env.YUNSEO_ALLOW_NATIVE !== "1") {
+    console.error("네이티브 상주는 은퇴했다 — ops/docker/ctl.sh 를 쓴다(되살리려면 YUNSEO_ALLOW_NATIVE=1).");
+    return 3;
+  }
   switch (cmd) {
     case "preflight":
       return preflight();

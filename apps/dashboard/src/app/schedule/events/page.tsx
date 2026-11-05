@@ -55,7 +55,6 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
             </Card>
             <Card>
               <CardHeader title="기계 판독 원천이 없는 곳" />
-              <Text size="label" tone="mute" block>아래 공식 페이지에서 일정을 확인해 직접 넣는다 (페이지를 긁어 오지 않는다).</Text>
               <List>
                 {view.hints.map((h) => (
                   <ListItem key={h.org} as="a" href={h.url} target="_blank" rel="noreferrer" title={h.label} meta={h.url} trailing={<Badge>{h.org}</Badge>} />
@@ -90,7 +89,6 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                 </TableRow>
               ))}
             </Table>
-            <Text size="label" tone="mute" block>수집은 워커 진입점(collect-events)이 한다. 실패하면 이전에 받은 일정은 그대로 둔다.</Text>
           </Card>
 
           <Card>
@@ -131,7 +129,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                 </TableRow>
               ))}
             </Table>
-            {view.upcoming.length === 0 && <Text tone="mute">수집한 일정이 없다 — 워커의 collect-events 를 한 번 돌린다</Text>}
+            {view.upcoming.length === 0 && <Text tone="mute">수집한 일정 없음</Text>}
           </Card>
 
           {view.manual.length > 0 && (

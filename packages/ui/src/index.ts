@@ -5,5 +5,6 @@
 export * from "./layout";
 export * from "./content";
 export * from "./controls";
+export * from "./library";
 export type { Media } from "./media";
 export type { Tone, Gap } from "./poly";

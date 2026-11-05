@@ -66,7 +66,7 @@ export function ReviewPanel({ piece, revision, actor, checklist, contentHash, g3
               )}
             </>
           ) : (
-            <Text size="label" tone="mute">{piece.status === "approved" ? "승인본 — 발행 대기열·업로드 묶음으로. 고칠 곳이 있으면 위 「다음 단계」의 수정 요청" : "검수 중(in_review)일 때 판단한다"}</Text>
+            <Text size="label" tone="mute">{piece.status === "approved" ? "승인본 — 발행 대기열로" : "검수 중일 때 판단"}</Text>
           )}
           <Outcome result={result} />
         </Card>
