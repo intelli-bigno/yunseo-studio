@@ -184,6 +184,25 @@ describe("ffmpeg 가 있는 환경", () => {
     expect(render).not.toContain(`fontsdir=${relFonts}`);
   }, 180_000);
 
+  it("[L9] 저장소 Pretendard(WOFF)를 OTF 로 바꿔 넣어 자막이 경고 없이 Pretendard 로 그려진다", async () => {
+    const dir = join(root, "pretendard");
+    const fontsDir = fileURLToPath(new URL("../../render-html/fonts/", import.meta.url));
+    const logPath = join(dir, "ffmpeg-debug.log");
+    const wrapper = join(dir, "ffmpeg-debug.sh");
+    await mkdir(dir, { recursive: true });
+    // 진짜 ffmpeg 를 한 번 더 debug 로그로 돌려 libass 가 고른 서체를 기록한다(첫 실행의 경고 판정은 원래 로그 수준 그대로)
+    await writeFile(wrapper, `#!/bin/sh\n'${BINS.ffmpegPath}' "$@"; code=$?\ncase "$*" in *subtitles=*) for a do [ "$a" = warning ] && a=debug; set -- "$@" "$a"; shift; done; '${BINS.ffmpegPath}' "$@" >/dev/null 2>>'${logPath}';; esac\nexit $code\n`);
+    await chmod(wrapper, 0o755);
+    const hangul = ["금리가 먼저 움직인다.", "가격은 나중에 따라온다.", "근원 지표를 지켜본다."];
+    const cards = await writeCardFixtures(join(dir, "cards"), COLORS, hangul);
+    const preset: ReelPreset = { ...FAST, subtitle: { ...FAST.subtitle, fontName: "Pretendard", coversHangul: true } };
+    const reel = await createFfmpegReelComposer({ ...BINS, ffmpegPath: wrapper, preset, encoder: ENCODER, fontsDir }).compose(cards, join(dir, "out"));
+    expect(reel.warnings.filter((w) => w.startsWith("reel/ffmpeg-warning")), "서체 로드 경고 없음").toEqual([]);
+    const log = await readFile(logPath, "utf8");
+    expect(log).not.toMatch(/Error opening (memory )?font/i);
+    expect(log, "libass 가 Pretendard 를 골랐다").toMatch(/fontselect: \(Pretendard, \d+, \d+\) -> Pretendard/);
+  }, 180_000);
+
   it("합성이 실패하면 기존 정상 mp4·SRT 를 건드리지 않고 작업 폴더도 남기지 않는다", async () => {
     const dir = join(root, "keep");
     const cards = await writeCardFixtures(join(dir, "cards"), COLORS, ALT);

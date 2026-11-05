@@ -1,6 +1,7 @@
 "use client";
 // [L2] 상태·게이트 행동 — 지금 상태에서 허용된 행동만, 막는 이유와 함께. 누르면 서버가 도메인 규칙으로 다시 판단한다(화면 우회 불가).
-// G3 승인·반려는 검수 탭(ReviewPanel)에서 체크리스트와 함께 한다.
+// G3 승인·반려는 검수 탭(ReviewPanel)에서 체크리스트와 함께 한다. 승인본의 「수정 요청」(02 changes_requested)은 여기서 사유와 함께.
+// [L9] 화면은 편 id 로만 key 를 준다(버전으로 주면 상태 전환마다 새로 마운트되며 이전 패널이 남아 중복 표시됐다).
 import { useState } from "react";
 import type { ActionOption, GateAction } from "@yunseo/domain";
 import { Badge, Button, Card, CardHeader, Check, CheckList, Field, FieldRow, Input, Select, Stack, Text } from "@yunseo/ui";
@@ -19,12 +20,14 @@ const LABEL: Record<GateAction, string> = {
   reject: "G3 반려",
   publish: "발행됨으로 표시",
   reapprove: "G3 다시 승인",
+  request_changes: "수정 요청 — 승인 무효, 작성으로",
 };
 const IN_REVIEW_TAB: GateAction[] = ["approve", "reject", "reapprove"];
 
 export function GatePanel({ pieceId, kind, revision, actor, actions }: { pieceId: string; kind: string; revision: number; actor: string; actions: ActionOption[] }) {
   const [name, setName] = useState(actor);
   const [importance, setImportance] = useState<"major" | "watch">("major");
+  const [reason, setReason] = useState("");
   const { pending, result, run } = useServerAction();
   const shown = actions.filter((a) => !IN_REVIEW_TAB.includes(a.action));
   if (shown.length === 0) return null;
@@ -52,12 +55,27 @@ export function GatePanel({ pieceId, kind, revision, actor, actions }: { pieceId
             <Text size="title">{LABEL[a.action]}</Text>
             <Button
               variant={a.gate ? "primary" : "secondary"}
-              disabled={pending || a.issues.length > 0 || !name.trim()}
-              onClick={() => run(() => gateAction(pieceId, revision, a.action, { actor: name, ...(a.action === "select" && kind !== "research" ? { importance } : {}) }), `${LABEL[a.action]} — 기록됨`)}
+              disabled={pending || a.issues.length > 0 || !name.trim() || (a.action === "request_changes" && !reason.trim())}
+              onClick={() =>
+                run(
+                  () =>
+                    gateAction(pieceId, revision, a.action, {
+                      actor: name,
+                      ...(a.action === "select" && kind !== "research" ? { importance } : {}),
+                      ...(a.action === "request_changes" ? { reason } : {}),
+                    }),
+                  `${LABEL[a.action]} — 기록됨`,
+                )
+              }
             >
-              {a.gate ? `${a.gate} 통과` : "진행"}
+              {a.action === "request_changes" ? "수정 요청" : a.gate ? `${a.gate} 통과` : "진행"}
             </Button>
           </Stack>
+          {a.action === "request_changes" && (
+            <Field label="수정 요청 사유 (필수 — 이력에 남는다)">
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} />
+            </Field>
+          )}
           {a.issues.length > 0 && (
             <CheckList>
               {a.issues.map((m) => (

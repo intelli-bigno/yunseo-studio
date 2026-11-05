@@ -18,6 +18,7 @@ import { DEFAULT_ENCODER, buildFfmpegArgs, type AudioSlot, type EncoderOptions }
 import { reelSpecIssues } from "./ffprobe";
 import { DEFAULT_BINARIES, assertFfmpegReady, probeMedia, runProcess, type FfmpegBinaries } from "./ffmpeg-runner";
 import { readPngSize } from "./png";
+import { isWoff1, sfntExtension, woffToSfnt } from "./woff";
 
 export interface FfmpegReelComposerOptions extends Partial<FfmpegBinaries> {
   preset?: ReelPreset;
@@ -121,10 +122,9 @@ export function createFfmpegReelComposer(options: FfmpegReelComposerOptions = {}
         // [L7] 서체는 작업 폴더의 fonts/ 로 복사해 상대 경로로 넘긴다 — Windows 절대 경로(C:\…)는 필터 값에 쓸 수 없는 글자(: \)가 있다
         let workFonts: string | undefined;
         if (burn && fontsDir !== undefined) {
-          const files = (await readdir(fontsDir)).filter((f) => /\.(?:ttf|otf|ttc|woff2?)$/i.test(f));
-          if (files.length === 0) throw new ReelComposeError("서체 폴더에 서체 파일이 없다", [fontsDir]);
           await mkdir(join(work, "fonts"));
-          for (const f of files) await copyFile(join(fontsDir, f), join(work, "fonts", f));
+          const copied = await stageSubtitleFonts(fontsDir, join(work, "fonts"));
+          if (copied.length === 0) throw new ReelComposeError("서체 폴더에 libass 가 읽을 서체(TTF·OTF·TTC·WOFF1)가 없다", [fontsDir]);
           workFonts = "fonts";
         }
         const args = buildFfmpegArgs({ plan, preset, cardPaths, assName: burn ? "subtitles.ass" : null, fontsDir: workFonts, outPath: workVideo, tracks, encoder });
@@ -163,4 +163,30 @@ export function createFfmpegReelComposer(options: FfmpegReelComposerOptions = {}
       };
     },
   };
+}
+
+/**
+ * [L9] 자막용 서체를 작업 폴더로 옮긴다 — TTF·OTF·TTC 는 그대로 복사, WOFF1 은 SFNT(OTF/TTF)로 무손실 변환해 넣는다.
+ * libass 는 WOFF 를 못 읽어 경고 뒤 다른 서체로 대신 그렸다. WOFF2 는 변환하지 않고 넣지도 않는다(넣으면 같은 경고가 난다).
+ * 같은 이름의 TTF/OTF 가 이미 있으면 WOFF 는 건너뛴다. 넣은 파일 이름을 돌려준다.
+ */
+export async function stageSubtitleFonts(fontsDir: string, dest: string): Promise<string[]> {
+  const names = (await readdir(fontsDir)).sort();
+  const stem = (f: string) => f.replace(/\.[^.]+$/, "").toLowerCase();
+  const direct = names.filter((f) => /\.(?:ttf|otf|ttc)$/i.test(f));
+  const have = new Set(direct.map(stem));
+  const out: string[] = [];
+  for (const f of direct) {
+    await copyFile(join(fontsDir, f), join(dest, f));
+    out.push(f);
+  }
+  for (const f of names.filter((x) => /\.woff$/i.test(x) && !have.has(stem(x)))) {
+    const bytes = await readFile(join(fontsDir, f));
+    if (!isWoff1(bytes)) continue;
+    const sfnt = woffToSfnt(bytes);
+    const name = `${f.replace(/\.woff$/i, "")}${sfntExtension(sfnt)}`;
+    await writeFile(join(dest, name), sfnt);
+    out.push(name);
+  }
+  return out;
 }

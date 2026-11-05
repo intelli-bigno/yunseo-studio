@@ -2,6 +2,7 @@
 // 전부 순수 함수다. 화면·저장소는 이 규칙을 부르기만 하고 우회할 수 없다(04 규칙 5): 허용 안 된 전이·조건 미충족은 예외.
 import { sha256Hex } from "./sha256";
 import { normalizeFields } from "./fields";
+import { documentGateIssues, type GateDocumentContext } from "./document";
 import {
   CHECK_RESULT_STATUSES,
   SCENARIO_OUTCOMES,
@@ -224,6 +225,8 @@ export function validApproval(p: Piece, gate: GateId): Approval | null {
 export interface LinkContext {
   /** 이후 편이 가리키는 이전 편(찾지 못했으면 null, 연결을 보지 않으면 undefined) */
   preIssue?: Piece | null | undefined;
+  /** [L9] 렌더 전 검사 규칙(금지 표현·포맷). 없어도 출처 없는 수치·기준 시점 등 확인 조건은 늘 본다 */
+  document?: GateDocumentContext;
 }
 
 /** 이후 편 ↔ 이전 편 연결 점검 — 누락·모르는 id */
@@ -303,12 +306,14 @@ export function pieceBlockers(p: Piece, ctx: LinkContext = {}): string[] {
     const miss = evidenceMissing(p);
     if (miss.length) out.push(`자료 확보 조건 ${4 - miss.length}/4`);
   }
+  // [L9] 칸이 다 찼으면 렌더 전 검사와 같은 규칙으로 본다 — 렌더에서야 막히던 「출처 없는 수치」를 G2 에서 먼저 막는다
+  if (!out.length) out.push(...documentGateIssues(p, ctx.document));
   return out;
 }
 
 // ───────────────────────────── 상태 기계 ─────────────────────────────
 
-export const GATE_ACTIONS = ["select", "start_draft", "await_evidence", "evidence_ready", "verify", "reopen", "request_review", "approve", "reject", "publish", "reapprove"] as const;
+export const GATE_ACTIONS = ["select", "start_draft", "await_evidence", "evidence_ready", "verify", "reopen", "request_review", "approve", "reject", "publish", "reapprove", "request_changes"] as const;
 export type GateAction = (typeof GATE_ACTIONS)[number];
 
 export interface TransitionRule {
@@ -334,6 +339,8 @@ export const TRANSITIONS: readonly TransitionRule[] = [
   { action: "reject", from: "in_review", to: "drafted", gate: "G3" },
   { action: "publish", from: "approved", to: "published", gate: null },
   { action: "reapprove", from: "published", to: "published", gate: "G3" },
+  // [L9] 02 SOP changes_requested — 승인본을 작성으로 되돌린다. G3 기록은 「반려」로 남아 승인이 무효가 되고, 사유가 필수다
+  { action: "request_changes", from: "approved", to: "drafted", gate: "G3" },
 ];
 
 export function transitionFor(p: Pick<Piece, "status" | "kind">, action: GateAction): TransitionRule | null {
@@ -399,9 +406,15 @@ export function guardIssues(p: Piece, action: GateAction, input: Partial<ActionI
       if (action === "reapprove") {
         if (validApproval(p, "G3")) out.push("이미 지금 내용으로 승인됨");
         out.push(...pieceBlockers(p, ctx));
-      }
+      } else out.push(...documentGateIssues(p, ctx.document)); // [L9] G3 승인 전 점검 = 렌더 전 검사
       break;
     }
+    case "request_review":
+      out.push(...documentGateIssues(p, ctx.document));
+      break;
+    case "request_changes":
+      if (!input.reason?.trim()) out.push("수정 요청 사유 필수");
+      break;
     case "reject":
       if (!input.reason?.trim()) out.push("반려 사유 필수");
       break;
@@ -430,10 +443,11 @@ export function applyAction(p: Piece, action: GateAction, input: ActionInput, ct
   if (action === "select" && input.importance) next.importance = input.importance;
   const hash = contentHash(next);
   const approval: Approval | null = rule.gate
-    ? { gate: rule.gate, decision: action === "reject" ? "rejected" : "approved", actor: input.actor.trim(), at: input.at, contentHash: hash, note: input.reason?.trim() || null }
+    ? { gate: rule.gate, decision: action === "reject" || action === "request_changes" ? "rejected" : "approved", actor: input.actor.trim(), at: input.at, contentHash: hash, note: input.reason?.trim() || null }
     : null;
   if (approval) next.approvals = [...(p.approvals ?? []), approval];
   if (rule.gate === "G3" && approval?.decision === "approved") next.hash = hash.slice(0, 8);
+  if (action === "request_changes") delete next.hash;
   return { piece: refresh(next, ctx), approval, summary: `${action}: ${p.status} → ${rule.to}` };
 }
 
@@ -451,7 +465,7 @@ export function availableActions(p: Piece, ctx: LinkContext = {}, input: Partial
     action: t.action,
     gate: t.gate,
     to: t.to,
-    issues: guardIssues(p, t.action, { checklist: g3Checklist(p.kind).map(() => true), ...input }, ctx).filter((m) => !m.startsWith("체크리스트") && m !== "반려 사유 필수"),
+    issues: guardIssues(p, t.action, { checklist: g3Checklist(p.kind).map(() => true), ...input }, ctx).filter((m) => !m.startsWith("체크리스트") && m !== "반려 사유 필수" && m !== "수정 요청 사유 필수"),
   }));
 }
 

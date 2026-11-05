@@ -2,7 +2,7 @@
 // 검수 (G3) — 전 항목 체크 뒤 승인, 반려는 사유 필수. [L2] 판단은 서버(도메인 규칙)가 다시 한다 — 승인은 지금 내용 해시를 기록하고, 내용이 바뀌면 무효.
 import { useState } from "react";
 import type { Approval, Piece } from "@yunseo/domain";
-import { Badge, Button, Card, CardHeader, Checkbox, Done, Input, List, Metric, Notice, Split, Stack, Text } from "@yunseo/ui";
+import { Badge, Button, Card, CardHeader, Check, CheckList, Checkbox, Done, Input, List, Metric, Notice, Split, Stack, Text } from "@yunseo/ui";
 import { gateAction } from "@/app/content/actions";
 import { Outcome, useServerAction } from "./AuthoringKit";
 
@@ -15,9 +15,11 @@ export interface ReviewProps {
   g3: { last: Approval | null; valid: boolean };
   /** 이후 편이면 나란히 볼 이전 편 */
   preIssue: Piece | null;
+  /** [L9] G3 승인 전 점검(렌더 전 검사와 같은 규칙) — 비어 있지 않으면 승인 버튼이 막힌다. 서버가 다시 판단한다 */
+  issues?: string[];
 }
 
-export function ReviewPanel({ piece, revision, actor, checklist, contentHash, g3, preIssue }: ReviewProps) {
+export function ReviewPanel({ piece, revision, actor, checklist, contentHash, g3, preIssue, issues = [] }: ReviewProps) {
   const [checked, setChecked] = useState<boolean[]>(() => checklist.map(() => false));
   const [reason, setReason] = useState("");
   const [name, setName] = useState(actor);
@@ -44,7 +46,14 @@ export function ReviewPanel({ piece, revision, actor, checklist, contentHash, g3
           {open ? (
             <>
               <Input placeholder="확인자" value={name} onChange={(e) => setName(e.target.value)} />
-              <Button variant="primary" block disabled={!all || pending || !name.trim()} onClick={() => run(() => gateAction(piece.id, revision, canApprove ? "approve" : "reapprove", { actor: name, checklist: checked }), "승인 기록됨")}>
+              {issues.length > 0 && (
+                <CheckList>
+                  {issues.map((m) => (
+                    <Check key={m} ok={false}>{m}</Check>
+                  ))}
+                </CheckList>
+              )}
+              <Button variant="primary" block disabled={!all || pending || !name.trim() || issues.length > 0} onClick={() => run(() => gateAction(piece.id, revision, canApprove ? "approve" : "reapprove", { actor: name, checklist: checked }), "승인 기록됨")}>
                 {canApprove ? "승인" : "다시 승인"}
               </Button>
               {canApprove && (
@@ -57,7 +66,7 @@ export function ReviewPanel({ piece, revision, actor, checklist, contentHash, g3
               )}
             </>
           ) : (
-            <Text size="label" tone="mute">{piece.status === "approved" ? "승인본 — 발행 대기열·업로드 묶음으로" : "검수 중(in_review)일 때 판단한다"}</Text>
+            <Text size="label" tone="mute">{piece.status === "approved" ? "승인본 — 발행 대기열·업로드 묶음으로. 고칠 곳이 있으면 위 「다음 단계」의 수정 요청" : "검수 중(in_review)일 때 판단한다"}</Text>
           )}
           <Outcome result={result} />
         </Card>
