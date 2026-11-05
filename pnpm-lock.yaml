@@ -53,6 +53,9 @@ importers:
       '@yunseo/adapters-publisher-instagram':
         specifier: workspace:*
         version: link:../../packages/adapters/publisher-instagram
+      '@yunseo/adapters-publisher-manual':
+        specifier: workspace:*
+        version: link:../../packages/adapters/publisher-manual
       '@yunseo/adapters-publisher-youtube':
         specifier: workspace:*
         version: link:../../packages/adapters/publisher-youtube

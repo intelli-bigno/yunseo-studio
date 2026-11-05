@@ -98,7 +98,52 @@
 | 어댑터 | `packages/adapters/publisher-instagram` | `createInstagramDryRunPlanner`(엔드포인트·순서·파라미터·예상 할당량)·`createCardAssetsPublishSource`(렌더된 카드 PNG → 계약 모양, 임시) |
 | 어댑터 | `packages/adapters/publisher-youtube` | `createYoutubeDryRunPlanner`(재개 가능 업로드 세션 → 파일 → 응답 확인 → 사람이 공개) |
 | 어댑터 | `packages/adapters/metrics` | `MetricsRepository` 의 SQLite 구현 — 레인 전용 테이블 `l5_metric_snapshots`·`l5_csv_imports`·`l5_column_mappings`(같은 `STUDIO_DB` 파일, 기존 테이블은 만지지 않음) |
-| 인프라(조립) | `apps/dashboard/src/server/studio.ts` | 파일 끝 `[L5]` 블록 하나 — `l5()` 가 계획·성과 유스케이스와 금지 표현 규칙(프리셋 로드 결과)을 돌려준다 |
+| 인프라(조립) | `apps/dashboard/src/server/studio.ts` | `[L5]` 블록 하나 — `l5()` 가 계획·성과 유스케이스와 금지 표현 규칙(프리셋 로드 결과)을 돌려준다. 편 저장소는 `[L2]` 의 `sqliteRepo()` 와 같은 연결을 쓴다 |
 | 화면 | `apps/dashboard/src/app/performance`·`publish/[pieceId]` | 서버 컴포넌트가 `l5()` 결과만 그린다. 성과 입력은 서버 동작(`actions.ts`)·CSV 섬(`components/CsvImport.tsx`)만 클라이언트 |
 
 경계 점검: `tests/l5-dry-run-guard.test.ts` 가 게시 경로 소스에 네트워크 호출·환경변수·토큰 이름·파일 쓰기가 없고, 화면에 비밀번호·토큰 입력 칸이 없으며, 성과 어댑터가 `l5_` 테이블만 만지고, `docs/05` §5.8 이 `evidence.ts` 와 어긋나지 않는지를 고정한다.
+
+## 구현 현황 — [L2] 쓰기 길: 작성·검수·업로드 묶음 (2026-11-05)
+
+화면(서버 액션) → 쓰기 유스케이스(`application/src/authoring`) → 도메인 규칙(`domain/src/story/authoring.ts`) → `AuthoringStore` 포트 → SQLite. **판단은 전부 도메인**이고, 유스케이스는 읽고 → 규칙 적용 → 원자적으로 저장만 한다. 화면·서버 액션이 규칙을 건너뛸 길은 없다(04 규칙 5).
+
+### 상태 기계 (02 SOP) — `TRANSITIONS` 표 밖의 (상태, 행동)은 전부 예외
+
+| 행동 | 전이 | 게이트 | 조건(도메인이 강제) |
+| --- | --- | --- | --- |
+| `select` | idea → selected | **G1** | 핵심 관점 한 문장, ①② 는 중요도 `major`(watch 는 피드 편성 없음), 누른 사람 |
+| `start_draft` | selected → drafted | — | |
+| `await_evidence` · `evidence_ready` | selected → evidence_wait → drafted | — | ② 만. 자료 확보 4조건(01 §4.3) 전부 참 |
+| `verify` | drafted → verified | **G2** | `pieceBlockers` 비어 있음 — 빈 단·관점·문장별 출처/기준 시점·사람 확인·근거 없는 해석·①시나리오 2+/확인할 것 1+·②이전 편 시나리오 전부 응답·확인 항목 전부 처리·자료 확보 |
+| `reopen` · `request_review` | verified → drafted / in_review | — | |
+| `approve` · `reject` | in_review → approved / drafted | **G3** | 승인: 체크리스트(02 §5.3) 전 항목 + 지금 내용과 맞는 G2 기록. 반려: 사유 필수 |
+| `publish` | approved → published | — | 지금 내용 해시와 같은 G3 승인 |
+| `reapprove` | published → published | **G3** | 발행 뒤 수정으로 풀린 승인을 다시 — 체크리스트 + G2 조건 |
+
+- 02 상태도의 `rendered`·`changes_requested` 는 **상태로 두지 않았다**: 렌더는 게이트가 아닌 산출물(파이프라인 기록)이고, 반려는 사유를 남기고 작성(drafted)으로 되돌린다. `scheduled`·`measured` 는 발행·성과 레인 몫.
+- **승인(Approval)** = 게이트·결정·사람·시각·**승인 대상 내용 해시**(`contentHash` — 제목·관점·단·문장·시나리오·응답의 정렬 JSON 의 SHA-256, 도메인 순수 구현). 상태·확인 표시·게시 예정 시각·자료 확보 체크는 해시에 넣지 않는다.
+- **승인 무효**: 검증 뒤(verified·in_review·approved) 내용이 바뀐 저장은 작성 단계로 돌아가고 G2·G3 가 풀린다. 발행된 편은 상태를 두고 G3 만 풀린다(대기열 「불일치」) — 이유·변경 종류(정정·갱신·명확화)·독자 문구(정정·갱신)·후속 게시물/기한(갱신) 필수(01 §6).
+- **출처·기준 시점**: 사실·시장 반응, 그리고 수치·날짜가 든 조사 문장은 URL(형식만 — 접속 안 함)·접근일·원문 인용·분 단위 `as_of` 없이는 사람 확인(`confirmClaim`)도 G2 도 안 된다. 해석은 `based_on`(근거 사실 id) 필수. 확인 표시는 편집으로 켤 수 없고, 바뀐 문장만 확인이 풀린다.
+- **이전 ↔ 이후 연결**: 이후 편은 `preIssueId` 로 이전 편을, 응답은 이전 편의 안정 id(`scenarios[].id`·`checks[].id`)로 가리킨다. 없는 id·이전 편이 아닌 편은 저장부터 거절, 이후 편이 응답한 시나리오는 이전 편에서 지울 수 없다.
+
+### 저장 — `AuthoringStore` (SQLite 구현: `adapters/storage`)
+
+| 테이블(스키마 v2) | 내용 |
+| --- | --- |
+| `schema_migrations` | 적용한 버전·이름·시각. 열 때 빠진 버전만 쓰기 잠금 안에서 적용(여러 프로세스 안전), 실패하면 되돌림 |
+| `pieces` (+`revision`·`structure`·`created_at`·`updated_at`) | 편. `revision` = 저장 버전 — `UPDATE … WHERE revision = 읽은 값` 으로 **낙관적 동시성**, 어긋나면 `RevisionConflictError` |
+| `piece_revisions` | 저장·게이트 행동·문장 확인마다 한 줄: 버전·시각·사람·종류·이유·독자 문구·후속·바뀐 칸(전/후)·내용 해시·상태 |
+| `approvals` | 게이트 기록(G1~G3, 승인/반려, 내용 해시). 유효성은 읽을 때 지금 해시와 비교 |
+| `pipeline_results` | 렌더·릴스·묶음 결과 + 만든 내용 해시(내용이 바뀌면 낡은 산출물로 묶지 않는다) |
+
+- 편·이력·게이트 기록·대기열 해시는 **한 트랜잭션**으로 쓴다. 쓰기마다 `meta.revision` 이 올라 읽기 캐시가 즉시 낡는다.
+- 저장소를 열 때 시안을 채우지 않는다. 「빈 DB 데모 채우기」 — 콘텐츠 화면 빈 상태 버튼·`pnpm run demo:seed` — 만 비어 있는 저장소에 넣는다(시안의 통과 게이트는 그 내용 해시로 기록).
+- 다른 레인 전용 테이블(`<레인>_` 접두사)은 각 레인 모듈이 `CREATE TABLE IF NOT EXISTS` 로 만든다 — 버전 목록에 넣지 않는다.
+
+### 렌더 → 미리보기 → 업로드 묶음 — 계약 포트로만 (`pipeline/contracts.ts`)
+
+- `createPipelineUseCases({ renderer, reels, packager, files })` — `CardRenderer`(L1)·`ReelComposer`(L3)가 **주입되지 않으면 해당 단계는 비활성 + 이유**(가짜 구현 없음). 조립부(`server/studio.ts` 의 `[L2]` 블록)는 지금 둘 다 `null` 이고, 통합 Worker 가 꽂는다.
+- 렌더 입력은 `toContentBody(piece)`: ① 은 기존 정본 스키마 `pre-issue-5/v1` 검증기를 통과해야 하고, ②·③ 은 공통 봉투 `post-issue-4/v1`·`research-5/v1`(잠정 — 코드 스키마가 생기면 바꾼다).
+- 묶음은 **유효한 G3 승인본 + 지금 내용으로 렌더한 카드**만. `ZipUploadPackager`(publisher-manual)가 렌더 기록의 크기·sha256 과 실제 파일을 대조한 뒤 `cards/NN.png`·`caption.txt`·`hashtags.txt`·`alt-text.txt`·(`reel.mp4`·자막)·`manifest.json`(`upload-bundle/v1`: 파일별 크기·sha256·역할, 경고) 을 zip 으로 묶는다(외부 패키지 없이 `node:zlib`).
+
+검증: 상태 전이 표 전수(3종 × 8상태 × 11행동)·승인 무효화·출처 누락 차단·연결 무결성 — `domain/src/story/authoring.test.ts`, SQLite 계약(마이그레이션·동시성·트랜잭션) — `adapters/storage/src/sqlite-studio-repository.test.ts`, zip 내용 — `adapters/publisher-manual/src/upload-packager.test.ts`, 저장 → 재조회 → 게이트 → 묶음 한 바퀴(실제 SQLite 파일) — `tests/l2-authoring.test.ts`.

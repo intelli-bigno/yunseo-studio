@@ -2,9 +2,9 @@
 // 화면이 부르는 입구(유스케이스)의 결과가 옛 목업 화면과 같은지 — 옛 logic.test.ts 의 기대를 그대로 옮겼다.
 import { afterAll, describe, expect, it } from "vitest";
 import { createStudioUseCases, withReadCache } from "../packages/application/src/index";
-import { createSqliteStudioRepository, SEED_TODAY } from "../packages/adapters/storage/src/index";
+import { createSqliteStudioRepository, DEFAULT_SEED, SEED_TODAY } from "../packages/adapters/storage/src/index";
 
-const sqlite = createSqliteStudioRepository();
+const sqlite = createSqliteStudioRepository({ seed: DEFAULT_SEED });
 const repo = withReadCache(sqlite);
 const uc = createStudioUseCases({ repo, clock: { today: () => SEED_TODAY }, cards: { activeSet: async () => ({ id: "a", label: "", names: [], aspect: "3 / 4" }), read: async () => null } });
 afterAll(() => sqlite.close());
