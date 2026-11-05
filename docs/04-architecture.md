@@ -147,3 +147,22 @@
 - 묶음은 **유효한 G3 승인본 + 지금 내용으로 렌더한 카드**만. `ZipUploadPackager`(publisher-manual)가 렌더 기록의 크기·sha256 과 실제 파일을 대조한 뒤 `cards/NN.png`·`caption.txt`·`hashtags.txt`·`alt-text.txt`·(`reel.mp4`·자막)·`manifest.json`(`upload-bundle/v1`: 파일별 크기·sha256·역할, 경고) 을 zip 으로 묶는다(외부 패키지 없이 `node:zlib`).
 
 검증: 상태 전이 표 전수(3종 × 8상태 × 11행동)·승인 무효화·출처 누락 차단·연결 무결성 — `domain/src/story/authoring.test.ts`, SQLite 계약(마이그레이션·동시성·트랜잭션) — `adapters/storage/src/sqlite-studio-repository.test.ts`, zip 내용 — `adapters/publisher-manual/src/upload-packager.test.ts`, 저장 → 재조회 → 게이트 → 묶음 한 바퀴(실제 SQLite 파일) — `tests/l2-authoring.test.ts`.
+
+## 구현 현황 — 일정 수집(L4, 2026-11-05)
+
+공식 일정 → 중요도 판정 → 편성 캘린더·「이번 주의 변수」가 자동으로 채워지는 길. 새 포트 3개가 이 길을 만든다.
+
+| 계층 | 위치 | 지금 있는 것 |
+| --- | --- | --- |
+| 도메인 | `packages/domain/src/events` | `CalendarEvent`·`StoredEvent`(UTC 저장), 종류 16개와 점검표 기본값, `judgeEventImportance`(02 §3.2), `planEventMerge`(중복 제거·변경 이력·사라짐), `selectEventWeekVariables`·`selectEventCandidates`(KST 날짜로 변환), 수동 입력 안내 URL |
+| 유스케이스 | `packages/application/src/events` | 포트 `EventSource`(원천)·`EventFeed`(저장·판정·이력·실행 기록), 유스케이스 `collectEvents`(원천 실패 격리·0건 응답 거부)·`createEventUseCases`(수집 현황·판정·수동 입력)·`withEventFeed`(StudioRepository 데코레이터) |
+| 유스케이스 | `packages/application/src/drafting` | 포트 `ScriptDrafter`, `draftScript`(꺼짐·금지 표현 block 시 폐기) |
+| 어댑터 | `packages/adapters/events-calendar` | `EventSource` 3개(연준 JSON·BLS ICS·BEA ICS)와 ICS 읽기·시간대 변환, `EventFeed` 의 SQLite 구현 — 테이블은 `l4_events`·`l4_event_history`·`l4_decisions`·`l4_fetch_runs`·`l4_meta`(storage 스키마는 건드리지 않고 같은 DB 파일을 쓴다) |
+| 어댑터 | `packages/adapters/llm` | `ScriptDrafter` 로컬 명령 실행 골격(`execFile`, 셸 없음, 타임아웃·출력 상한) |
+| 인프라(조립) | `apps/dashboard/src/server/studio.ts` (`// [L4]` 블록) | 같은 DB 에 `EventFeed` 를 열고 `withEventFeed` 를 읽기 캐시 안쪽에 끼운다. `events()` 로 일정 유스케이스를 낸다 |
+| 인프라(조립) | `apps/worker/src/collect-events.ts`, `apps/cli/src/events.ts` | 1회 실행 함수와 `events fetch --dry` |
+| 화면 | `/schedule`(후보함·이번 주의 변수), `/schedule/events`(수집 현황·변경 이력·수동 입력) | 판정 버튼은 서버 액션 → 유스케이스. 올릴 때 사유 필수는 도메인 규칙(`eventDecisionIssues`) |
+
+- `withEventFeed` 는 **수집한 일정이 하나도 없으면 원래 저장소의 값을 그대로** 돌려 준다(데모 시안을 채운 DB 면 시안 데이터, 빈 DB 면 빈 목록) — 첫 수집 전에도 화면이 깨지지 않는다. `revision()` 은 원래 값 + 피드 값이라 일정·판정이 바뀌면 읽기 캐시가 바로 낡는다.
+- 어댑터(네트워크)는 `fetch` 를 **주입**받는다. 테스트는 녹화한 응답만 돌려주는 가짜를 쓰고(모르는 주소는 즉시 실패), 계약 테스트(`event-feed.contract.test.ts`)는 메모리·SQLite 두 구현에 같은 시험을 돌린다.
+- 포트 메서드 이름이 `pull` 인 이유: `tests/import-graph.test.ts` 가 application 에서 `fetch(` 문자열을 막는다(포트 뒤로 숨기는 규칙을 문자열로 지킨다).

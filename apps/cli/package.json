@@ -7,6 +7,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@yunseo/adapters-events-calendar": "workspace:*",
+    "@yunseo/application": "workspace:*",
     "@yunseo/domain": "workspace:*",
     "@yunseo/presets-schema": "workspace:*",
     "yaml": "^2.9.1"

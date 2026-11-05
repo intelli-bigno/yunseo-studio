@@ -61,9 +61,17 @@ yunseo-studio/
 | `apps/dashboard` | 동작 — 오늘·편성 캘린더·콘텐츠·발행 대기열 + `GET /api/health`. **[L2] 콘텐츠 화면은 실데이터**: 새 편(3종) · 작성/출처/연결/이력/미리보기·묶음/검수 탭 · 서버 액션 저장(낙관적 동시성) · `GET /api/pieces/<id>/bundle`(zip)·`/cards/<n>`. 시안은 「빈 DB 데모 채우기」로만 |
 | `apps/dashboard` (L5 화면) | 동작 — **성과**(`/performance`: 주별·편별·종별 표, 수동 입력, CSV 가져오기 3단계(열 매핑 확인), 최근 입력 지우기)와 **발행 dry-run 미리보기**(`/publish/[pieceId]?channel=feed\|reels`: 요청 순서·파라미터·예상 할당량·규격 위반·규격 근거). 조립은 `server/studio.ts` 의 `[L5]` 블록 하나 |
 | `apps/worker` | 최소 진입점 — Node 상주 프로세스 + `GET /health`. 잡 큐 소비는 M3 이후 |
+| `packages/adapters/{render-html,publisher-manual,storage}` | 빈 모듈 (MVP 어댑터 3개 자리) |
+| `apps/cli` | 동작 — `pnpm run validate [--publish]` (프리셋·콘텐츠·금지 표현 검증), `events fetch --dry` (공식 일정을 받아 저장 없이 개수 보고) |
+| `packages/design-tokens` | 동작 — 대시보드 디자인 토큰(색·서체·간격·컴포넌트)과 CSS 변수 변환, 대비 검사. 외부 의존 0 ([design/final-direction.md](design/final-direction.md)) |
+| `apps/dashboard` | 목업 동작 — 오늘·편성 캘린더·콘텐츠 3종(작성·출처·미리보기·검수)·발행 대기열 + `GET /api/health`. 데이터는 목업, 유스케이스 호출은 M2 |
+| `apps/worker` | 최소 진입점 — Node 상주 프로세스 + `GET /health`. 잡 큐 소비는 M3 이후. 일정 수집 1회 실행 함수 `collectEventsOnce`(`collect-events.ts`, 실행 `pnpm --filter @yunseo/app-worker run collect-events`) — 스케줄 등록은 L6 |
 | `apps/worker` (L6) | 스케줄러·작업 등록부(`registry.ts`·`jobs/`) — 일일 백업 03:30 KST·헬스 10분, `/health` 에 마지막·다음 실행, 운영 명령 `ops-cli.ts`(백업·복원) |
 | `packages/adapters/ops` (L6) | SQLite 백업·복원(`VACUUM INTO`·무결성 검사·보존 14), 실행 기록 표 `l6_job_runs`, 백업 목록·로그 꼬리, 서비스 헬스 확인 |
 | `ops/windows` (L6) | Windows 상주 서비스 — 작업 스케줄러 XML·감시 프로세스·`opsctl`(설치·제거·시작·중지·복원, `--dry-run`)·`deploy.sh`(Git 배포). [10-operations.md](10-operations.md) |
+| `packages/domain/src/events` | 동작 — 일정 모델(UTC 저장·KST 표시)·병합 규칙(중복 제거·변경 이력·사라짐)·중요도 판정(02 §3.2)·편성 변환(후보함·이번 주의 변수) |
+| `packages/adapters/events-calendar` | 동작 — 공식 원천 3개(연준 JSON·BLS ICS·BEA ICS)와 `EventFeed` SQLite 구현(`l4_*` 테이블, 같은 DB 파일). 녹화 응답 픽스처로 계약 테스트 |
+| `packages/adapters/llm` | 골격 — `ScriptDrafter` 로컬 명령 실행 어댑터(기본 꺼짐, 유료 API 없음) |
 | `templates/`, `config/` 패키지 | 아직 만들지 않음 (M1 에서 필요할 때) |
 
 ### 검사 명령

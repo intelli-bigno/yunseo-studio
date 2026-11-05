@@ -1,0 +1,84 @@
+{
+  "events": [
+    {
+      "description": "&lt;p&gt;Two-day meeting, December 8 - 9&lt;/p&gt;&#10;&#10;&lt;p&gt;Press Conference&lt;/p&gt;",
+      "title": "FOMC Meeting",
+      "time": "2:00 p.m.",
+      "month": "2026-12",
+      "days": "9",
+      "type": "FOMC"
+    },
+    {
+      "description": "&lt;p&gt;Two-day meeting, October 27 - 28&lt;/p&gt;&#10;&#10;&lt;p&gt;Press Conference&lt;/p&gt;",
+      "title": "FOMC Meeting",
+      "time": "2:00 p.m.",
+      "month": "2026-10",
+      "days": "28",
+      "type": "FOMC"
+    },
+    {
+      "description": "&lt;p&gt;Meeting of October 27-28&lt;/p&gt;",
+      "title": "FOMC Minutes",
+      "time": "2:00 p.m.",
+      "month": "2026-11",
+      "days": "18",
+      "type": "FOMC"
+    },
+    {
+      "link": "https://www.federalreserve.gov/live-broadcast.htm",
+      "title": "FOMC Press Conference",
+      "time": "2:30 p.m.",
+      "month": "2026-12",
+      "days": "9",
+      "type": "FOMC"
+    },
+    {
+      "title": "Beige Book",
+      "time": "2:00 p.m.",
+      "month": "2026-11",
+      "days": "25",
+      "type": "Beige"
+    },
+    {
+      "title": "G.17 - Industrial Production and Capacity Utilization",
+      "time": "9:15 a.m.",
+      "month": "2026-11",
+      "days": "17",
+      "type": "Stat"
+    },
+    {
+      "title": "H.15 - Selected Interest Rates",
+      "time": "4:15 p.m.",
+      "month": "2026-12",
+      "days": "1, 2, 3, 4, 7, 8, 9, 10, 11, 14, 15, 16, 17, 18, 21, 22, 23, 24, 28, 29, 30, 31",
+      "type": "Stat"
+    },
+    {
+      "description": "Supervision and Regulation",
+      "location": "At the University of Mississippi Banking and Finance Symposium, Oxford, Miss.",
+      "title": "Discussion - Vice Chair for Supervision Michelle W. Bowman",
+      "time": "12:15 p.m.",
+      "month": "2026-11",
+      "days": "6",
+      "type": "Speeches"
+    },
+    {
+      "description": "Conversation with Governor Bowman",
+      "location": "At the Missouri Bankers Association Executive Management Conference (Virtual)",
+      "title": "Discussion -- Governor Michelle W. Bowman",
+      "time": "9:15 a.m.",
+      "month": "",
+      "days": "6",
+      "type": "events"
+    },
+    {}
+  ],
+  "announcement": [
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed Tuesday, January 27, due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all releases as scheduled, including statistical publications.&lt;/p&gt;",
+      "month": "2026-01",
+      "day": "27",
+      "type": "other"
+    }
+  ]
+}
