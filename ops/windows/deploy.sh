@@ -24,6 +24,11 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# 2026-11-05 은퇴: 상주는 WSL Docker 하나(ops/docker). 네이티브 작업 스케줄러 상주를 다시 만들지 않는다 — 데이터가 두 곳으로 갈라진다.
+if [ "${YUNSEO_ALLOW_NATIVE:-0}" != 1 ] && [ "$DRY" = 0 ]; then
+  echo "네이티브 상주는 은퇴했다 — ops/docker/ctl.sh deploy 를 쓴다(되살리려면 YUNSEO_ALLOW_NATIVE=1)." >&2
+  exit 3
+fi
 SHA="$(git rev-parse --verify "${REF}^{commit}")"
 run() {
   printf '+'; printf ' %q' "$@"; printf '\n'

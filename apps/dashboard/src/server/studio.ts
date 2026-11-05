@@ -165,6 +165,8 @@ const kstNow = () => `${new Date(Date.now() + KST_OFFSET_MS).toISOString().slice
 /** 접두사-YYMMDD-무작위 4자 (예: P-261105-k3x9) */
 const nextId = (prefix: string) => `${prefix}-${kstNow().slice(2, 10).replaceAll("-", "")}-${randomBytes(3).toString("hex").slice(0, 4)}`;
 const workDir = () => process.env.STUDIO_WORK_DIR ?? resolve(tmpdir(), "yunseo-studio-work");
+/** 렌더·묶음 산출물 폴더 — 쇼츠 보관함(server/library.ts)이 읽는다 */
+export const studioWorkDir = workDir;
 
 export function authoring(): AuthoringUseCases {
   // [L9] 게이트(G2·G3)가 렌더 전 검사와 같은 규칙(금지 표현·포맷·발행 언어)으로 판단한다 — 프리셋을 못 읽으면 확인 조건만 본다

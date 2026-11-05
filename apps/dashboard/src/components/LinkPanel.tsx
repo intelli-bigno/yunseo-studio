@@ -81,7 +81,7 @@ export function LinkPanel({ piece, revision, actor, preIssue, linkedPosts, art }
       }
     >
       {!preIssue ? (
-        <Notice tone="accent">사전 시나리오 없음 — 소급해서 만든 것처럼 쓰지 않는다. 이전 편을 가리키려면 작성 탭에서 고른다</Notice>
+        <Notice tone="accent">사전 시나리오 없음</Notice>
       ) : (
         <>
           <Card>

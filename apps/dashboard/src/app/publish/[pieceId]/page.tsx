@@ -128,7 +128,7 @@ export default async function DryRunPage({ params, searchParams }: { params: Pro
       />
       <Grid>
         <Cell span={12}>
-          <Notice tone="accent">dry-run — 실제 호출은 하지 않는다. 이 화면은 게시 계획만 보여 주며 토큰·계정 정보를 받지 않는다. 게시는 사람의 승인(G3) 뒤에만 가능하다.</Notice>
+          <Notice tone="accent">dry-run — 게시 계획만, 실제 호출 없음</Notice>
         </Cell>
         {!rules.loaded && (
           <Cell span={12}>

@@ -233,7 +233,7 @@ export function ComposeEditor({ piece, revision, actor, blockers, preIssueOption
       <Card>
         {published && (
           <>
-            <Notice>발행된 편 — 본문을 바꾸면 이유가 이력에 남고 G3 승인이 풀린다(01 §6)</Notice>
+            <Notice>발행된 편 — 바꾸면 G3 승인이 풀린다</Notice>
             <FieldRow>
               <Field label="변경 종류">
                 <Select value={changeKind} onChange={(e) => setChangeKind(e.target.value as ChangeKind | "")}>
@@ -255,7 +255,7 @@ export function ComposeEditor({ piece, revision, actor, blockers, preIssueOption
             </Field>
           </>
         )}
-        {reviewed && dirty && <Notice>내용을 바꿔 저장하면 사실 확인(G2)·발행 판단(G3)이 풀리고 작성 단계로 돌아간다</Notice>}
+        {reviewed && dirty && <Notice>저장하면 G2·G3 가 풀린다</Notice>}
         {!published && (
           <Field label="저장 메모 (선택)">
             <Input value={reason} onChange={(e) => setReason(e.target.value)} />

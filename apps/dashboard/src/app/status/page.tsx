@@ -1,7 +1,8 @@
 // [L6] 운영 — 서비스 상태·예약 작업(마지막·다음 실행)·최근 작업 기록·백업 목록·로그 꼬리. 읽기 전용, 클라이언트 JS 없음.
 // 렌더 전략: 요청마다(상태 화면은 지금 값이어야 한다). 비밀값은 다루지 않는다 — 로그는 정해진 파일 이름만 읽는다.
-import { Badge, Card, CardHeader, Cell, EmptyState, Grid, Metric, MetricRow, Page, PageHeader, Stack, Table, TableHead, TableRow, Text } from "@yunseo/ui";
+import { AppCell, AppGrid, Badge, Card, CardHeader, Cell, EmptyState, Grid, Metric, MetricRow, Page, PageHeader, Stack, Table, TableHead, TableRow, Text } from "@yunseo/ui";
 import { backupStale, fmtBytes, fmtKst, fmtRelative, RUN_LABEL, runTone } from "@/lib/ops-format";
+import { listInstalledApps } from "@/server/library";
 import { ops } from "@/server/studio";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function StatusPage() {
   const v = await ops().getOpsStatus({ runs: 20, logLines: 30 });
   const s = v.summary;
+  const apps = listInstalledApps();
   const now = v.checkedAt;
   return (
     <Page>
@@ -147,6 +149,19 @@ export default async function StatusPage() {
                   ))}
                 </Stack>
               )}
+            </Card>
+          </Cell>
+        ))}
+
+        {apps.map((m) => (
+          <Cell span={12} key={m.machine}>
+            <Card>
+              <CardHeader title={`설치 앱 · ${m.machine}`} action={<Text tone="mute" mono>{m.apps.length}개 · {fmtKst(m.collectedAt)}</Text>} />
+              <AppGrid>
+                {m.apps.map((a) => (
+                  <AppCell key={a.name} name={a.name} src={a.icon ?? undefined} />
+                ))}
+              </AppGrid>
             </Card>
           </Cell>
         ))}
