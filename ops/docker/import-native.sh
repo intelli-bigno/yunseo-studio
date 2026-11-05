@@ -23,7 +23,7 @@ netstat -ano | grep -E "100\.84\.73\.107:(8930|8931) .*LISTENING" && { echo "nat
 # 2) 볼륨으로 옮기기 — 컨테이너를 멈춘 동안 같은 이미지로 볼륨만 붙인 일회용 컨테이너가 복사한다
 run ssh "$HOST" 'wsl.exe -d Ubuntu -- docker stop yunseo-studio'
 if [ "$DRY" = 0 ]; then
-  ssh "$HOST" 'wsl.exe -d Ubuntu -- docker run --rm -i --user node -v yunseo-studio-data:/data -v /mnt/d/Services/yunseo-studio/data:/src:ro -v /mnt/c/Users/yjh99/AppData/Local/Temp/yunseo-studio-work:/work:ro --entrypoint bash yunseo-studio:local -s' < "$here/import-native-inner.sh"
+  ssh "$HOST" 'MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu -- docker run --rm -i --user node -v yunseo-studio-data:/data -v /mnt/d/Services/yunseo-studio/data:/src:ro -v /mnt/c/Users/yjh99/AppData/Local/Temp/yunseo-studio-work:/work:ro --entrypoint bash yunseo-studio:local -s' < "$here/import-native-inner.sh"
 else
   echo "+ docker run --rm (볼륨 복사: ops/docker/import-native-inner.sh)"
 fi
