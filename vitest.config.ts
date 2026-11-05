@@ -10,5 +10,8 @@ export default defineConfig({
     // 「OS can't spawn worker thread」로 워커가 죽는다(2026-11-05 실측) — 워커마다 풀을 작게 한다. 렌더 결과(바이트)에는 영향이 없다.
     env: { RAYON_NUM_THREADS: "2" },
     include: ["{apps,packages}/**/*.test.ts", "tests/**/*.test.ts"],
+    // 동시 워커 상한. 기본은 코어 수(24)만큼 워커를 띄우는데, Windows 실행기의 작업 cgroup 은 pids.max=256 이라
+    // 워커(각 ~10 스레드) + ffmpeg 통합 테스트(릴스 합성)가 겹치면 워커가 시작하다 SIGABRT 로 죽는다(2026-11-05 실측: 테스트 파일 1개가 통째로 실행 안 됨).
+    maxWorkers: 8,
   },
 });
