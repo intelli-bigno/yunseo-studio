@@ -245,6 +245,8 @@ export class SqliteStudioRepository implements StudioRepository, AuthoringStore 
           this.#db.prepare("INSERT INTO queue (position, piece_id, channel, approved_hash, current_hash, posted_url) VALUES (?,?,?,?,?,NULL)").run(position, p.id, "feed", ah, h);
         }
       }
+      // [L9] G3 반려·수정 요청 — 승인이 무효가 됐으니 대기열 행은 다시 「G3 필요」(승인 해시를 비운다)
+      if (approval?.gate === "G3" && approval.decision === "rejected") this.#db.prepare("UPDATE queue SET approved_hash = NULL WHERE piece_id = ? AND posted_url IS NULL").run(p.id);
       this.#q.bump.run();
       return next;
     });

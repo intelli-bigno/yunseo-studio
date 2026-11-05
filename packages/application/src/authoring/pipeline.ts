@@ -125,7 +125,7 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
 
   const outDir = (p: Piece, step: string) => join(workDir, p.id, contentHash(p).slice(0, 12), step);
 
-  return {
+  const api = {
     async status(id: string): Promise<PipelineView> {
       const p = await load(id);
       return plan(p, await store.getPipeline(id), await reelGate());
@@ -181,7 +181,33 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
       const bytes = await files.read(cur.bundle.zip.path);
       return bytes ? { name: cur.bundle.zip.name, bytes } : null;
     },
+
+    /**
+     * [L9] 카드 → 릴스 → 묶음(릴스 포함)을 한 번에 — 이미 지금 내용으로 만든 단계는 건너뛰고, 비활성 단계는 이유를 남기고 넘어간다.
+     * 카드 렌더가 막히면(입력 오류 등) 그 자리에서 멈춘다. 릴스가 묶음보다 먼저라 묶음에 릴스가 들어간다.
+     */
+    async runAll(id: string): Promise<PipelineView & { ran: PipelineStepKey[]; skipped: { key: PipelineStepKey; reason: string }[] }> {
+      const ran: PipelineStepKey[] = [];
+      const skipped: { key: PipelineStepKey; reason: string }[] = [];
+      let view = await api.status(id);
+      for (const key of PIPELINE_ORDER) {
+        const step = view.steps.find((s) => s.key === key)!;
+        if (step.done) continue;
+        if (!step.enabled) {
+          if (key === "render") throw new PipelineStepError(key, step.reason ?? "비활성");
+          skipped.push({ key, reason: step.reason ?? "비활성" });
+          continue;
+        }
+        view = key === "render" ? await api.render(id) : key === "reel" ? await api.composeReel(id) : await api.bundle(id);
+        ran.push(key);
+      }
+      return { ...view, ran, skipped };
+    },
   };
+  return api;
 }
+
+/** 단계 순서 — 카드 렌더 → 릴스 → 업로드 묶음(릴스가 있으면 함께 묶는다) */
+export const PIPELINE_ORDER: readonly PipelineStepKey[] = ["render", "reel", "bundle"];
 
 export type PipelineUseCases = ReturnType<typeof createPipelineUseCases>;

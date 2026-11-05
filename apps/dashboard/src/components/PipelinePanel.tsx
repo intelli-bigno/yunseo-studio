@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Badge, Button, Card, CardFrame, CardHeader, CardStage, Check, CheckList, Notice, Paper, Split, Stack, Text, TextLink, Thumb, Thumbs, type Media } from "@yunseo/ui";
 import { pipelineAction } from "@/app/content/actions";
+import { nextPipelineStep } from "@/lib/pipeline-flow";
 import { Outcome, useServerAction } from "./AuthoringKit";
 
 export interface PipelineStepView {
@@ -30,7 +31,8 @@ const LABEL = { render: "카드 렌더", reel: "릴스 합성", bundle: "업로�
 export function PipelinePanel({ pieceId, steps, stale, documentErrors, cards, caption, hashtags, warnings, bundle }: PipelineProps) {
   const [at, setAt] = useState(0);
   const { pending, result, run } = useServerAction();
-  const next = steps.find((s) => s.enabled && !s.done && s.key !== "reel") ?? steps.find((s) => s.enabled && !s.done);
+  const next = nextPipelineStep(steps);
+  const anyOpen = steps.some((s) => s.enabled && !s.done);
   const cur = cards[at];
 
   return (
@@ -38,15 +40,21 @@ export function PipelinePanel({ pieceId, steps, stale, documentErrors, cards, ca
       rail={
         <Card>
           <CardHeader title="렌더 → 묶음" />
-          <CheckList>
-            {steps.map((s) => (
-              <Check key={s.key} ok={s.done}>
-                {LABEL[s.key]} {s.done ? "완료" : s.enabled ? "가능" : `— ${s.reason}`}
-              </Check>
-            ))}
-          </CheckList>
-          <Button variant="primary" block disabled={!next || pending} onClick={() => next && run(() => pipelineAction(pieceId, next.key), `${LABEL[next.key]} 완료`)}>
-            {pending ? "진행 중" : next ? `${LABEL[next.key]} 실행` : "진행할 단계 없음"}
+          {/* [L9] 단계마다 버튼 — 카드 렌더 뒤 바로 릴스, 그다음 묶음(릴스 포함). 다음 차례 단계만 강조한다 */}
+          {steps.map((s) => (
+            <Stack key={s.key} direction="row" justify="between" align="center">
+              <CheckList>
+                <Check ok={s.done}>
+                  {LABEL[s.key]} {s.done ? "완료" : s.enabled ? "가능" : `— ${s.reason}`}
+                </Check>
+              </CheckList>
+              <Button variant={next?.key === s.key ? "primary" : "secondary"} disabled={!s.enabled || pending} onClick={() => run(() => pipelineAction(pieceId, s.key), `${LABEL[s.key]} 완료`)}>
+                {s.done ? "다시" : "실행"}
+              </Button>
+            </Stack>
+          ))}
+          <Button variant="primary" block disabled={!anyOpen || pending} onClick={() => run(() => pipelineAction(pieceId, "all"), "카드·릴스·묶음 — 가능한 단계 완료")}>
+            {pending ? "진행 중" : "카드·릴스·묶음 한 번에"}
           </Button>
           {bundle && (
             <Stack gap={1}>

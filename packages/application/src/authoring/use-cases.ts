@@ -21,6 +21,7 @@ import {
   type AuthoringKind,
   type EditMeta,
   type GateAction,
+  type GateDocumentContext,
   type GateId,
   type Piece,
   type PiecePatch,
@@ -31,6 +32,8 @@ export interface AuthoringDeps {
   store: AuthoringStore;
   clock: AuthoringClock;
   ids: IdGenerator;
+  /** [L9] 게이트가 쓰는 렌더 전 검사 규칙(금지 표현·포맷·발행 언어). 없어도 출처 없는 수치 등 확인 조건은 도메인이 늘 본다 */
+  document?: GateDocumentContext;
 }
 
 export interface GateRecordView {
@@ -80,7 +83,7 @@ export interface SaveResult {
   changed: number;
 }
 
-export function createAuthoringUseCases({ store, clock, ids }: AuthoringDeps) {
+export function createAuthoringUseCases({ store, clock, ids, document = {} }: AuthoringDeps) {
   const load = async (id: string): Promise<Piece> => {
     const p = await store.loadPiece(id);
     if (!p) throw new PieceNotFoundError(id);
@@ -117,7 +120,7 @@ export function createAuthoringUseCases({ store, clock, ids }: AuthoringDeps) {
       const piece = await store.loadPiece(id);
       if (!piece) return null;
       const pre = await preOf(piece);
-      const ctx = { preIssue: pre ?? null };
+      const ctx = { preIssue: pre ?? null, document };
       const [linkedPosts, pres] = await Promise.all([piece.kind === "pre" ? store.findLinkedPosts(id) : Promise.resolve([]), piece.kind === "post" ? store.listPreIssues() : Promise.resolve([])]);
       const fresh = refresh(piece, ctx);
       const gate = (g: GateId): GateRecordView => ({ last: lastApproval(fresh, g), valid: !!validApproval(fresh, g) });
@@ -143,7 +146,7 @@ export function createAuthoringUseCases({ store, clock, ids }: AuthoringDeps) {
       const nextPre = cmd.patch.preIssueId !== undefined ? (cmd.patch.preIssueId ? await store.loadPiece(cmd.patch.preIssueId) : undefined) : await preOf(before);
       const linkedPosts = before.kind === "pre" ? await store.findLinkedPosts(id) : [];
       const meta: EditMeta = { ...cmd.meta, at };
-      const r = applyEdit(before, cmd.patch, meta, { preIssue: nextPre, linkedPosts });
+      const r = applyEdit(before, cmd.patch, meta, { preIssue: nextPre, linkedPosts, document });
       const changeKind = before.status === "published" ? (cmd.meta.changeKind ?? "edit") : "edit";
       const revision = await store.savePiece({
         piece: r.piece,
@@ -168,7 +171,7 @@ export function createAuthoringUseCases({ store, clock, ids }: AuthoringDeps) {
     async confirmClaim(id: string, cmd: { expectedRevision: number; claimId: string; actor: string }): Promise<{ revision: number }> {
       const before = await load(id);
       const at = clock.now();
-      const next = refresh(confirmClaim(before, cmd.claimId, cmd.actor, at), { preIssue: (await preOf(before)) ?? null });
+      const next = refresh(confirmClaim(before, cmd.claimId, cmd.actor, at), { preIssue: (await preOf(before)) ?? null, document });
       const revision = await store.savePiece({
         piece: next,
         expectedRevision: cmd.expectedRevision,
@@ -183,7 +186,7 @@ export function createAuthoringUseCases({ store, clock, ids }: AuthoringDeps) {
       const before = await load(id);
       const at = clock.now();
       const pre = await preOf(before);
-      const r = applyAction(before, cmd.action, { ...cmd.input, at }, { preIssue: pre ?? null });
+      const r = applyAction(before, cmd.action, { ...cmd.input, at }, { preIssue: pre ?? null, document });
       const revision = await store.savePiece({
         piece: r.piece,
         expectedRevision: cmd.expectedRevision,

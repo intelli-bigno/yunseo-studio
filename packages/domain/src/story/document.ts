@@ -2,7 +2,7 @@
 // 3종 모두 정식 스키마(pre-issue-5/v1 · post-issue-4/v1 · research-5/v1)로 내고, 같은 검증기(validateContentDoc)를 통과해야 ok 다.
 // 단 본문(글)은 「첫 줄 = 카드 제목, 다음 줄부터 점」으로 읽고, 글로 못 채우는 필드는 구조 칸(fields.ts)에서 읽는다.
 import type { Claim } from "../content/claims";
-import { validateContentDoc, type ContentBody } from "../content/document";
+import { contentBlockers, contentVerificationFindings, validateContentDoc, type ContentBody, type ContentRules } from "../content/document";
 import { contentHash, isAuthoringKind, pieceAsOf, type AuthoringKind } from "./authoring";
 import { listColumns, listLines } from "./fields";
 import type { Piece, PieceClaim } from "./model";
@@ -47,10 +47,10 @@ const headed = (body: string) => {
 
 const JUDGMENT: Record<string, string> = { 유지: "kept", 수정: "revised", 폐기: "dropped", kept: "kept", revised: "revised", dropped: "dropped" };
 
-export function toContentBody(p: Piece, options: { language?: string } = {}): DocumentResult {
+export function toContentBody(p: Piece, options: { language?: string; status?: "draft" | "verified" } = {}): DocumentResult {
   if (!isAuthoringKind(p.kind)) return { ok: false, errors: ["스토리 편은 카드 정본이 아님"] };
   const language = options.language ?? "en";
-  const status = p.status === "idea" || p.status === "selected" || p.status === "evidence_wait" || p.status === "drafted" ? "draft" : "verified";
+  const status = options.status ?? (p.status === "idea" || p.status === "selected" || p.status === "evidence_wait" || p.status === "drafted" ? "draft" : "verified");
   const stage = (key: string) => p.stages.find((s) => s.key === key)?.body ?? "";
   const head = (key: string) => lines(stage(key))[0] ?? "";
   const f = (key: string): string | null => p.fields?.[key]?.trim() || null;
@@ -173,4 +173,22 @@ export function toContentBody(p: Piece, options: { language?: string } = {}): Do
 
   const v = validateContentDoc(body);
   return v.ok ? { ok: true, schema: v.value.schema, kind: CONTRACT_KIND[p.kind], body: v.value, contentHash: contentHash(p) } : { ok: false, errors: v.errors };
+}
+
+/** 게이트 판단에 쓰는 렌더 전 검사 규칙(금지 표현·포맷). 없으면 규칙 무관한 확인 조건(출처 없는 수치·기준 시점 등)만 본다 */
+export interface GateDocumentContext {
+  rules?: ContentRules | null;
+  language?: string;
+}
+
+/**
+ * [L9] 렌더 전 검사(contentBlockers)를 게이트에서 먼저 — 이 편이 「확인됨(verified)」 정본이 된다고 보고 막는 이유를 낸다.
+ * G2 통과·G3 승인 조건이다. 렌더에서야 막히던 「출처 없는 수치」 등을 게이트가 먼저 막고 이유를 화면에 보인다.
+ */
+export function documentGateIssues(p: Piece, ctx: GateDocumentContext = {}): string[] {
+  if (!isAuthoringKind(p.kind)) return [];
+  const r = toContentBody(p, { status: "verified", ...(ctx.language ? { language: ctx.language } : {}) });
+  if (!r.ok) return r.errors.map((e) => `정본 형식 · ${e}`);
+  const findings = ctx.rules ? contentBlockers(r.body, ctx.rules).block : contentVerificationFindings(r.body);
+  return [...new Set(findings.map((f) => `렌더 전 검사 · ${f.path}: ${f.message}`))];
 }

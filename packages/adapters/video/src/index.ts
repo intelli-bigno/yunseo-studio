@@ -5,3 +5,4 @@ export * from "./ffmpeg-runner";
 export * from "./ffprobe";
 export * from "./ass";
 export * from "./png";
+export * from "./woff";
