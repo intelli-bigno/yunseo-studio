@@ -41,7 +41,7 @@ ops/docker/ctl.sh backup-now              # /data/backups 에 즉시 백업(VACU
 ```
 
 - 코드는 Git 으로만 옮긴다. 배포는 `git push`(허브) → WSL 에서 `git archive <sha>` → `docker compose build/up`. 빌드가 실패해도 실행 중인 컨테이너는 그대로다. 직전 이미지는 `yunseo-studio:prev` 로 남는다.
-- 컨테이너 안 직접: `ssh windows-desktop 'wsl.exe -d Ubuntu -- docker exec yunseo-worker …'`.
+- 컨테이너 안 직접: `ssh windows-desktop 'wsl.exe -d Ubuntu -- docker exec yunseo-studio …'`.
 
 ## Mac 터널 (Mac 마다 1회)
 
