@@ -5,6 +5,7 @@ export * from "./read-cache";
 export * from "./use-cases";
 export * from "./ops";
 export * from "./pipeline/contracts";
+export * from "./pipeline/manifest";
 export * from "./publishing";
 export * from "./metrics";
 export * from "./authoring";

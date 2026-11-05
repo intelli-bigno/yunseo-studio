@@ -31,8 +31,8 @@ const orNull = (v: unknown): string | null => (v === null || v === undefined ? n
 const j = JSON.stringify;
 
 /** pieces.structure 칸 — 종류별 구조(시나리오·확인 항목·응답·자료 확보·중요도) */
-type Structure = Pick<Piece, "importance" | "scenarios" | "checks" | "scenarioOutcomes" | "checkResults" | "evidence">;
-const STRUCTURE_KEYS = ["importance", "scenarios", "checks", "scenarioOutcomes", "checkResults", "evidence"] as const;
+type Structure = Pick<Piece, "importance" | "scenarios" | "checks" | "scenarioOutcomes" | "checkResults" | "evidence" | "fields">;
+const STRUCTURE_KEYS = ["importance", "scenarios", "checks", "scenarioOutcomes", "checkResults", "evidence", "fields"] as const;
 
 function structureOf(p: Piece): string | null {
   const out: Record<string, unknown> = {};

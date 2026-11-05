@@ -3,20 +3,21 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
+import { PRETENDARD_FAMILY, pretendardDir } from "@yunseo/adapters-render-html/fonts";
 import { FfmpegUnavailableError, ReelComposeError, createFfmpegReelComposer, type AudioSlot } from "@yunseo/adapters-video";
-import type { CardRenderResult, RenderedFile } from "@yunseo/application";
+import { RENDER_MANIFEST, type CardRenderResult, type RenderedFile } from "@yunseo/application";
 import { DEFAULT_REEL_PRESET, REEL_TRANSITIONS, type ReelPreset, type ReelTransitionName } from "@yunseo/domain";
 import type { RunResult } from "./run";
 
 export const REEL_USAGE = [
   "사용법: reel <cards-dir> --out <dir> [옵션]",
-  "  <cards-dir>   카드 PNG 묶음. render-result.json(CardRenderResult)이 있으면 그것을, 없으면 *.png 를 이름순으로 쓴다",
+  "  <cards-dir>   카드 PNG 묶음. render.json(렌더 매니페스트)이 있으면 그것을, 없으면 *.png 를 이름순으로 쓴다",
   "  --out <dir>             산출물(<pieceId>-reel.mp4, .srt) 폴더",
   `  --transition <이름>     ${REEL_TRANSITIONS.join(" | ")} (기본 ${DEFAULT_REEL_PRESET.transition})`,
   "  --subtitles <json>      카드별 자막 문장 배열(JSON). 없으면 카드의 altTexts 첫 문장",
   "  --no-burn               자막을 영상에 새기지 않는다(SRT 만)",
   "  --voice <파일>          음성 트랙(선택, 기본 없음)   --music <파일>   음악 트랙(선택, 기본 없음)",
-  "  --font-name <이름>      번인 서체   --fonts-dir <폴더>   서체 폴더   --covers-hangul   서체가 한글을 그린다고 확인됨",
+  "  --font-name <이름>      번인 서체(기본: 저장소 Pretendard)   --fonts-dir <폴더>   서체 폴더   --covers-hangul   서체가 한글을 그린다고 확인됨",
   "  --encoder-preset <이름> x264 preset (기본 medium, 시안 확인은 ultrafast)",
   "환경 변수: FFMPEG_PATH · FFPROBE_PATH (기본 PATH 의 ffmpeg·ffprobe). 합성은 ffmpeg 가 있는 Windows 실행기에서 한다.",
 ];
@@ -77,7 +78,8 @@ export function parseReelArgs(argv: readonly string[]): ParsedReelArgs {
   return { ok: true, args };
 }
 
-const MANIFEST_NAMES = ["render-result.json", "cards.json", "manifest.json"] as const;
+// render.json = L1 렌더러가 쓰는 정본 매니페스트(@yunseo/application RENDER_MANIFEST). 뒤의 둘은 예전 이름 — 손으로 만든 폴더용
+const MANIFEST_NAMES = [RENDER_MANIFEST, "render-result.json", "cards.json"] as const;
 
 function describe(path: string): RenderedFile {
   const bytes = readFileSync(path);
@@ -105,7 +107,7 @@ export function loadCardSet(cardsDir: string): CardRenderResult {
 
   const collator = new Intl.Collator("en", { numeric: true });
   const pngs = readdirSync(dir).filter((f) => /\.png$/i.test(f)).sort(collator.compare);
-  if (pngs.length === 0) throw new Error(`카드 PNG 가 없다: ${dir} (render-result.json 도 없음)`);
+  if (pngs.length === 0) throw new Error(`카드 PNG 가 없다: ${dir} (render.json 도 없음)`);
   return { pieceId: basename(dir), cards: pngs.map((f) => describe(join(dir, f))), caption: "", hashtags: [], altTexts: [], warnings: [] };
 }
 
@@ -125,7 +127,10 @@ export async function runReel(argv: readonly string[], env: Readonly<Record<stri
     const tracks: AudioSlot[] = [...(a.voice ? [{ role: "voice" as const, path: a.voice }] : []), ...(a.music ? [{ role: "music" as const, path: a.music }] : [])];
     const preset: ReelPreset = {
       ...DEFAULT_REEL_PRESET,
-      subtitle: { ...DEFAULT_REEL_PRESET.subtitle, burnIn: a.burn, coversHangul: a.coversHangul, ...(a.fontName ? { fontName: a.fontName } : {}) },
+      // [L7] 서체를 지정하지 않으면 저장소의 Pretendard(한글 포함)를 쓴다 — 시스템 서체를 설치하지 않는다
+      subtitle: a.fontName
+        ? { ...DEFAULT_REEL_PRESET.subtitle, burnIn: a.burn, coversHangul: a.coversHangul, fontName: a.fontName }
+        : { ...DEFAULT_REEL_PRESET.subtitle, burnIn: a.burn, coversHangul: true, fontName: PRETENDARD_FAMILY },
     };
     const composer = createFfmpegReelComposer({
       ...(env.FFMPEG_PATH ? { ffmpegPath: env.FFMPEG_PATH } : {}),
@@ -133,7 +138,7 @@ export async function runReel(argv: readonly string[], env: Readonly<Record<stri
       preset,
       tracks,
       ...(a.transition ? { transition: a.transition } : {}),
-      ...(a.fontsDir ? { fontsDir: a.fontsDir } : {}),
+      ...(a.fontsDir ? { fontsDir: a.fontsDir } : a.fontName ? {} : { fontsDir: pretendardDir() }),
       ...(a.subtitlesFile ? { subtitleTexts: loadSubtitleTexts(a.subtitlesFile) } : {}),
       ...(a.encoderPreset ? { encoder: { preset: a.encoderPreset } } : {}),
     });

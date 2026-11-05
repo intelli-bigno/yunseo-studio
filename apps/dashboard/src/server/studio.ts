@@ -11,6 +11,13 @@ import { tmpdir } from "node:os";
 import { createBundleFiles, createZipUploadPackager } from "@yunseo/adapters-publisher-manual";
 import { type SqliteStudioRepository } from "@yunseo/adapters-storage";
 import { createAuthoringUseCases, createPipelineUseCases, type AuthoringUseCases, type PipelineUseCases } from "@yunseo/application";
+// [L7] 카드 렌더(L1)·릴스 합성(L3) 조립에 쓰는 것
+import { existsSync } from "node:fs";
+import { createHtmlCardRenderer } from "@yunseo/adapters-render-html/renderer";
+import { PRETENDARD_FAMILY } from "@yunseo/adapters-render-html/fonts";
+import { DEFAULT_BINARIES, assertFfmpegReady, createFfmpegReelComposer } from "@yunseo/adapters-video";
+import type { CardRenderer, ReelComposer } from "@yunseo/application";
+import { DEFAULT_REEL_PRESET } from "@yunseo/domain";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -88,9 +95,9 @@ export function ops(): OpsUseCases {
 // ---- [L5] 게시 계획(dry-run)·성과 — 레인 전용 조립. 화면은 `l5()` 로 유스케이스만 받는다.
 // 위쪽 조립(compose)·studio() 는 건드리지 않고, 같은 DB 파일(STUDIO_DB)에 l5_* 테이블만 더한다. import 도 이 블록에 묶어 둔다.
 import { createSqliteMetricsRepository } from "@yunseo/adapters-metrics";
-import { createCardAssetsPublishSource, createInstagramDryRunPlanner } from "@yunseo/adapters-publisher-instagram";
+import { createInstagramDryRunPlanner } from "@yunseo/adapters-publisher-instagram";
 import { createYoutubeDryRunPlanner } from "@yunseo/adapters-publisher-youtube";
-import { createMetricsUseCases, createPublishPlanUseCases, type MetricsUseCases, type PublishPlanUseCases } from "@yunseo/application";
+import { createMetricsUseCases, createPipelinePublishSource, createPublishPlanUseCases, type MetricsUseCases, type PublishPlanUseCases } from "@yunseo/application";
 import type { BannedExpressionRule } from "@yunseo/domain";
 import { loadPresets } from "@yunseo/presets-schema";
 
@@ -107,10 +114,6 @@ function composeL5(): L5 {
   const path = process.env.STUDIO_DB;
   const here = process.cwd();
   const repo = sqliteRepo(); // [L2] 작성·검수와 같은 저장소 연결 — 메모리 모드에서도 L5 가 L2 가 만든 콘텐츠를 본다(열 때 시안을 채우지 않으므로 따로 열면 서로 비어 보인다)
-  const cards = createFileCardAssets({
-    renderDirs: [resolve(here, "../../docs/design/card-reference/example/render"), resolve(here, "docs/design/card-reference/example/render")],
-    v2Dir: process.env.CARD_V2_DIR,
-  });
 
   let bannedExpressions: readonly BannedExpressionRule[] = [];
   const rules: L5["rules"] = { loaded: false, count: 0, error: null };
@@ -128,7 +131,8 @@ function composeL5(): L5 {
     publish: createPublishPlanUseCases({
       repo,
       clock: clock(),
-      source: createCardAssetsPublishSource({ repo, cards }),
+      // [L7] 실제 렌더 결과 — L2 파이프라인이 지금 내용으로 만든 카드(L1)·릴스(L3). 렌더 전인 편은 「산출물 없음」
+      source: createPipelinePublishSource({ pipeline: pipeline(), files: createBundleFiles(workDir()) }),
       instagram: createInstagramDryRunPlanner({ bannedExpressions }),
       youtube: createYoutubeDryRunPlanner({ bannedExpressions }),
     }),
@@ -148,7 +152,7 @@ export function l5(): L5 {
 // STUDIO_DB(SQLite 파일 경로)를 지정하면 저장이 남고, 없으면 메모리 DB(프로세스가 끝나면 사라짐). 열 때 시안을 채우지 않는다 —
 // 「빈 DB 데모 채우기」(콘텐츠 화면 빈 상태 버튼 · pnpm run demo:seed)로만.
 // STUDIO_OPERATOR = 이력·게이트 기록의 기본 이름(로그인이 생기기 전), STUDIO_WORK_DIR = 렌더·묶음 산출물 폴더.
-// 렌더러(L1)·릴스 합성기(L3)는 아직 주입하지 않는다 — 해당 단계는 화면에 「미주입」 이유와 함께 비활성. 통합 Worker 가 여기서 꽂는다.
+// 렌더러(L1)·릴스 합성기(L3)는 아래 [L7] 블록이 꽂는다.
 const l2 = globalThis as typeof globalThis & { __yunseoSqlite?: SqliteStudioRepository; __yunseoAuthoring?: AuthoringUseCases; __yunseoPipeline?: PipelineUseCases };
 
 function sqliteRepo(): SqliteStudioRepository {
@@ -168,8 +172,79 @@ export function authoring(): AuthoringUseCases {
 
 export function pipeline(): PipelineUseCases {
   const dir = workDir();
-  return (l2.__yunseoPipeline ??= createPipelineUseCases({ store: sqliteRepo(), clock: { now: kstNow }, renderer: null, reels: null, packager: createZipUploadPackager(), files: createBundleFiles(dir), workDir: dir }));
+  const l7 = composeL7();
+  return (l2.__yunseoPipeline ??= createPipelineUseCases({
+    store: sqliteRepo(),
+    clock: { now: kstNow },
+    renderer: l7.renderer,
+    reels: l7.reels,
+    reelsReady: l7.reelsReady,
+    packager: createZipUploadPackager(),
+    files: createBundleFiles(dir),
+    workDir: dir,
+    ...(l7.language ? { language: l7.language } : {}),
+  }));
 }
+
+// [L7] 통합 — 카드 렌더(L1)·릴스 합성(L3)을 L2 파이프라인에 꽂는다. 프리셋(금지 표현·포맷·브랜드·발행 언어)은 저장소 presets/ 에서 읽는다.
+// 서체는 저장소의 Pretendard(packages/adapters/render-html/fonts) — 카드와 릴스 자막이 같은 파일을 쓴다. 시스템 서체를 설치하지 않는다.
+// ffmpeg 는 FFMPEG_PATH·FFPROBE_PATH(없으면 PATH 의 ffmpeg) — 없거나 기능이 빠졌으면 릴스 단계만 이유와 함께 비활성(카드·묶음은 계속).
+interface L7 {
+  renderer: CardRenderer | null;
+  reels: ReelComposer | null;
+  reelsReady: () => Promise<string | null>;
+  language: string | undefined;
+  /** 프리셋을 못 읽어 렌더러를 못 만든 이유 */
+  error: string | null;
+}
+
+const l7Slot = globalThis as typeof globalThis & { __yunseoL7?: L7 };
+
+/** 저장소 루트 — next start 는 apps/dashboard, 저장소 루트에서 띄우면 루트 */
+function repoPath(...rel: string[]): string | null {
+  const here = process.cwd();
+  for (const base of [resolve(here, "../.."), here]) {
+    const p = resolve(base, ...rel);
+    if (existsSync(p)) return p;
+  }
+  return null;
+}
+
+function composeL7(): L7 {
+  if (l7Slot.__yunseoL7) return l7Slot.__yunseoL7;
+  const fontsDir = repoPath("packages", "adapters", "render-html", "fonts") ?? undefined;
+  const bins = { ffmpegPath: process.env.FFMPEG_PATH || DEFAULT_BINARIES.ffmpegPath, ffprobePath: process.env.FFPROBE_PATH || DEFAULT_BINARIES.ffprobePath };
+  const reels = createFfmpegReelComposer({
+    ...bins,
+    preset: { ...DEFAULT_REEL_PRESET, subtitle: { ...DEFAULT_REEL_PRESET.subtitle, fontName: PRETENDARD_FAMILY, coversHangul: true } },
+    ...(fontsDir ? { fontsDir } : {}),
+  });
+  const reelsReady = () => assertFfmpegReady(bins, { burnIn: true }).then(() => null);
+  const presetsDir = repoPath("presets");
+  let out: L7;
+  try {
+    if (!presetsDir) throw new Error("presets 폴더를 찾지 못함");
+    const presets = loadPresets(presetsDir);
+    out = {
+      renderer: createHtmlCardRenderer({
+        rules: { banned: presets.bannedExpressions, formats: presets.formats },
+        brand: { name: presets.brand.name, operator: presets.character.name },
+        ...(fontsDir ? { fontsDir } : {}),
+      }),
+      reels,
+      reelsReady,
+      language: presets.language.publish,
+      error: null,
+    };
+  } catch (error) {
+    // 프리셋이 깨졌으면 렌더러를 꽂지 않는다 — 파이프라인이 「렌더러 미주입」 으로 비활성 처리한다(금지 표현 검사 없는 렌더 금지)
+    out = { renderer: null, reels, reelsReady, language: undefined, error: error instanceof Error ? (error.message.split("\n")[0] ?? "프리셋 오류") : "프리셋 오류" };
+  }
+  return (l7Slot.__yunseoL7 = out);
+}
+
+/** 통합 상태(렌더러를 못 만든 이유) — 화면 안내용 */
+export const pipelineSetupError = (): string | null => composeL7().error;
 
 /** 이력·게이트 기록의 기본 이름 */
 export const operatorName = (): string => process.env.STUDIO_OPERATOR?.trim() || "운영자";

@@ -3,9 +3,9 @@
 // block 이 하나라도 있으면 아무것도 쓰지 않고 거부한다. warn 은 결과의 warnings 에 담는다.
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { CardRenderResult, CardRenderer, ContentDocument, RenderedFile } from "@yunseo/application";
+import { RENDER_MANIFEST, toRenderManifest, type CardRenderResult, type CardRenderer, type ContentDocument, type RenderedFile } from "@yunseo/application";
 import {
   buildPublishText,
   contentBlockers,
@@ -34,6 +34,8 @@ export interface HtmlCardRendererOptions {
   disclosure?: string | null;
   /** 슬롯 이름 → 배경 이미지 파일. 지정이 없으면 토큰 색 배경 */
   backgrounds?: Backgrounds | undefined;
+  /** 서체 폴더(Pretendard WOFF 3종). 없으면 패키지의 fonts/ */
+  fontsDir?: string;
   /** 테스트에서 래스터라이저를 바꿔 끼운다 */
   rasterizer?: Rasterizer;
 }
@@ -82,7 +84,7 @@ function planContext(body: ContentBody, strings: Strings, rules: ContentRules, d
 }
 
 export function createHtmlCardRenderer(options: HtmlCardRendererOptions): CardRenderer {
-  const rasterizer = options.rasterizer ?? createRasterizer();
+  const rasterizer = options.rasterizer ?? createRasterizer(options.fontsDir);
 
   return {
     async render(doc: ContentDocument, outDir: string): Promise<CardRenderResult> {
@@ -115,8 +117,9 @@ export function createHtmlCardRenderer(options: HtmlCardRendererOptions): CardRe
       if (brandName === null) warnings.push("채널 이름이 정해지지 않았다(TBD) — 카드에 자리표시를 그렸다. 게시 전에 확정해야 한다");
       if (body.status === "draft") warnings.push("draft 이므로 카드에 초안 표시를 그렸다 — 게시 불가");
 
-      // 3) 카드 그리기
+      // 3) 카드 그리기 — 같은 폴더에 다시 그리면 이전 렌더의 PNG·매니페스트를 먼저 지운다(장 수가 줄면 옛 카드가 남아 섞인다)
       await mkdir(outDir, { recursive: true });
+      for (const f of await readdir(outDir)) if (/\.png$/i.test(f) || f === RENDER_MANIFEST) await rm(join(outDir, f), { force: true });
       const cards: RenderedFile[] = [];
       const width = String(pages.length).length;
       for (const [index, page] of pages.entries()) {
@@ -133,7 +136,7 @@ export function createHtmlCardRenderer(options: HtmlCardRendererOptions): CardRe
         cards.push({ name, path, bytes: bytes.byteLength, sha256: sha256(bytes) });
       }
 
-      return {
+      const result: CardRenderResult = {
         pieceId: body.id,
         cards,
         caption: publish.caption,
@@ -141,6 +144,9 @@ export function createHtmlCardRenderer(options: HtmlCardRendererOptions): CardRe
         altTexts: pages.map((page, index) => altTextOf(page, index, pages.length, strings)),
         warnings,
       };
+      // 매니페스트(render.json) — 릴스 CLI·사람이 이 폴더만 보고 카드 세트를 읽는다
+      await writeFile(join(outDir, RENDER_MANIFEST), `${JSON.stringify(toRenderManifest(result), null, 2)}\n`);
+      return result;
     },
   };
 }

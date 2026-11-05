@@ -67,6 +67,7 @@
 | 작업 | 일정 | 내용 |
 | --- | --- | --- |
 | `backup` | 매일 03:30 KST, **놓치면 기동 1분 뒤 따라잡기** | `VACUUM INTO` 로 `backups\studio-YYYYMMDD-HHMMSS.db`(KST) 생성 → `integrity_check` 통과 뒤에만 최종 이름 → 최신 14개만 남김 |
+| `collect-events-0610` · `collect-events-1810` | 매일 06:10 · 18:10 KST (`STUDIO_DB` 있을 때만, 따라잡기 없음) | [L7] 공식 일정 수집(L4 `collectEventsOnce`) — 원천 하나라도 실패하면 실패 기록(성공한 원천 반영은 남음) |
 | `health` | 10분마다 | 대시보드 `/api/health` 확인(200 아니면 실패 기록) + 실행 기록 작업별 최근 300개만 남김 |
 
 ### 4.2 백업 방식 (`packages/adapters/ops/src/sqlite-backup.ts`)
@@ -144,3 +145,4 @@ node --import tsx ops/windows/opsctl.ts uninstall           # 작업·방화벽 
 - [미검증] S4U 작업 등록이 이 PC 의 OpenSSH 관리자 세션에서 되는지 — `preflight` 의 admin 항목이 ok 이면 된다. 안 되면 「암호 저장」 방식 대신 로그온 트리거(stt-server 방식)로 바꾸는 선택지가 있고, 그때는 재부팅 뒤 로그온해야 뜬다.
 - [미검증] 실제 재부팅 뒤 자동 시작 — 설치 뒤 Lead 지시로 재부팅 1회 확인.
 - 8925 미리보기 서버 정리, `STUDIO_CLOCK=system` 전환은 Lead 몫.
+- [L7] 대시보드 릴스 합성은 서비스 계정의 PATH 에 ffmpeg 가 있어야 한다(없으면 릴스 단계만 비활성). Windows 네이티브 서비스로 띄울 때 `FFMPEG_PATH`·`FFPROBE_PATH` 를 서비스 정의에 넣을지는 설치 단계(Lead)에서 정한다 — 지금 실측은 WSL 실행기(/usr/bin/ffmpeg 6.1.1)뿐이다. [미검증] 네이티브 Windows `next start` 에서 `@resvg/resvg-js` 외부 모듈 로드.

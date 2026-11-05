@@ -68,10 +68,36 @@ export function SourcesEditor({ piece, revision, actor, art }: { piece: Piece; r
               <Field label="발행처">
                 <Input value={cur.publisher ?? ""} onChange={(e) => set({ publisher: e.target.value || null })} />
               </Field>
+              <Field label="출처 등급">
+                <Select value={cur.tier ?? ""} onChange={(e) => set({ tier: (e.target.value || null) as NonNullable<PieceClaim["tier"]> | null })}>
+                  <option value="">고르기</option>
+                  <option value="primary">1차 자료(기관 원문)</option>
+                  <option value="major_media">주요 언론</option>
+                  <option value="other">그 밖</option>
+                </Select>
+              </Field>
               <Field label="접근일">
                 <Input mono type="date" value={cur.accessedAt ?? ""} onChange={(e) => set({ accessedAt: e.target.value || null })} />
               </Field>
             </FieldRow>
+            {cur.basis === "experienced" && (
+              <FieldRow>
+                <Field label="직접 경험 — 무엇을">
+                  <Input value={cur.experience?.what ?? ""} onChange={(e) => set({ experience: { what: e.target.value, when: cur.experience?.when ?? "", dataLocation: cur.experience?.dataLocation ?? "" } })} />
+                </Field>
+                <Field label="언제">
+                  <Input value={cur.experience?.when ?? ""} onChange={(e) => set({ experience: { what: cur.experience?.what ?? "", when: e.target.value, dataLocation: cur.experience?.dataLocation ?? "" } })} />
+                </Field>
+                <Field label="다시 볼 자료 위치">
+                  <Input value={cur.experience?.dataLocation ?? ""} onChange={(e) => set({ experience: { what: cur.experience?.what ?? "", when: cur.experience?.when ?? "", dataLocation: e.target.value } })} />
+                </Field>
+              </FieldRow>
+            )}
+            {cur.mark === "scenario" && (
+              <Field label="시나리오 조건 (이 경우에만 — 예측 아님)">
+                <Input value={cur.condition ?? ""} onChange={(e) => set({ condition: e.target.value || null })} />
+              </Field>
+            )}
             <Field label="출처 URL (형식만 검사)">
               <Input invalid={claimBlockers(cur, claims).some((m) => m.startsWith("출처 URL"))} value={cur.url ?? ""} placeholder="https://" onChange={(e) => set({ url: e.target.value || null })} />
             </Field>
@@ -109,13 +135,13 @@ export function SourcesEditor({ piece, revision, actor, art }: { piece: Piece; r
               <Button
                 variant="primary"
                 block
-                disabled={pending || dirty || piece.status !== "drafted" || claimBlockers(cur, claims).length > 0}
+                disabled={pending || dirty || (piece.status !== "drafted" && piece.status !== "published") || claimBlockers(cur, claims).length > 0}
                 onClick={() => run(() => confirmClaimAction(piece.id, revision, cur.id, actor), "확인 기록됨")}
               >
                 원문 대조 — 확인
               </Button>
             )}
-            {!cur.verified && (dirty || piece.status !== "drafted") && <Text size="label" tone="mute">{dirty ? "저장한 뒤 확인할 수 있다" : "작성 단계(drafted)에서만 확인한다"}</Text>}
+            {!cur.verified && (dirty || (piece.status !== "drafted" && piece.status !== "published")) && <Text size="label" tone="mute">{dirty ? "저장한 뒤 확인할 수 있다" : "작성 단계(drafted)·발행 뒤 정정에서만 확인한다"}</Text>}
           </Card>
         )
       }

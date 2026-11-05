@@ -95,3 +95,16 @@ pnpm run dev:worker      Node 워커 (기본 4010, PORT 로 변경) — /health
 
 경계는 두 겹으로 강제한다: ESLint `no-restricted-imports`(import 문)와 `tests/boundaries.test.ts`(package.json 선언 의존).
 GitHub Actions(`.github/workflows/ci.yml`)가 PR·main push 마다 `check` 를 돌린다.
+
+## [L7] 통합 배선 (2026-11-05)
+
+| 위치 | 바뀐 것 |
+| --- | --- |
+| `packages/domain/src/story/fields.ts` | 새 파일 — 편의 **구조 칸**(`KIND_FIELDS`): 정본 스키마 필드 중 단 본문(글)으로 못 채우는 것(사건 종류·일시·시간대, 이후 편 실제 결과·판단 갱신·다음 변수, 연구 편 단계·가설·조건·도구 등). 값은 `Piece.fields` |
+| `packages/domain/src/story/document.ts` | `toContentBody` — 3종 모두 정식 스키마(`pre-issue-5/v1`·`post-issue-4/v1`·`research-5/v1`)로 내고 `validateContentDoc` 를 통과해야 ok. claim 은 구분 필드 전부(kind·basis·as_of·출처·tier·based_on·condition·experience·verified_by/at), 시간대 없는 시각은 KST(+09:00) |
+| `packages/application/src/pipeline/manifest.ts` | 카드 렌더 매니페스트 이름·모양 한 곳(`RENDER_MANIFEST = "render.json"`, 모양 = `CardRenderResult`, 카드 경로는 폴더 기준 상대) |
+| `packages/application/src/authoring/publish-source.ts` | `createPipelinePublishSource` — L5 게시 계획 입력 = L2 파이프라인이 지금 내용으로 만든 카드·릴스 |
+| `packages/adapters/render-html/src/fonts.ts` | `PRETENDARD_FAMILY`·`pretendardDir()` — 카드와 릴스 자막이 같은 저장소 서체를 쓴다 |
+| `apps/worker/src/jobs/collect-events.ts` | 일정 수집(L4 `collectEventsOnce`) 하루 2회 작업 |
+| `apps/dashboard` | `server/studio.ts` `[L7]` 블록(렌더러·릴스 합성기 주입), 의존 `@yunseo/adapters-video`·`satori`·`@resvg/resvg-js`, `next.config.ts` `serverExternalPackages` |
+| `tests/l7-integration.test.ts` | E2E(유스케이스 수준): 새 DB → 3종 → G1~G3 → 카드 → 릴스 → zip → dry-run |

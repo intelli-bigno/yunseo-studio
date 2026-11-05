@@ -31,6 +31,12 @@ export interface PieceClaim {
   verifiedAt?: string | null;
   /** [L2] 해석이 서 있는 사실 문장 id(01 §5 based_on) */
   basedOn?: string[];
+  /** [L7] 출처 등급(01 §5 tier) — 조사한 사실·시장 반응은 정본에서 필수 */
+  tier?: "primary" | "major_media" | "other" | null;
+  /** [L7] 시나리오 문장의 조건(01 §5 condition) — 시나리오는 정본에서 필수 */
+  condition?: string | null;
+  /** [L7] 직접 경험의 기록(01 §5 experience) — 직접 경험한 사실·해석은 정본에서 필수: 무엇을·언제·다시 볼 자료 위치 */
+  experience?: { what: string; when: string; dataLocation: string } | null;
 }
 
 export interface Stage {
@@ -69,6 +75,8 @@ export interface Piece {
   checkResults?: CheckResult[];
   /** ② 이후 편 발행 전 자료 확보 조건(01 §4.3, 사람 판단) */
   evidence?: EvidenceReady;
+  /** [L7] 구조 칸(fields.ts KIND_FIELDS) — 정본 스키마 필드 중 단 본문으로 못 채우는 것 */
+  fields?: Record<string, string>;
   /** 게이트 통과 기록(최근 것부터 아님 — 기록 순서). 저장소가 채운다 */
   approvals?: Approval[];
 }

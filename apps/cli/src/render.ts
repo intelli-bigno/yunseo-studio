@@ -73,10 +73,7 @@ export async function runRender(rootDir: string, argv: readonly string[], cwd: s
     await mkdir(outDir, { recursive: true });
     await writeFile(join(outDir, "caption.txt"), `${result.caption}\n`);
     await writeFile(join(outDir, "alt-texts.txt"), `${result.altTexts.map((t, i) => `${i + 1}. ${t}`).join("\n")}\n`);
-    await writeFile(
-      join(outDir, "render.json"),
-      `${JSON.stringify({ pieceId: result.pieceId, cards: result.cards.map(({ name, bytes, sha256 }) => ({ name, bytes, sha256 })), hashtags: result.hashtags, warnings: result.warnings }, null, 2)}\n`,
-    );
+    // render.json(매니페스트)은 렌더러가 쓴다 — 릴스 명령(reel)이 같은 파일을 읽는다
     return {
       code: 0,
       lines: [

@@ -56,6 +56,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@resvg/resvg-js':
+        specifier: ^2.6.2
+        version: 2.6.2
       '@yunseo/adapters-events-calendar':
         specifier: workspace:*
         version: link:../../packages/adapters/events-calendar
@@ -80,6 +83,9 @@ importers:
       '@yunseo/adapters-storage':
         specifier: workspace:*
         version: link:../../packages/adapters/storage
+      '@yunseo/adapters-video':
+        specifier: workspace:*
+        version: link:../../packages/adapters/video
       '@yunseo/application':
         specifier: workspace:*
         version: link:../../packages/application
@@ -104,6 +110,9 @@ importers:
       react-dom:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
+      satori:
+        specifier: ^0.63.2
+        version: 0.63.2
     devDependencies:
       '@types/react':
         specifier: ^19.3.0
