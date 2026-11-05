@@ -180,7 +180,9 @@ describe("SQLite 저장소 (AuthoringStore 계약)", () => {
     const repo = open();
     const p = { ...fresh(), status: "in_review" as const, approvals: [{ gate: "G2" as const, decision: "approved" as const, actor: "윤서", at: who.at, contentHash: contentHash(fresh()), note: null }] };
     await repo.createPiece(p, entry(p));
-    const ok = applyAction(p, "approve", { ...who, checklist: Array(9).fill(true) });
+    // 저장소 계약 시험 — 게이트 규칙(도메인)은 따로 시험한다. 빈 편이라 [L9] 렌더 전 검사에 막히므로 승인 기록을 직접 만든다
+    const approval = { gate: "G3" as const, decision: "approved" as const, actor: "윤서", at: who.at, contentHash: contentHash(p), note: null };
+    const ok = { piece: { ...p, status: "approved" as const, hash: contentHash(p).slice(0, 8), approvals: [...p.approvals, approval] }, approval };
     await repo.savePiece({ piece: ok.piece, expectedRevision: 1, entry: entry(ok.piece), approval: ok.approval });
     const [row] = await repo.listQueue();
     expect(row).toMatchObject({ pieceId: "P-1", channel: "feed", approvedHash: contentHash(p).slice(0, 8), currentHash: contentHash(p).slice(0, 8) });
@@ -188,6 +190,18 @@ describe("SQLite 저장소 (AuthoringStore 계약)", () => {
     await repo.savePiece({ piece: edited, expectedRevision: 2, entry: entry(edited), approval: null });
     const [after] = await repo.listQueue();
     expect(after?.approvedHash).not.toBe(after?.currentHash);
+  });
+
+  it("[L9] G3 반려(수정 요청) 기록이면 대기열 승인 해시를 비운다 — 「G3 필요」로", async () => {
+    const repo = open();
+    const p = fresh();
+    await repo.createPiece(p, entry(p));
+    const yes = { gate: "G3" as const, decision: "approved" as const, actor: "윤서", at: who.at, contentHash: contentHash(p), note: null };
+    await repo.savePiece({ piece: { ...p, status: "approved" }, expectedRevision: 1, entry: entry(p), approval: yes });
+    expect((await repo.listQueue())[0]?.approvedHash).not.toBeNull();
+    const no = { ...yes, decision: "rejected" as const, note: "표현 다시" };
+    await repo.savePiece({ piece: { ...p, status: "drafted" }, expectedRevision: 2, entry: entry(p), approval: no });
+    expect((await repo.listQueue())[0]?.approvedHash).toBeNull();
   });
 
   it("이전 편 ↔ 이후 편 조회", async () => {

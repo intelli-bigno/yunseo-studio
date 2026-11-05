@@ -35,6 +35,7 @@ const fact = (id: string, patch: Partial<PieceClaim> = {}): PieceClaim => ({
   basis: "research",
   text: "발표는 11월 3일이다.",
   publisher: "기관",
+  tier: "primary",
   url: "https://example.org/a",
   quote: "원문 그대로",
   accessedAt: "2026-11-02",
@@ -52,7 +53,8 @@ function readyPre(id = "P-1"): Piece {
     p,
     {
       stages: p.stages.map((s) => ({ key: s.key, body: `${s.title} 본문` })),
-      claims: [fact("c1"), { ...fact("c2"), mark: "view", basis: "experienced", url: null, quote: null, accessedAt: null, publisher: null, text: "재정 속도가 먼저 바뀐다고 본다.", basedOn: ["c1"] }],
+      claims: [fact("c1"), { ...fact("c2"), mark: "view", basis: "experienced", url: null, quote: null, accessedAt: null, publisher: null, text: "재정 속도가 먼저 바뀐다고 본다.", basedOn: ["c1"], experience: { what: "발표 뒤 금리 확인", when: "지난 발표", dataLocation: "운영 노트" } }],
+      fields: { event_kind: "central_bank", event_at: "2026-11-06T14:00", timezone: "America/New_York" },
       scenarios: [
         { id: "s1", label: "A", condition: "조건 A", reading: "읽는 법 A" },
         { id: "s2", label: "B", condition: "조건 B", reading: "읽는 법 B" },
@@ -275,12 +277,28 @@ describe("이전 ↔ 이후 연결 무결성", () => {
     expect(pieceBlockers(a, { preIssue: pre })).toEqual(["이전 편 시나리오 2개 미응답", "이전 편 확인 항목 1개 미처리"]);
     const answered = applyEdit(
       a,
-      { scenarioOutcomes: [{ scenarioId: "s1", outcome: "matched", note: "" }, { scenarioId: "s2", outcome: "diverged", note: "" }], checkResults: [{ checkId: "k1", status: "done", note: "" }] },
+      {
+        scenarioOutcomes: [{ scenarioId: "s1", outcome: "matched", note: "그대로" }, { scenarioId: "s2", outcome: "diverged", note: "빗나감" }],
+        checkResults: [{ checkId: "k1", status: "done", note: "확인함" }],
+        claims: [fact("c1", { mark: "reaction", text: "단기 금리는 거의 그대로였다." })],
+        fields: {
+          event_kind: "central_bank",
+          event_at: "2026-11-06T14:00",
+          timezone: "America/New_York",
+          "result_vs_expectation.actual_result": "동결",
+          "result_vs_expectation.expectation_gap": "예상대로",
+          "judgment_update.items": "유지 | 표현이 경로를 정한다 | 같은 어조 | c1",
+          "next_variables.items": "다음 물가 | 어조를 시험 | 공식 일정",
+        },
+      },
       who,
       { preIssue: pre },
     ).piece;
-    expect(pieceBlockers(answered, { preIssue: pre })).toEqual([]);
-    expect(applyAction(answered, "verify", who, { preIssue: pre }).piece.status).toBe("verified");
+    expect(pieceBlockers(answered, { preIssue: pre })).toEqual(["사람 확인 전 문장 1개"]);
+    const checked = confirmClaim(answered, "c1", "윤서", AT);
+    // 연결 조건이 채워지면 렌더 전 검사(정본 형식·출처 없는 수치 등)만 남는다 — 이것도 비어야 G2 통과
+    expect(pieceBlockers(checked, { preIssue: pre })).toEqual([]);
+    expect(applyAction(checked, "verify", who, { preIssue: pre }).piece.status).toBe("verified");
   });
 
   it("이전 편에 없는 id 로 응답하거나 없는 이전 편을 가리키면 저장이 막힌다", () => {
@@ -382,5 +400,66 @@ describe("렌더 입력(콘텐츠 정본 본문)", () => {
     const edited = applyEdit(p, { claims: p.claims.map((c) => (c.id === "c1" ? { ...c, text: "발표는 11월 4일이다." } : c)) }, { ...who, reason: "날짜 오류", changeKind: "correction", readerNote: "날짜를 바로잡았습니다" }).piece;
     expect(edited.claims.find((c) => c.id === "c1")?.verified).toBe(false);
     expect(confirmClaim(edited, "c1", "윤서", AT).claims.find((c) => c.id === "c1")?.verified).toBe(true);
+  });
+});
+
+describe("[L9] 렌더 전 검사를 게이트에서 먼저 (P-261105-6b8d 재현)", () => {
+  /** 본문에 출처 문장에 없는 수치(0.3%)를 넣은 편 — 예전엔 G2·G3 를 지나 렌더에서야 막혔다 */
+  const unsourced = () => {
+    const p = readyPre();
+    return applyEdit(p, { stages: p.stages.map((s, i) => ({ key: s.key, body: i === 0 ? "왜 중요한가\n근원 물가가 0.3% 오르면 시험대다" : s.body })) }, who).piece;
+  };
+  const confirmed = (p: Piece) => p.claims.reduce((x, c) => confirmClaim(x, c.id, "윤서", AT), p);
+
+  it("G2: 출처 없는 수치가 있으면 사실 확인 통과가 막히고 이유가 보인다", () => {
+    const p = confirmed(unsourced());
+    const issues = pieceBlockers(p);
+    expect(issues.some((m) => m.includes("렌더 전 검사") && m.includes("출처 없는 수치"))).toBe(true);
+    expect(deriveGates(p).G2).toBe("blocked");
+    expect(p.blocker ?? "").toMatch(/G2/);
+    expect(() => applyAction(p, "verify", who)).toThrow(/출처 없는 수치/);
+    expect(availableActions(p).find((a) => a.action === "verify")?.issues.some((m) => m.includes("출처 없는 수치"))).toBe(true);
+  });
+
+  it("G2: 수치를 출처 문장에 넣으면 통과한다", () => {
+    const p = unsourced();
+    const sourced = confirmed(applyEdit(p, { claims: p.claims.map((c) => (c.id === "c1" ? { ...c, text: "근원 물가는 0.3% 올랐다(11월 3일 발표)." } : c)) }, who).piece);
+    expect(pieceBlockers(sourced)).toEqual([]);
+    expect(applyAction(sourced, "verify", who).piece.status).toBe("verified");
+  });
+
+  it("G3: 승인 전 점검은 프리셋 규칙(금지 표현 block)으로도 막는다 — 화면 우회 불가", () => {
+    const rules = { banned: [{ id: "t-1", terms: ["본문"], surfaces: ["body" as const], severity: "block" as const, origin: "brief" as const, reason: "시험" }], formats: [] };
+    const inReview = applyAction(applyAction(readyPre(), "verify", who).piece, "request_review", who).piece;
+    expect(() => applyAction(inReview, "approve", { ...who, checklist: allChecked("pre") }, { document: { rules } })).toThrow(/금지 표현/);
+    expect(availableActions(inReview, { document: { rules } }).find((a) => a.action === "approve")?.issues.some((m) => m.includes("금지 표현"))).toBe(true);
+    expect(() => applyAction(applyAction(readyPre(), "verify", who).piece, "request_review", who, { document: { rules } })).toThrow(/금지 표현/);
+    expect(applyAction(inReview, "approve", { ...who, checklist: allChecked("pre") }).piece.status).toBe("approved");
+  });
+});
+
+describe("[L9] 수정 요청(request_changes) — 승인본을 작성으로", () => {
+  it("사유 필수, G3 는 반려 기록으로 무효, 상태는 작성, 승인 해시 표시는 지운다", () => {
+    const approved = toApproved(readyPre());
+    expect(transitionFor(approved, "request_changes")).toMatchObject({ from: "approved", to: "drafted", gate: "G3" });
+    expect(availableActions(approved).map((a) => a.action)).toEqual(["publish", "request_changes"]);
+    expect(availableActions(approved).find((a) => a.action === "request_changes")?.issues).toEqual([]);
+    expect(() => applyAction(approved, "request_changes", who)).toThrow(/수정 요청 사유 필수/);
+    const r = applyAction(approved, "request_changes", { ...who, reason: "수치 표현 다시" });
+    expect(r.piece.status).toBe("drafted");
+    expect(r.approval).toMatchObject({ gate: "G3", decision: "rejected", note: "수치 표현 다시", actor: "윤서" });
+    expect(validApproval(r.piece, "G3")).toBeNull();
+    expect(r.piece.hash).toBeUndefined();
+    expect(r.piece.approvals!.filter((a) => a.gate === "G3").map((a) => a.decision)).toEqual(["approved", "rejected"]);
+    expect(() => applyAction({ ...r.piece, status: "approved" }, "publish", who)).toThrow(/G3/);
+    // 다시 G2 → 검수 → 승인 길을 밟는다
+    expect(toApproved(r.piece).status).toBe("approved");
+  });
+
+  it("승인본이 아니면 수정 요청 불가(검수 중은 반려, 발행 뒤는 정정)", () => {
+    const inReview = applyAction(applyAction(readyPre(), "verify", who).piece, "request_review", who).piece;
+    expect(() => applyAction(inReview, "request_changes", { ...who, reason: "x" })).toThrow(/할 수 없음/);
+    const published = applyAction(toApproved(readyPre()), "publish", who).piece;
+    expect(() => applyAction(published, "request_changes", { ...who, reason: "x" })).toThrow(/할 수 없음/);
   });
 });

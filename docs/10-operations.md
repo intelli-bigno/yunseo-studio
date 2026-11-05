@@ -90,6 +90,8 @@
 ## 5. 상태·로그
 
 - 워커 `GET /health` → `{ status, app, startedAt, revision, jobs: [{ name, schedule, lastRun, nextRun, running }] }`.
+- 대시보드 `GET /api/health` → `{ status, app, startedAt, revision }` — [L9] 예전엔 revision 을 싣지 않아 `/status` 대시보드 줄의 배포 커밋·시작이 「—」였다.
+- [L9] 릴스 자막 서체: libass 는 WOFF 를 못 읽는다(Windows 실측 「Error opening memory font Pretendard-*.woff」). 합성기가 저장소 Pretendard WOFF 를 작업 폴더에서 OTF 로 무손실 변환해 `fontsdir` 로 넘긴다(시스템 설치·외부 다운로드 없음, OFL 그대로). 실측 절차: `scripts/reel-font-check.ts` 머리 주석 — 네이티브 ffmpeg 로그에 `fontselect: (Pretendard, 400, 0) -> Pretendard-Regular`.
 - 대시보드 `/status`(메뉴 「운영」): 서비스 2개 헬스(주소·응답 시간·배포 커밋), 예약 작업(마지막·다음 실행), 최근 작업 기록 20건, 백업 목록·총용량, `worker.log`·`dashboard.log` 마지막 30줄. 마지막 백업이 26시간을 넘기면 경고색.
 - 로그 회전: 감시 프로세스가 5MB 직전에 `.log → .log.1 → … → .log.5` 로 민다(서비스당 최대 약 30MB).
 

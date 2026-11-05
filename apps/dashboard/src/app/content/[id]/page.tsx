@@ -13,6 +13,7 @@ import { ReviewPanel } from "@/components/ReviewPanel";
 import { SourcesEditor } from "@/components/SourcesEditor";
 import { GateTrack, KindMark, StatusChip } from "@/components/ui";
 import { fmtSlot } from "@/lib/format";
+import { g3Issues } from "@/lib/gate-view";
 import { emptyMedia } from "@/lib/media";
 import { DETAIL_TAB_LABEL, DETAIL_TABS, isDetailTab, stepTab } from "@/lib/shortcuts";
 import { authoring, operatorName, pipeline } from "@/server/studio";
@@ -66,7 +67,7 @@ export default async function PiecePage({ params, searchParams }: { params: Prom
       />
       {p.viewpoint ? <Text size="title" tone="dim">{p.viewpoint}</Text> : <Notice>핵심 관점 미정 — G1</Notice>}
       {p.blocker && <Notice>× {p.blocker}</Notice>}
-      {p.kind !== "story" && <GatePanel key={`${p.id}-${revision}`} pieceId={p.id} kind={p.kind} revision={revision} actor={actor} actions={view.actions} />}
+      {p.kind !== "story" && <GatePanel key={p.id} pieceId={p.id} kind={p.kind} revision={revision} actor={actor} actions={view.actions} />}
 
       <Tabs prev={href(stepTab(tab, -1))} next={href(stepTab(tab, 1))}>
         {DETAIL_TABS.map((t) => (
@@ -117,7 +118,7 @@ export default async function PiecePage({ params, searchParams }: { params: Prom
           bundle={flow.bundle ? { name: flow.bundle.zip.name, bytes: flow.bundle.zip.bytes, sha256: flow.bundle.zip.sha256 } : null}
         />
       )}
-      {tab === "review" && <ReviewPanel key={`${p.id}-${revision}`} piece={p} revision={revision} actor={actor} checklist={view.checklist} contentHash={view.contentHash} g3={view.gates.G3} preIssue={pre} />}
+      {tab === "review" && <ReviewPanel key={`${p.id}-${revision}`} piece={p} revision={revision} actor={actor} checklist={view.checklist} contentHash={view.contentHash} g3={view.gates.G3} preIssue={pre} issues={g3Issues(view.actions)} />}
     </Page>
   );
 }

@@ -74,12 +74,13 @@ export async function gateAction(id: string, expectedRevision: number, action: G
   }
 }
 
-export async function pipelineAction(id: string, step: "render" | "reel" | "bundle"): Promise<ActionResult> {
+export async function pipelineAction(id: string, step: "render" | "reel" | "bundle" | "all"): Promise<ActionResult> {
   try {
     const p = pipeline();
     if (step === "render") await p.render(id);
     else if (step === "reel") await p.composeReel(id);
-    else await p.bundle(id);
+    else if (step === "bundle") await p.bundle(id);
+    else await p.runAll(id); // [L9] 카드 → 릴스 → 묶음(릴스 포함) 한 번에. 비활성 단계는 화면의 단계 목록이 이유를 보인다
     touched(id);
     return { ok: true };
   } catch (error) {

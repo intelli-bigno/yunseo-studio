@@ -17,7 +17,7 @@ import { createHtmlCardRenderer } from "@yunseo/adapters-render-html/renderer";
 import { PRETENDARD_FAMILY } from "@yunseo/adapters-render-html/fonts";
 import { DEFAULT_BINARIES, assertFfmpegReady, createFfmpegReelComposer } from "@yunseo/adapters-video";
 import type { CardRenderer, ReelComposer } from "@yunseo/application";
-import { DEFAULT_REEL_PRESET } from "@yunseo/domain";
+import { DEFAULT_REEL_PRESET, type ContentRules } from "@yunseo/domain";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -167,7 +167,14 @@ const nextId = (prefix: string) => `${prefix}-${kstNow().slice(2, 10).replaceAll
 const workDir = () => process.env.STUDIO_WORK_DIR ?? resolve(tmpdir(), "yunseo-studio-work");
 
 export function authoring(): AuthoringUseCases {
-  return (l2.__yunseoAuthoring ??= createAuthoringUseCases({ store: sqliteRepo(), clock: { now: kstNow }, ids: { next: nextId } }));
+  // [L9] 게이트(G2·G3)가 렌더 전 검사와 같은 규칙(금지 표현·포맷·발행 언어)으로 판단한다 — 프리셋을 못 읽으면 확인 조건만 본다
+  const l7 = composeL7();
+  return (l2.__yunseoAuthoring ??= createAuthoringUseCases({
+    store: sqliteRepo(),
+    clock: { now: kstNow },
+    ids: { next: nextId },
+    document: { rules: l7.rules, ...(l7.language ? { language: l7.language } : {}) },
+  }));
 }
 
 export function pipeline(): PipelineUseCases {
@@ -194,6 +201,8 @@ interface L7 {
   reels: ReelComposer | null;
   reelsReady: () => Promise<string | null>;
   language: string | undefined;
+  /** 렌더 전 검사 규칙(프리셋) — 게이트도 같은 규칙을 쓴다. 프리셋을 못 읽었으면 null */
+  rules: ContentRules | null;
   /** 프리셋을 못 읽어 렌더러를 못 만든 이유 */
   error: string | null;
 }
@@ -225,9 +234,11 @@ function composeL7(): L7 {
   try {
     if (!presetsDir) throw new Error("presets 폴더를 찾지 못함");
     const presets = loadPresets(presetsDir);
+    const rules: ContentRules = { banned: presets.bannedExpressions, formats: presets.formats };
     out = {
+      rules,
       renderer: createHtmlCardRenderer({
-        rules: { banned: presets.bannedExpressions, formats: presets.formats },
+        rules,
         brand: { name: presets.brand.name, operator: presets.character.name },
         ...(fontsDir ? { fontsDir } : {}),
       }),
@@ -238,7 +249,7 @@ function composeL7(): L7 {
     };
   } catch (error) {
     // 프리셋이 깨졌으면 렌더러를 꽂지 않는다 — 파이프라인이 「렌더러 미주입」 으로 비활성 처리한다(금지 표현 검사 없는 렌더 금지)
-    out = { renderer: null, reels, reelsReady, language: undefined, error: error instanceof Error ? (error.message.split("\n")[0] ?? "프리셋 오류") : "프리셋 오류" };
+    out = { renderer: null, rules: null, reels, reelsReady, language: undefined, error: error instanceof Error ? (error.message.split("\n")[0] ?? "프리셋 오류") : "프리셋 오류" };
   }
   return (l7Slot.__yunseoL7 = out);
 }

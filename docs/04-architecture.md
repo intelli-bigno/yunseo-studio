@@ -114,13 +114,15 @@
 | `select` | idea → selected | **G1** | 핵심 관점 한 문장, ①② 는 중요도 `major`(watch 는 피드 편성 없음), 누른 사람 |
 | `start_draft` | selected → drafted | — | |
 | `await_evidence` · `evidence_ready` | selected → evidence_wait → drafted | — | ② 만. 자료 확보 4조건(01 §4.3) 전부 참 |
-| `verify` | drafted → verified | **G2** | `pieceBlockers` 비어 있음 — 빈 단·관점·문장별 출처/기준 시점·사람 확인·근거 없는 해석·①시나리오 2+/확인할 것 1+·②이전 편 시나리오 전부 응답·확인 항목 전부 처리·자료 확보 |
-| `reopen` · `request_review` | verified → drafted / in_review | — | |
-| `approve` · `reject` | in_review → approved / drafted | **G3** | 승인: 체크리스트(02 §5.3) 전 항목 + 지금 내용과 맞는 G2 기록. 반려: 사유 필수 |
+| `verify` | drafted → verified | **G2** | `pieceBlockers` 비어 있음 — 빈 단·관점·문장별 출처/기준 시점·사람 확인·근거 없는 해석·①시나리오 2+/확인할 것 1+·②이전 편 시나리오 전부 응답·확인 항목 전부 처리·자료 확보 + **[L9] 칸이 다 차면 렌더 전 검사(`documentGateIssues` = `contentBlockers` 의 block — 정본 형식·출처 없는 수치·기준 시점·금지 표현·글자 상한)** |
+| `reopen` · `request_review` | verified → drafted / in_review | — | 검수 요청도 렌더 전 검사가 비어야 |
+| `approve` · `reject` | in_review → approved / drafted | **G3** | 승인: 체크리스트(02 §5.3) 전 항목 + 지금 내용과 맞는 G2 기록 + 렌더 전 검사(프리셋 규칙). 반려: 사유 필수 |
+| `request_changes` | approved → drafted | **G3** | [L9] 02 `changes_requested` — 승인본 수정 요청. 사유 필수, G3 는 「반려」로 기록돼 승인 무효, 대기열 승인 해시도 비운다 |
 | `publish` | approved → published | — | 지금 내용 해시와 같은 G3 승인 |
 | `reapprove` | published → published | **G3** | 발행 뒤 수정으로 풀린 승인을 다시 — 체크리스트 + G2 조건 |
 
-- 02 상태도의 `rendered`·`changes_requested` 는 **상태로 두지 않았다**: 렌더는 게이트가 아닌 산출물(파이프라인 기록)이고, 반려는 사유를 남기고 작성(drafted)으로 되돌린다. `scheduled`·`measured` 는 발행·성과 레인 몫.
+- 02 상태도의 `rendered`·`changes_requested` 는 **상태로 두지 않았다**: 렌더는 게이트가 아닌 산출물(파이프라인 기록)이고, 반려·수정 요청은 사유를 남기고 작성(drafted)으로 되돌린다(다시 G2 → 검수 → G3).
+- [L9] 게이트(G2·G3)는 렌더기와 **같은 규칙**(`contentBlockers`, 프리셋은 조립부가 `document.rules` 로 넘긴다 — 없어도 확인 조건은 늘 본다)으로 막는다. 렌더 단계에서야 「출처 없는 수치」로 막히던 일이 게이트에서 먼저 막히고, 막는 이유가 「다음 단계」·검수 탭에 보인다. `scheduled`·`measured` 는 발행·성과 레인 몫.
 - **승인(Approval)** = 게이트·결정·사람·시각·**승인 대상 내용 해시**(`contentHash` — 제목·관점·단·문장·시나리오·응답의 정렬 JSON 의 SHA-256, 도메인 순수 구현). 상태·확인 표시·게시 예정 시각·자료 확보 체크는 해시에 넣지 않는다.
 - **승인 무효**: 검증 뒤(verified·in_review·approved) 내용이 바뀐 저장은 작성 단계로 돌아가고 G2·G3 가 풀린다. 발행된 편은 상태를 두고 G3 만 풀린다(대기열 「불일치」) — 이유·변경 종류(정정·갱신·명확화)·독자 문구(정정·갱신)·후속 게시물/기한(갱신) 필수(01 §6).
 - **출처·기준 시점**: 사실·시장 반응, 그리고 수치·날짜가 든 조사 문장은 URL(형식만 — 접속 안 함)·접근일·원문 인용·분 단위 `as_of` 없이는 사람 확인(`confirmClaim`)도 G2 도 안 된다. 해석은 `based_on`(근거 사실 id) 필수. 확인 표시는 편집으로 켤 수 없고, 바뀐 문장만 확인이 풀린다.
