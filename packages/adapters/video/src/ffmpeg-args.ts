@@ -88,6 +88,10 @@ export function buildFilterGraph(input: BuildFfmpegInput): string {
     }
   }
 
+  // 끝에 마지막 프레임을 2장 덧붙여 둔다 — 전환 필터가 끝에서 한 프레임을 잃어도 출력 길이(-t)가 계획의 프레임 수를 채운다
+  parts.push(`[${tail}]tpad=stop=2:stop_mode=clone[vt]`);
+  tail = "vt";
+
   // 자막 번인
   if (input.assName !== null) {
     const fontsDir = input.fontsDir === undefined ? "" : `:fontsdir=${filterValue(input.fontsDir, "fontsDir")}`;
@@ -145,6 +149,7 @@ export function buildFfmpegArgs(input: BuildFfmpegInput): string[] {
     "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
   );
   if (audio.map) args.push("-c:a", "aac", "-b:a", `${preset.audio.bitrateKbps}k`, "-ar", String(preset.audio.sampleRate), "-ac", "2");
-  args.push("-t", sec(plan.totalFrames / fps), "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:v", "+bitexact", "-flags:a", "+bitexact", "-movflags", "+faststart", input.outPath);
+  // 반 프레임을 덜어 정확히 totalFrames 장에서 끊는다(-t 는 pts < 값 인 프레임까지 포함하므로 정수 경계에 걸리면 한 장이 더 붙는다)
+  args.push("-t", sec((plan.totalFrames - 0.5) / fps), "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:v", "+bitexact", "-flags:a", "+bitexact", "-movflags", "+faststart", input.outPath);
   return args;
 }

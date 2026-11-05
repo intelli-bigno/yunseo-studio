@@ -31,7 +31,7 @@ describe("ffmpeg 인자 — 입력과 길이", () => {
     expect(after(args, "-c:v")).toBe("libx264");
     expect(after(args, "-pix_fmt")).toBe("yuv420p");
     expect(after(args, "-c:a")).toBe("aac");
-    expect(afterLast(args, "-t")).toBe(String(Number((i.plan.totalFrames / 30).toFixed(4))));
+    expect(afterLast(args, "-t")).toBe(String(Number(((i.plan.totalFrames - 0.5) / 30).toFixed(4)))); // 반 프레임 덜어 정확히 계획의 프레임 수에서 끊는다
     expect(args.at(-1)).toBe("/out/reel.mp4");
     expect(args).toContain("-movflags");
   });
@@ -101,13 +101,17 @@ describe("ffmpeg 필터 — 전환 프리셋", () => {
   it("한 장뿐이면 잇지 않는다", () => {
     const plan = planReel([{ text: "Only." }], P);
     const graph = buildFilterGraph({ plan, preset: P, cardPaths: ["/a.png"], assName: null, outPath: "/o.mp4" });
-    expect(graph).toContain("[v0]format=yuv420p[vout]");
+    expect(graph).toContain("[v0]tpad=stop=2:stop_mode=clone[vt];[vt]format=yuv420p[vout]");
+  });
+
+  it("끝에 마지막 프레임을 덧붙여 전환 필터의 한 프레임 손실을 막는다", () => {
+    expect(buildFilterGraph(input())).toMatch(/xfade=[^;]*\[vx\];\[vx\]tpad=stop=2:stop_mode=clone\[vt\];\[vt\]subtitles=/);
   });
 });
 
 describe("ffmpeg 필터 — 자막", () => {
   it("번인이면 ASS 를 subtitles 로 새기고, 아니면 새기지 않는다", () => {
-    expect(buildFilterGraph(input())).toContain("subtitles=filename=subtitles.ass,format=yuv420p[vout]");
+    expect(buildFilterGraph(input())).toContain("[vt]subtitles=filename=subtitles.ass,format=yuv420p[vout]");
     const none = buildFilterGraph(input({ assName: null }));
     expect(none).not.toContain("subtitles=");
     expect(none).toContain("format=yuv420p[vout]");
