@@ -12,8 +12,8 @@ export const POST_STAGE_KEYS = ["result_vs_expectation", "market_reaction", "jud
 export type PostStageKey = (typeof POST_STAGE_KEYS)[number];
 
 /** matched 맞았다 / partial 일부 / diverged 갈라졌다 / unresolved 아직 모른다 */
-export const SCENARIO_OUTCOMES = ["matched", "partial", "diverged", "unresolved"] as const;
-export type ScenarioOutcomeKind = (typeof SCENARIO_OUTCOMES)[number];
+export const POST_SCENARIO_OUTCOMES = ["matched", "partial", "diverged", "unresolved"] as const;
+export type PostScenarioOutcomeKind = (typeof POST_SCENARIO_OUTCOMES)[number];
 
 export const CHECK_STATUSES = ["done", "not_available", "dropped"] as const;
 export type CheckStatus = (typeof CHECK_STATUSES)[number];
@@ -21,13 +21,13 @@ export type CheckStatus = (typeof CHECK_STATUSES)[number];
 export const JUDGMENT_STATUSES = ["kept", "revised", "dropped"] as const;
 export type JudgmentStatus = (typeof JUDGMENT_STATUSES)[number];
 
-export interface ScenarioOutcome {
+export interface PostScenarioOutcome {
   /** 이전 편 scenarios.items[].id (없으면 label) */
   scenario_id: string;
-  outcome: ScenarioOutcomeKind;
+  outcome: PostScenarioOutcomeKind;
   note: string;
 }
-export interface CheckResult {
+export interface PostCheckResult {
   /** 이전 편 after_checks.checks[].id */
   check_id: string;
   status: CheckStatus;
@@ -62,8 +62,8 @@ export interface PostIssueCard extends Envelope {
       headline: string;
       actual_result: string;
       expectation_gap: string;
-      scenario_outcomes: ScenarioOutcome[];
-      check_results: CheckResult[];
+      scenario_outcomes: PostScenarioOutcome[];
+      check_results: PostCheckResult[];
     };
     market_reaction: { headline: string; points: string[] };
     judgment_update: { headline: string; items: JudgmentItem[] };
@@ -109,7 +109,7 @@ export function validatePostIssueCard(input: unknown): ValidationResult<PostIssu
           const o = e.record(raw, p);
           return {
             scenario_id: e.text(o["scenario_id"], `${p}.scenario_id`),
-            outcome: e.oneOf(o["outcome"], SCENARIO_OUTCOMES, `${p}.outcome`, "unresolved"),
+            outcome: e.oneOf(o["outcome"], POST_SCENARIO_OUTCOMES, `${p}.outcome`, "unresolved"),
             note: e.text(o["note"], `${p}.note`),
           };
         }),
