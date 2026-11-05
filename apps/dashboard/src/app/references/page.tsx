@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const SOURCE_LABEL: Record<RefItem["source"], string> = { pinterest: "Pinterest", dribbble: "Dribbble", instagram: "Instagram" };
 const MAX_PICK = 3;
 
-type Q = { source?: string; set?: string; tag?: string; pick?: string };
+type Q = { source?: string | undefined; set?: string | undefined; tag?: string | undefined; pick?: string | undefined };
 const href = (q: Q) => {
   const p = new URLSearchParams(Object.entries(q).filter((e): e is [string, string] => !!e[1]));
   const s = p.toString();

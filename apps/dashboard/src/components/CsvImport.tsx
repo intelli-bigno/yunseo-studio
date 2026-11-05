@@ -113,7 +113,7 @@ export function CsvImport({ today, preview, run }: Props) {
             <Textarea tall value={text} onChange={(e) => setText(e.target.value)} />
           </Field>
           <Text size="label" tone="mute" block>
-            내보낸 파일은 그 시점까지의 누적 값이다. 같은 날 같은 출처로 다시 가져오면 덮어쓴다. 다음 단계에서 열 매핑을 확인한다.
+            누적 값 · 같은 날 다시 가져오면 덮어쓴다
           </Text>
           <Stack direction="row" gap={2}>
             <Button variant="primary" disabled={busy || text.trim() === ""} onClick={() => void check(true)}>

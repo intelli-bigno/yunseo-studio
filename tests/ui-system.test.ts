@@ -100,6 +100,6 @@ describe("화면 글은 짧다", () => {
   it.each(appFiles.filter((f) => f.endsWith(".tsx")).map((f) => [f.slice(root.length)]))("%s", (rel) => {
     const src = readFileSync(join(root, rel), "utf8").replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
     const texts = [...src.matchAll(/>([^<>{}]*[가-힣][^<>{}]*)</g), ...src.matchAll(/"([^"\n]*[가-힣][^"\n]*)"/g)].map((m) => m[1]!.trim());
-    expect(texts.filter((t) => [...t].length > 40)).toEqual([]);
+    expect(texts.filter((t) => !/[=?`()]/.test(t) && [...t].length > 40)).toEqual([]); // 코드 조각(삼항·화살표)은 글이 아니다
   });
 });

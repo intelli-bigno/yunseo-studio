@@ -220,7 +220,7 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
                   <Textarea name="note" maxLength={500} />
                 </Field>
                 <Text size="label" tone="mute" block>
-                  그 시점까지의 누적 값을 넣는다. 빈 칸은 건너뛴다. 같은 날 같은 편을 다시 넣으면 덮어쓴다. {platform === "instagram" ? "「노출」은 2024-07-02 이후 게시물에서 공식 지표가 아니다 — 조회를 쓴다." : "시청 시간은 분 단위."}
+                  그 시점까지의 누적 값을 넣는다. 빈 칸은 건너뛴다. 같은 날 같은 편을 다시 넣으면 덮어쓴다. {platform === "instagram" ? "「노출」 대신 조회(2024-07-02 이후)" : "시청 시간은 분 단위."}
                 </Text>
                 <Stack direction="row" gap={2}>
                   <Button type="submit" variant="primary">저장</Button>
