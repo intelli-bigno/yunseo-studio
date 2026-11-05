@@ -84,3 +84,21 @@
 
 유스케이스와 SQLite 를 실제로 이은 통합 검증은 `tests/studio-integration.test.ts`, 포트 계약 테스트는 `packages/adapters/storage/src/sqlite-studio-repository.test.ts`. 성능 정책(읽기 캐시·렌더 전략)은 [09-performance.md](09-performance.md).
 
+## 구현 현황 — 게시 계획(dry-run)·성과 (L5, 2026-11-05)
+
+게시는 **계획만** 만든다(실제 호출·토큰·계정 입력 없음). 성과는 수동 입력·CSV 로만 들어온다.
+
+| 계층 | 위치 | 지금 있는 것 |
+| --- | --- | --- |
+| 도메인 | `packages/domain/src/publish` | 플랫폼 규격 상수(`specs.ts`, 2026-11-05 실측)·근거 목록(`evidence.ts`, 문서 URL·확인일·원문 인용)·계획 모델(`plan.ts`: `PublishPlan`·`PlannedStep`·`SpecIssue`·`QuotaForecast`, `mode` 는 영구히 `"dry-run"`)·규격 검사(`check.ts`: IG 캐러셀/릴스, YouTube Shorts — JPEG 변환·장수·비율·용량·폭·길이·캡션·해시태그·@태그·대체 텍스트·금지 표현·`TBD`)·PNG/JPEG 크기 읽기(`image-info.ts`) |
+| 도메인 | `packages/domain/src/metrics` | `MetricSnapshot`(게시물·시점·지표 값)·지표 정의(IG/YT 공식 지표 이름)·검증·최신 값·비율·편별/종별/주별 집계(`rules.ts`)·CSV 읽기·열 추정·행→스냅샷(`csv.ts`) |
+| 유스케이스 | `packages/application/src/publishing` | 포트 `InstagramPublishPlanner`·`YoutubePublishPlanner`·`PublishSource`, 유스케이스 `getPublishPreview(편, 채널)` — 렌더 계약(`CardRenderResult`·`ReelResult`)을 도메인 입력으로 옮겨 계획을 만든다. 게시(실행) 메서드는 포트에 없다 |
+| 유스케이스 | `packages/application/src/metrics` | 포트 `MetricsRepository`, 유스케이스 `getPerformance`·`recordManual`·`previewCsv`·`importCsv`·`deleteSnapshot` |
+| 계약 | `packages/application/src/pipeline/contracts.ts` | 레인 공용 계약(Lead 고정, 바이트 그대로) — 콘텐츠 정본 → 카드 → 릴스 → 업로드 묶음 |
+| 어댑터 | `packages/adapters/publisher-instagram` | `createInstagramDryRunPlanner`(엔드포인트·순서·파라미터·예상 할당량)·`createCardAssetsPublishSource`(렌더된 카드 PNG → 계약 모양, 임시) |
+| 어댑터 | `packages/adapters/publisher-youtube` | `createYoutubeDryRunPlanner`(재개 가능 업로드 세션 → 파일 → 응답 확인 → 사람이 공개) |
+| 어댑터 | `packages/adapters/metrics` | `MetricsRepository` 의 SQLite 구현 — 레인 전용 테이블 `l5_metric_snapshots`·`l5_csv_imports`·`l5_column_mappings`(같은 `STUDIO_DB` 파일, 기존 테이블은 만지지 않음) |
+| 인프라(조립) | `apps/dashboard/src/server/studio.ts` | 파일 끝 `[L5]` 블록 하나 — `l5()` 가 계획·성과 유스케이스와 금지 표현 규칙(프리셋 로드 결과)을 돌려준다 |
+| 화면 | `apps/dashboard/src/app/performance`·`publish/[pieceId]` | 서버 컴포넌트가 `l5()` 결과만 그린다. 성과 입력은 서버 동작(`actions.ts`)·CSV 섬(`components/CsvImport.tsx`)만 클라이언트 |
+
+경계 점검: `tests/l5-dry-run-guard.test.ts` 가 게시 경로 소스에 네트워크 호출·환경변수·토큰 이름·파일 쓰기가 없고, 화면에 비밀번호·토큰 입력 칸이 없으며, 성과 어댑터가 `l5_` 테이블만 만지고, `docs/05` §5.8 이 `evidence.ts` 와 어긋나지 않는지를 고정한다.

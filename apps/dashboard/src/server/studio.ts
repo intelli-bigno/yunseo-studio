@@ -58,3 +58,62 @@ export function ops(): OpsUseCases {
   return (opsSlot.__yunseoOps ??= composeOps());
 }
 // [/L6]
+
+// ---- [L5] 게시 계획(dry-run)·성과 — 레인 전용 조립. 화면은 `l5()` 로 유스케이스만 받는다.
+// 위쪽 조립(compose)·studio() 는 건드리지 않고, 같은 DB 파일(STUDIO_DB)에 l5_* 테이블만 더한다. import 도 이 블록에 묶어 둔다.
+import { createSqliteMetricsRepository } from "@yunseo/adapters-metrics";
+import { createCardAssetsPublishSource, createInstagramDryRunPlanner } from "@yunseo/adapters-publisher-instagram";
+import { createYoutubeDryRunPlanner } from "@yunseo/adapters-publisher-youtube";
+import { createMetricsUseCases, createPublishPlanUseCases, type MetricsUseCases, type PublishPlanUseCases } from "@yunseo/application";
+import type { BannedExpressionRule } from "@yunseo/domain";
+import { loadPresets } from "@yunseo/presets-schema";
+
+export interface L5 {
+  publish: PublishPlanUseCases;
+  metrics: MetricsUseCases;
+  /** 금지 표현 규칙(프리셋)을 읽었는가 — 못 읽으면 dry-run 이 금지 표현을 검사하지 못한다는 것을 화면이 알린다 */
+  rules: { loaded: boolean; count: number; error: string | null };
+  /** 성과가 파일(STUDIO_DB)에 남는가. false 면 메모리에만 있어 서버를 끄면 사라진다 */
+  persisted: boolean;
+}
+
+function composeL5(): L5 {
+  const path = process.env.STUDIO_DB;
+  const here = process.cwd();
+  const repo = createSqliteStudioRepository(path ? { path } : {});
+  const cards = createFileCardAssets({
+    renderDirs: [resolve(here, "../../docs/design/card-reference/example/render"), resolve(here, "docs/design/card-reference/example/render")],
+    v2Dir: process.env.CARD_V2_DIR,
+  });
+
+  let bannedExpressions: readonly BannedExpressionRule[] = [];
+  const rules: L5["rules"] = { loaded: false, count: 0, error: null };
+  for (const dir of [resolve(here, "../../presets"), resolve(here, "presets")]) {
+    try {
+      bannedExpressions = loadPresets(dir).bannedExpressions;
+      Object.assign(rules, { loaded: true, count: bannedExpressions.length, error: null });
+      break;
+    } catch (error) {
+      rules.error = error instanceof Error ? error.message.split("\n")[0] ?? "프리셋 오류" : "프리셋 오류";
+    }
+  }
+
+  return {
+    publish: createPublishPlanUseCases({
+      repo,
+      clock: clock(),
+      source: createCardAssetsPublishSource({ repo, cards }),
+      instagram: createInstagramDryRunPlanner({ bannedExpressions }),
+      youtube: createYoutubeDryRunPlanner({ bannedExpressions }),
+    }),
+    metrics: createMetricsUseCases({ repo, metrics: createSqliteMetricsRepository(path ? { path } : {}), clock: clock() }),
+    rules,
+    persisted: Boolean(path),
+  };
+}
+
+const l5Slot = globalThis as typeof globalThis & { __yunseoL5?: L5 };
+
+export function l5(): L5 {
+  return (l5Slot.__yunseoL5 ??= composeL5());
+}
