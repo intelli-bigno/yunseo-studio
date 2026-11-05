@@ -55,7 +55,8 @@ describe("compose — 복귀·데이터", () => {
     expect(compose).toMatch(/STUDIO_DB: \/data\/studio\.db/);
     expect(compose).toMatch(/volumes:\n\s+- data:\/data/);
     expect(compose).toMatch(/^volumes:\n  data:\n    name: yunseo-studio-data$/m);
-    expect(compose).not.toMatch(/\/mnt\/d/); // 9p 위 SQLite WAL 금지
+    const body = compose.replace(/#.*$/gm, ""); // 주석은 근거 설명이라 뺀다
+    expect(body).not.toMatch(/\/mnt\/d/); // 9p 위 SQLite WAL 금지
   });
 
   it("실제 운영 데이터 모드(STUDIO_CLOCK=system)와 KST", () => {
