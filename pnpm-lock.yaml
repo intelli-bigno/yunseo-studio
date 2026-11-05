@@ -38,6 +38,9 @@ importers:
       '@yunseo/adapters-render-html':
         specifier: workspace:*
         version: link:../../packages/adapters/render-html
+      '@yunseo/adapters-video':
+        specifier: workspace:*
+        version: link:../../packages/adapters/video
       '@yunseo/application':
         specifier: workspace:*
         version: link:../../packages/application
@@ -197,6 +200,15 @@ importers:
         version: 0.63.2
 
   packages/adapters/storage:
+    dependencies:
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../application
+      '@yunseo/domain':
+        specifier: workspace:*
+        version: link:../../domain
+
+  packages/adapters/video:
     dependencies:
       '@yunseo/application':
         specifier: workspace:*
