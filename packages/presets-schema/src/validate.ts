@@ -4,12 +4,14 @@ import {
   SEVERITIES,
   SURFACES,
   type BannedExpressionRule,
+  type FormatPage,
   type ValidationResult,
 } from "@yunseo/domain";
 import type {
   ActivePreset,
   BrandPreset,
   CharacterPreset,
+  FormatCard,
   FormatPreset,
   LanguagePreset,
   TonePreset,
@@ -103,11 +105,26 @@ export function validateFormat(input: unknown): ValidationResult<FormatPreset> {
     if (max !== null && !(typeof max === "number" && Number.isInteger(max) && max > 0)) {
       e.add(`${p}.max_chars`, "양의 정수 또는 null 이어야 한다");
     }
-    return { slot: e.text(c["slot"], `${p}.slot`), stage, max_chars: typeof max === "number" ? max : null };
+    const card: FormatCard = { slot: e.text(c["slot"], `${p}.slot`), stage, max_chars: typeof max === "number" ? max : null };
+    if (c["pages"] !== undefined) {
+      card.pages = e.array(c["pages"], `${p}.pages`, 1).map((rawPage, j) => {
+        const pp = `${p}.pages[${j}]`;
+        const page = e.record(rawPage, pp);
+        const texts = (value: unknown, path: string, min: number): Record<string, string> => {
+          const map = e.record(value, path);
+          if (Object.keys(map).length < min) e.add(path, "언어 코드별 문구가 하나 이상 있어야 한다");
+          return Object.fromEntries(Object.keys(map).map((lang) => [lang, e.text(map[lang], `${path}.${lang}`)]));
+        };
+        const out: FormatPage = { q: texts(page["q"], `${pp}.q`, 1) };
+        if (page["a"] !== undefined) out.a = texts(page["a"], `${pp}.a`, 1);
+        return out;
+      });
+    }
+    return card;
   });
   return e.result({
     id: e.text(r["id"], "id"),
-    kind: e.oneOf(r["kind"], ["pre_issue", "post_issue"] as const, "kind", "pre_issue"),
+    kind: e.oneOf(r["kind"], ["pre_issue", "post_issue", "research"] as const, "kind", "pre_issue"),
     status,
     publish_timing: e.text(r["publish_timing"], "publish_timing"),
     limits_provisional: r["limits_provisional"] === true,

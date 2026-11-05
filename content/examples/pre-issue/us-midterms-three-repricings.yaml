@@ -1,9 +1,14 @@
-# 예시 1건 — 사실 수치를 넣지 않았다. 일시·시간대·운영자 해석은 자리만 두었다(draft).
+# 예시 1건 — 사실 수치를 넣지 않았다. 일시·시간대·기준 시점·운영자 해석은 자리만 두었다(draft).
 # verified 로 올리려면 verificationBlockers(card) 가 비어야 한다.
+# 본문 문장 안의 **핵심 구** 는 카드에서 굵게 + 밑줄로 강조된다(글자 수·금지 표현 검사는 표기를 벗기고 한다).
 schema: pre-issue-5/v1
 id: us-midterms-three-repricings
+type: pre_issue
 status: draft
 language: en
+as_of: null                  # 이 편이 근거로 삼은 자료의 가장 늦은 시각(ISO 8601) — 확인 전
+importance: major
+reels: { planned: false }
 event:
   name: US midterm elections
   kind: election
@@ -16,23 +21,26 @@ stages:
   why_it_matters:
     headline: An election result is a change in expectations
     points:
-      - Markets trade on what they expect to happen next, and an election can change which policies are realistic.
-      - The useful question is not who wins, but which expectations a surprise would actually move.
+      - Markets trade on what they expect to happen next, not on what already happened.
+      - An election can change which policies look realistic. The useful question is not who wins, but **which expectations a surprise would actually move.**
   market_expectation:
-    headline: What the market seems to assume today
+    headline: A baseline, set before the result
     points:
-      - Before the result, prices already reflect a most-likely outcome. Reading that baseline comes first.
-      - A surprise matters most where the baseline is widely shared.
+      - Before the result, prices already lean toward a most-likely outcome.
+      - "**Reading that baseline comes first.** A surprise matters most where the baseline is widely shared."
   scenarios:
-    headline: Three ways the result can read
+    headline: Three outcomes, not predictions
     items:
-      - label: Close to the baseline
+      - id: close-to-baseline
+        label: Close to the baseline
         condition: The outcome is near what the market already assumes.
         reading: Little is re-priced, and attention moves to the details of what comes next.
-      - label: More room for policy change
+      - id: more-policy-room
+        label: More room for policy change
         condition: The outcome makes larger shifts in spending, tax or regulation more plausible.
         reading: Sectors tied to those policies may need a new set of assumptions.
-      - label: A slow, unclear result
+      - id: slow-unclear
+        label: A slow, unclear result
         condition: Control takes time to settle.
         reading: Uncertainty itself becomes the story until it clears.
   transmission:
@@ -48,13 +56,17 @@ stages:
         via: Expectations for regulation, trade and tax
         touches: [energy, health care, technology]
   after_checks:
-    headline: What to check once the result is in
+    headline: Three signals you can verify yourself
     checks:
-      - what: Whether the result was a surprise against the baseline you noted
+      - id: surprise-vs-baseline
+        what: Whether the result was a surprise against the baseline you noted
         where: Compare your notes with the first official results
-      - what: How expectations for interest rates moved
+      - id: rate-expectations
+        what: How expectations for interest rates moved
         where: Central bank communication and market-implied rate expectations
-      - what: Which sectors moved most
+      - id: sector-moves
+        what: Which sectors moved most
         where: Sector performance from a data source you trust
+    closing: Write down your baseline first. Then compare it with the first official results.
 claims: []                   # 사실 수치를 쓰지 않았으므로 비어 있다
 operator_view: null          # 운영자 도메인 지식·경험으로 얹을 고유 해석 — 아직 없음

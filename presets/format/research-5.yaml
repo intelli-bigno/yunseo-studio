@@ -1,0 +1,49 @@
+# 포맷 ③ 트레이딩 연구 — 어떻게 판단하고 실행할 것인가. 이슈 없는 날, 한 주제를 스레드로 키운다.
+# 정본 설계는 docs/01-content-sot.md §4.4. 편 하나 = 스레드의 한 단계(stage) — 한 편은 표지 + 그 단계 + 출처만 그린다.
+id: research-5
+kind: research
+status: active
+publish_timing: 이슈 없는 날. 스레드의 다음 단계를 한 번에 몰아서 내지 않는다
+limits_provisional: true     # max_chars 는 카드 예시 3종 첫 렌더(2026-11-05)로 조정한 가정값 — 운영 첫 편 뒤 다시 본다
+stages:                      # 5단계 — 스레드 발전 순서 (packages/domain RESEARCH_STAGES 와 같아야 한다)
+  - { id: idea,       label: 무엇을 왜 보나,                question: 가설과 그것이 틀렸음을 보여 줄 신호는 무엇인가 }
+  - { id: conditions, label: 언제 쓰고 언제 쓰지 않나,       question: 적용 조건·제외 조건·리스크 한도는 무엇인가 }
+  - { id: failures,   label: 어디서 틀렸나,                 question: 틀린 사례와 그 뒤 바뀐 점은 무엇인가 }
+  - { id: tool,       label: 도구와 사용법,                  question: 도구는 무엇이고 한계와 검증 범위는 어디까지인가 }
+  - { id: follow_up,  label: 후속 검증에서 무엇이 확인됐나,   question: 무엇을 어떤 범위에서 다시 확인했고 무엇이 아직 모르는가 }
+# 슬롯 = 단계 id. 한 편은 자기 단계의 슬롯 하나와 cover·sources 만 쓴다.
+cards:
+  - { slot: cover, stage: null, max_chars: 90 }
+  - slot: idea
+    stage: idea
+    max_chars: 220
+    pages:
+      - q: { en: "What are we looking at, and why?", ko: "무엇을, 왜 보나요?" }
+  - slot: conditions
+    stage: conditions
+    max_chars: 260
+    pages:
+      - q: { en: "When does it apply, and when not?", ko: "언제 쓰고 언제 쓰지 않나요?" }
+  - slot: failures
+    stage: failures
+    max_chars: 300
+    pages:
+      - q: { en: "Where did it go wrong?", ko: "어디서 틀렸나요?" }
+  - slot: tool
+    stage: tool
+    max_chars: 400
+    pages:
+      - q: { en: "What is it, and how is it used?", ko: "무엇이고, 어떻게 쓰나요?" }
+      - q: { en: "What are its limits?", ko: "한계는 무엇인가요?" }
+        a: { en: "Know them before you use it", ko: "쓰기 전에 알아 두세요" }
+  - slot: follow_up
+    stage: follow_up
+    max_chars: 300
+    pages:
+      - q: { en: "What did the follow-up show?", ko: "후속 검증에서 무엇이 확인됐나요?" }
+  - slot: sources
+    stage: null
+    max_chars: null
+    pages:
+      - q: { en: "Where does this come from?", ko: "이 내용은 어디서 왔을까요?" }
+        a: { en: "Sources and times, claim by claim", ko: "주장마다 출처와 시점을 적습니다" }

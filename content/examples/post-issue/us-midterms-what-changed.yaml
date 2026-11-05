@@ -1,0 +1,80 @@
+# 이슈 이후(post-issue-4) 예시 1건 — 이전 편(us-midterms-three-repricings)의 시나리오·확인 항목을 id 로 닫는 모양.
+# 실제 개표 결과·시장 수치를 쓰지 않았다: 사실 칸은 [대괄호] 자리표시이고, claims 는 출처·시점을 채울 칸만 둔 draft 다.
+# 수치가 들어가면 claims 에 같은 수치와 출처(url·접근일·원문 인용·발행처·등급)·분 단위 기준 시점이 있어야 verified 로 올라간다.
+schema: post-issue-4/v1
+id: us-midterms-what-changed
+type: post_issue
+status: draft
+language: en
+as_of: null
+importance: major
+reels: { planned: false }
+links:
+  pre_issue_id: us-midterms-three-repricings
+evidence_ready: false        # 1차 자료·관측 시간·시나리오 대응·사실/반응/해석 분리를 사람이 확인한 뒤 true
+event:
+  name: US midterm elections
+  kind: election
+  occurred_at: null
+  timezone: null
+cover:
+  title: What the US midterms changed, and what they did not
+  hook: The result, set against the three scenarios we wrote down first.
+stages:
+  result_vs_expectation:
+    headline: Compared with the baseline we noted
+    actual_result: "[Reported result: add it from the official count, with the time it was published.]"
+    expectation_gap: Closer to the baseline, or further from it? **Say it plainly, in one sentence.**
+    scenario_outcomes:
+      - scenario_id: close-to-baseline
+        outcome: unresolved
+        note: Mark it matched, partial or diverged once the official count is in.
+      - scenario_id: more-policy-room
+        outcome: unresolved
+        note: Say which proposals became more likely, and what in the data shows it.
+      - scenario_id: slow-unclear
+        outcome: unresolved
+        note: If control is still unsettled, say so. That is an answer too.
+    check_results:
+      - check_id: surprise-vs-baseline
+        status: not_available
+        note: Compare your notes with the first official results.
+      - check_id: rate-expectations
+        status: not_available
+        note: Read it from central bank communication, not from a headline.
+  market_reaction:
+    headline: Only what was observed
+    points:
+      - Observed moves go here, each with its source and the minute it was read.
+      - A move that was not observed is left out. **It is not guessed.**
+  judgment_update:
+    headline: What stays, what changes
+    items:
+      - judgment: Read the baseline before the result
+        status: kept
+        reason: Nothing in this sample changes the method.
+        based_on: []
+      - judgment: A slow result keeps uncertainty in focus
+        status: dropped
+        reason: Drop it, and say why, if control settled quickly.
+        based_on: []
+  next_variables:
+    headline: Two things to watch next
+    items:
+      - variable: Proposals that move from possible to likely
+        why: They decide which sectors need new assumptions.
+        where: Official announcements and committee calendars
+        when: Over the coming weeks
+      - variable: Expectations for interest rates
+        why: They carry the fiscal outlook into prices.
+        where: Central bank communication
+claims:
+  - id: c-result
+    kind: fact
+    basis: researched
+    text: "[Reported result: figure and its primary source go here]"
+  - id: c-reaction
+    kind: market_reaction
+    basis: researched
+    text: "[Observed market move: value, window and the minute it was read go here]"
+operator_view: null
