@@ -1,5 +1,5 @@
 // 시안 데이터 — 화면 확인용 자리표시. 수치·출처는 실제 사실이 아니다(발행에 쓰지 않는다).
-// 빈 저장소를 처음 열 때 한 번만 채운다(sqlite-studio-repository.ts). 실제 데이터가 들어오면 이 파일은 시험용으로만 남는다.
+// 「빈 DB 데모 채우기」 명령(seedDemo · pnpm run demo:seed · 콘텐츠 화면 빈 상태 버튼)으로만 채운다 — 저장소를 열 때 자동으로 채우지 않는다.
 import type { EventCandidate, Piece, PieceClaim, QueueItem, Stage, WeekVariable } from "@yunseo/domain";
 
 /** 시안 데이터의 기준 「오늘」 — 날짜가 이 값 둘레로 짜여 있다 */
@@ -55,6 +55,13 @@ export const SEED_PIECES: Piece[] = [
     stages: preStages("의회 구성이 재정 지출 속도를 정하고, 재정 속도가 장기 금리 기대를 움직인다."),
     claims: midtermClaims,
     cards: ["a-01", "a-02", "a-03", "a-04", "a-05", "a-06", "a-07"],
+    importance: "major",
+    scenarios: [
+      { id: "s1", label: "시나리오 A", condition: "상·하원 모두 한쪽", reading: "재정 확대 기대가 금리에 먼저 반영될 수 있다 [자리표시]" },
+      { id: "s2", label: "시나리오 B", condition: "의회가 갈림", reading: "재정 속도 기대가 늦춰질 수 있다 [자리표시]" },
+      { id: "s3", label: "시나리오 C", condition: "결과 확정 지연", reading: "불확실성 구간이 길어진다 [자리표시]" },
+    ],
+    checks: [{ id: "k1", what: "10년물 금리 방향", where: "재무부 수익률 곡선(자리표시)" }],
   },
   {
     id: "P-1105",
@@ -80,6 +87,10 @@ export const SEED_PIECES: Piece[] = [
     stages: postStages,
     claims: [],
     preIssueId: "P-1104",
+    importance: "major",
+    scenarioOutcomes: [],
+    checkResults: [],
+    evidence: { primary: false, observed: false, allScenarios: false, separated: false },
   },
   {
     id: "R-1107",

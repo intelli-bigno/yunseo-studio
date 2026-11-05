@@ -24,9 +24,9 @@ export function goTarget(second: string): string | null {
   return hit?.href ?? null;
 }
 
-export const DETAIL_TABS = ["write", "sources", "preview", "review"] as const;
+export const DETAIL_TABS = ["write", "sources", "link", "history", "preview", "review"] as const;
 export type DetailTab = (typeof DETAIL_TABS)[number];
-export const DETAIL_TAB_LABEL: Record<DetailTab, string> = { write: "작성", sources: "출처·기준 시점", preview: "미리보기", review: "검수" };
+export const DETAIL_TAB_LABEL: Record<DetailTab, string> = { write: "작성", sources: "출처·기준 시점", link: "연결", history: "이력", preview: "미리보기·묶음", review: "검수" };
 
 export function stepTab(current: DetailTab, dir: 1 | -1): DetailTab {
   const i = DETAIL_TABS.indexOf(current);
