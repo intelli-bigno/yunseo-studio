@@ -2,7 +2,8 @@
 # 빌드·실행은 Windows(WSL Docker)에서만: ops/docker/README.md. Mac 에서 docker 실행 금지.
 # 빌드 입력은 `git archive` 로 뽑은 깨끗한 커밋 트리다(node_modules·.next 없음, .dockerignore 가 한 번 더 막는다).
 
-FROM node:22-bookworm-slim
+# Debian 12(bookworm) 기반 node 22. 이 PC 에 이미 받아 둔 태그라 레지스트리 자격증명 없이 빌드된다(ops/docker/README.md 「함정」).
+FROM node:22-slim
 
 ENV NEXT_TELEMETRY_DISABLED=1 CI=1 TZ=Asia/Seoul
 

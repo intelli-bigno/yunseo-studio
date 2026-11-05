@@ -12,6 +12,12 @@ VOLUME=yunseo-studio-data
 IMAGE=yunseo-studio:local
 URL=http://127.0.0.1:8930
 
+# 비대화 세션(ssh)에서는 ~/.docker/config.json 의 credsStore(desktop.exe)가 "logon session does not exist" 로 실패한다(2026-10-18 기록).
+# 쓰는 이미지가 전부 공개 이미지라 자격증명이 필요 없다 — 빈 설정 폴더를 쓴다(compose·buildx 플러그인은 /usr/local/lib/docker/cli-plugins 라 영향 없음).
+mkdir -p "$ROOT/.docker-nocreds"
+[ -f "$ROOT/.docker-nocreds/config.json" ] || echo '{}' > "$ROOT/.docker-nocreds/config.json"
+export DOCKER_CONFIG="$ROOT/.docker-nocreds"
+
 cmd="${1:-status}"
 shift || true
 
