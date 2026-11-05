@@ -44,6 +44,8 @@ export const XFADE_EFFECT: Readonly<Record<ReelTransitionName, string | null>> =
   slide: "slideleft",
 };
 
+/** -t 에서 덜어 주는 프레임 수 — 어느 올림·내림 규칙에서도 정확히 그 장수가 되게 한다 */
+const FRAME_MARGIN = 0.1;
 const SAFE_FILTER_VALUE = /^[A-Za-z0-9_./-]+$/;
 const sec = (n: number) => n.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
 
@@ -134,8 +136,10 @@ export function buildFfmpegArgs(input: BuildFfmpegInput): string[] {
 
   const args = ["-hide_banner", "-nostdin", "-loglevel", "warning", "-y", "-filter_threads", String(encoder.threads), "-filter_complex_threads", "1"];
   // 정지 이미지를 프레임 수에 딱 맞게 읽는다: 반 프레임을 덜어 마지막에 한 프레임이 더 붙지 않게 한다
-  // 입력마다 디코더 스레드를 1개로 — PNG 디코더는 기본으로 코어 수만큼 스레드를 만든다(장면 8개 × 24 = 192개)
-  plan.scenes.forEach((s, i) => args.push("-threads", "1", "-loop", "1", "-framerate", String(fps), "-t", sec((s.frames - 0.5) / fps), "-i", input.cardPaths[i]!));
+  // 입력마다 디코더 스레드를 1개로 — PNG 디코더는 기본으로 코어 수만큼 스레드를 만든다(장면 8개 × 24 = 192개).
+  // 길이(-t)는 프레임 수에서 0.1 프레임을 덜어 준다: 정확히 프레임 경계면 올림·내림 규칙에 따라 한 장이 달라지고, 반 프레임이면 내림으로 한 장이 모자란다
+  // (ffmpeg 6.1.1 실측, 30fps: -t 2.4833 → 74장, 2.5 → 75장, 2.5167 → 76장). 0.1 프레임 덜면 어느 규칙에서도 정확히 frames 장이다.
+  plan.scenes.forEach((s, i) => args.push("-threads", "1", "-loop", "1", "-framerate", String(fps), "-t", sec((s.frames - FRAME_MARGIN) / fps), "-i", input.cardPaths[i]!));
 
   const audio = audioPlan(input, plan.scenes.length);
   args.push(...audio.inputs);
@@ -149,7 +153,6 @@ export function buildFfmpegArgs(input: BuildFfmpegInput): string[] {
     "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
   );
   if (audio.map) args.push("-c:a", "aac", "-b:a", `${preset.audio.bitrateKbps}k`, "-ar", String(preset.audio.sampleRate), "-ac", "2");
-  // 반 프레임을 덜어 정확히 totalFrames 장에서 끊는다(-t 는 pts < 값 인 프레임까지 포함하므로 정수 경계에 걸리면 한 장이 더 붙는다)
-  args.push("-t", sec((plan.totalFrames - 0.5) / fps), "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:v", "+bitexact", "-flags:a", "+bitexact", "-movflags", "+faststart", input.outPath);
+  args.push("-t", sec((plan.totalFrames - FRAME_MARGIN) / fps), "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:v", "+bitexact", "-flags:a", "+bitexact", "-movflags", "+faststart", input.outPath);
   return args;
 }

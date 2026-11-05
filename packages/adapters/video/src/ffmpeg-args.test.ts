@@ -18,12 +18,12 @@ describe("ffmpeg 인자 — 입력과 길이", () => {
   const i = input();
   const args = buildFfmpegArgs(i);
 
-  it("카드마다 정지 이미지 입력을 프레임 수에 맞춰 연다 (반 프레임 덜어 한 프레임이 더 붙지 않게)", () => {
+  it("카드마다 정지 이미지 입력을 프레임 수에 맞춰 연다 (0.1 프레임 덜어 올림·내림 어느 규칙에서도 정확히 그 장수)", () => {
     const inputs = args.reduce<number[]>((acc, a, idx) => (a === "-i" ? [...acc, idx] : acc), []);
     expect(inputs.length).toBe(5); // 카드 4 + 무음 오디오 1
     i.plan.scenes.forEach((s, k) => {
       const at = inputs[k]!;
-      expect(args.slice(at - 8, at + 2)).toEqual(["-threads", "1", "-loop", "1", "-framerate", "30", "-t", String(Number(((s.frames - 0.5) / 30).toFixed(4))), "-i", `/cards/c${k + 1}.png`]);
+      expect(args.slice(at - 8, at + 2)).toEqual(["-threads", "1", "-loop", "1", "-framerate", "30", "-t", String(Number(((s.frames - 0.1) / 30).toFixed(4))), "-i", `/cards/c${k + 1}.png`]);
     });
   });
 
@@ -31,7 +31,7 @@ describe("ffmpeg 인자 — 입력과 길이", () => {
     expect(after(args, "-c:v")).toBe("libx264");
     expect(after(args, "-pix_fmt")).toBe("yuv420p");
     expect(after(args, "-c:a")).toBe("aac");
-    expect(afterLast(args, "-t")).toBe(String(Number(((i.plan.totalFrames - 0.5) / 30).toFixed(4)))); // 반 프레임 덜어 정확히 계획의 프레임 수에서 끊는다
+    expect(afterLast(args, "-t")).toBe(String(Number(((i.plan.totalFrames - 0.1) / 30).toFixed(4)))); // 0.1 프레임 덜어 정확히 계획의 프레임 수에서 끊는다
     expect(args.at(-1)).toBe("/out/reel.mp4");
     expect(args).toContain("-movflags");
   });
@@ -39,10 +39,11 @@ describe("ffmpeg 인자 — 입력과 길이", () => {
   it("스레드 수를 제한한다 (실행기 pids.max=256 에서 기본값으로는 스레드를 못 만들어 죽는다)", () => {
     expect(after(args, "-filter_threads")).toBe("4");
     expect(after(args, "-filter_complex_threads")).toBe("1");
-    expect(after(args, "-threads")).toBe("4");
+    expect(afterLast(args, "-threads")).toBe("4"); // 출력(인코더)
+    expect(args.filter((a) => a === "-threads").length).toBe(i.plan.scenes.length + 1); // 입력마다 디코더 1개 + 인코더
     const one = buildFfmpegArgs({ ...i, encoder: { crf: 20, preset: "medium", threads: 1 } });
     expect(after(one, "-filter_threads")).toBe("1");
-    expect(after(one, "-threads")).toBe("1");
+    expect(afterLast(one, "-threads")).toBe("1");
   });
 
   it("카드 수와 장면 수가 다르면 실패한다", () => {

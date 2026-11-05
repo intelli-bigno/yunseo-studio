@@ -109,11 +109,13 @@ describe("runReel", () => {
   it("진짜 ffmpeg 로 릴스를 만든다 (cards-dir → MP4 + SRT)", async () => {
     const dir = join(root, "e2e");
     const text = ["Inflation data lands on Tuesday and sets the tone.", "The central bank may hold steady this time.", "Watch the core reading before any conclusion."];
-    await writeCardFixtures(dir, [[24, 40, 90], [90, 40, 24], [30, 80, 40]], text);
+    const fixture = await writeCardFixtures(dir, [[24, 40, 90], [90, 40, 24], [30, 80, 40]], text);
+    await writeFile(join(dir, "render-result.json"), JSON.stringify(fixture)); // 카드 렌더러가 남기는 CardRenderResult
     const out = join(root, "e2e-out");
     const r = await runReel([dir, "--out", out, "--encoder-preset", "ultrafast"], { FFMPEG_PATH: process.env.FFMPEG_PATH, FFPROBE_PATH: process.env.FFPROBE_PATH });
     expect(r.code, r.lines.join("\n")).toBe(0);
-    expect(r.lines[0]).toMatch(/^✓ .*e2e-reel\.mp4 {2}\(\d+(\.\d+)?초, \d+KB, sha256 [0-9a-f]{12}\)$/);
-    expect(await readFile(join(out, "e2e-reel.srt"), "utf8")).toContain("Inflation data lands on Tuesday and sets the tone.");
+    expect(r.lines[0]).toMatch(/^✓ .*fixture-piece-reel\.mp4 {2}\(\d+(\.\d+)?초, \d+KB, sha256 [0-9a-f]{12}\)$/);
+    // 자막은 줄바꿈돼 들어가므로 공백을 하나로 접어 문장 단위로 확인한다
+    expect((await readFile(join(out, "fixture-piece-reel.srt"), "utf8")).replace(/\s+/g, " ")).toContain("Inflation data lands on Tuesday and sets the tone.");
   }, 240_000);
 });
