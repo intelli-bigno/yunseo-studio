@@ -45,7 +45,7 @@
 
 - 포트 8930·8931 은 2026-11-05 실측 때 비어 있었다(같은 IP 에서 듣는 포트는 8922·8925뿐). 기존 미리보기 서버 **8925 는 건드리지 않는다**(통합 뒤 Lead 정리).
 - 환경변수는 서비스 정의(`ops/windows/lib/layout.ts`)가 넣는다: `STUDIO_DB`·`YUNSEO_DATA_DIR`·`YUNSEO_WORKER_URL`·`YUNSEO_DASHBOARD_URL`·`YUNSEO_BACKUP_KEEP=14`·`NODE_ENV=production`. 비밀값은 없다.
-- `STUDIO_CLOCK` 은 넣지 않았다 — 지금 데이터는 시안 기준일 둘레다. 실제 운영 데이터로 바뀌면 `STUDIO_CLOCK=system` 을 서비스 정의에 더한다(Lead 결정).
+- `STUDIO_CLOCK=system` 을 서비스 정의에 넣는다(L8 첫 설치, 빈 DB 로 실제 운영 데이터 시작 — KST 오늘 기준).
 
 ## 3. 보안 경계 — 왜 대시보드 로그인이 없나
 

@@ -59,7 +59,7 @@ const title = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 export function serviceDef(name: ServiceName, l: Layout, { nodeExe, host = TAILNET_HOST, revision = null }: ServiceOptions): ServiceDef {
   const j = win32.join;
   const url = (svc: ServiceName) => `http://${host}:${PORTS[svc]}`;
-  const common: Record<string, string> = { STUDIO_DB: l.db, YUNSEO_DATA_DIR: l.data, ...(revision ? { YUNSEO_REVISION: revision } : {}) };
+  const common: Record<string, string> = { STUDIO_DB: l.db, YUNSEO_DATA_DIR: l.data, STUDIO_CLOCK: "system", ...(revision ? { YUNSEO_REVISION: revision } : {}) };
   const base = {
     name,
     taskName: `${TASK_FOLDER}${title(name)}`,
