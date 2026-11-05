@@ -166,3 +166,59 @@
 - `withEventFeed` 는 **수집한 일정이 하나도 없으면 원래 저장소의 값을 그대로** 돌려 준다(데모 시안을 채운 DB 면 시안 데이터, 빈 DB 면 빈 목록) — 첫 수집 전에도 화면이 깨지지 않는다. `revision()` 은 원래 값 + 피드 값이라 일정·판정이 바뀌면 읽기 캐시가 바로 낡는다.
 - 어댑터(네트워크)는 `fetch` 를 **주입**받는다. 테스트는 녹화한 응답만 돌려주는 가짜를 쓰고(모르는 주소는 즉시 실패), 계약 테스트(`event-feed.contract.test.ts`)는 메모리·SQLite 두 구현에 같은 시험을 돌린다.
 - 포트 메서드 이름이 `pull` 인 이유: `tests/import-graph.test.ts` 가 application 에서 `fetch(` 문자열을 막는다(포트 뒤로 숨기는 규칙을 문자열로 지킨다).
+
+## 카드 렌더 엔진 (2026-11-05) — 콘텐츠 정본 → 카드 PNG 세트
+
+콘텐츠 정본 한 편을 **카드 PNG 세트(1080×1350) + 캡션·해시태그·대체텍스트**로 바꾼다. 렌더 중에는 이미지 생성·네트워크 호출이 없다(LLM 없음).
+
+```
+정본 YAML ─ validateContentDoc ─▶ ContentBody ─ contentBlockers ─▶ block 이면 거부 / warn 은 결과 warnings
+   │                                                    (금지 표현 · 글자 상한 · 출처/기준 시점)
+   └▶ planCards(종별 카드 계획) ─▶ cardElement(레이아웃) ─▶ satori(SVG) ─▶ resvg(PNG) ─▶ 카드 + 캡션·태그·대체텍스트
+```
+
+| 조각 | 위치 | 하는 일 |
+| --- | --- | --- |
+| 정본 스키마·검사 | `packages/domain/src/content/` | 3종 스키마(`pre-issue.ts`·`post-issue.ts`·`research.ts`), 공통 봉투·claim 구분 필드(`envelope.ts`·`claims.ts`), 통합 진입 `validateContentDoc`·`contentBlockers`(`document.ts`), 캡션·해시태그 `buildPublishText`(`publish-text.ts`) |
+| 포맷 프리셋 | `presets/format/{pre-issue-5,post-issue-4,research-5}.yaml` | 단 순서, 카드 슬롯별 글자 상한(`max_chars`, 가정값), 카드 장면별 질문 Q·기본 답 A(언어 코드별) |
+| 카드 계획 | `packages/adapters/render-html/src/plan/` | 종마다 다른 정본을 「카드 몇 장, 장마다 무엇」(`CardPage`)으로 바꾼다. 대체텍스트(`alt.ts`)도 여기서 |
+| 레이아웃·테마 | `render-html/src/layout.ts`·`theme.ts` | 카드 예시 v2 시각 문법(사진 전면 배경·말풍선 Q/A·번호 목록 상자·닫는 상자·코너 상자). 색·치수는 `theme.ts` 한 곳 |
+| 래스터 | `render-html/src/raster.ts` | satori → SVG → resvg → PNG. 서체는 `render-html/fonts/` 의 Pretendard(WOFF, SIL OFL) |
+| 포트 구현 | `render-html/src/card-renderer.ts` | `createHtmlCardRenderer(options)` 가 계약 `CardRenderer`(`application/src/pipeline/contracts.ts`)를 구현. 입구는 `@yunseo/adapters-render-html/renderer` — 대시보드가 쓰는 기본 입구(`CardAssets`)와 나눠, 네이티브 모듈(`.node`)이 Next 번들로 새지 않게 했다(2026-11-05 `next build` 실측: 기본 입구에서 같이 내보내면 webpack 이 `.node` 를 파싱하다 실패) |
+| 진입 | `apps/cli` | `pnpm run render <content.yaml> --out <폴더> [--backgrounds <폴더>]` — 카드 + `caption.txt`·`alt-texts.txt`·`render.json` |
+
+### 렌더러 선택 — satori + resvg (브라우저 없음)
+
+| 기준 | satori + resvg (선택) | 로컬 HTML + 헤드리스 Chromium |
+| --- | --- | --- |
+| 결정성 | 글자를 글리프 경로로 바꿔 SVG 에 담고(서체는 저장소 파일) resvg 가 그린다 — 브라우저 버전·시스템 서체가 없다. **실측**: 같은 입력을 폴더를 바꿔 두 번 그려 4세트·24장 sha256 이 모두 같다(Windows WSL, 테스트 `apps/cli/src/render.test.ts`) | 같은 기계·같은 Chrome 이면 같지만 Chrome 버전·서체 힌팅이 바뀌면 바이트가 바뀐다 [미측정] |
+| Windows 실행 | npm 패키지만(선행 빌드 바이너리) — `win auto` 의 WSL 에서 추가 설치 없이 돈다 | 브라우저 설치·샌드박스가 따로 필요 |
+| 속도 | __SPEED__ | 장마다 브라우저 기동(카드 예시 v2 의 `render.sh` 방식) [미측정] |
+| 제약 | CSS 일부만(flex·grid·그림자·그라데이션·transform 은 됨). 이모지는 외부 이미지가 필요해 쓰지 않는다 — 톤 프리셋 `emoji: none` 과 같다. 서체는 TTF/OTF/WOFF | 거의 없음 |
+
+- 판단 근거는 「같은 입력 → 같은 PNG」(검수·승인 해시 비교, 04 도메인의 `Approval` 은 산출물 해시를 본다)와 Windows 에서 설치 없이 도는 것이다. 제약은 카드 예시 v2 의 모든 요소가 그려지는 것을 눈으로 확인해 감수했다.
+- **측정하지 않은 것**: 다른 CPU 구조(arm64)에서의 바이트 동일성. 검증은 Windows WSL(x64)과 같은 구조인 CI(ubuntu x64)가 기준이다. Mac 에서 테스트를 돌려 해시가 다르면 그 차이가 이 한계다.
+- 의존 경계: 렌더 어댑터만 래스터 라이브러리 2개(`satori`·`@resvg/resvg-js`)를 더 쓴다 — `tests/import-graph.test.ts` 의 어댑터 허용 목록에 이 둘만 적었다. react 는 쓰지 않는다(요소 트리는 평범한 객체).
+- 라이선스: satori·resvg-js 는 MPL-2.0(의존으로만 사용), Pretendard 는 SIL OFL 1.1(`fonts/Pretendard-OFL.txt`).
+
+### 렌더 전 검사
+
+`contentBlockers(body, rules)` 가 `{ block, warn }` 을 돌려주고, block 이 하나라도 있으면 렌더기는 파일을 쓰지 않고 거부한다(`ContentBlockedError`).
+
+| 검사 | block | warn |
+| --- | --- | --- |
+| 금지 표현(`presets/compliance`) | 규칙이 block 인 것(브리프 원문 금지어) | 규칙이 warn 인 것(영어 제안) |
+| 글자 상한(포맷 프리셋 `max_chars` × 장 수) | 상한의 1.5배 초과(레이아웃이 넘칠 위험), 또는 `limits_provisional: false` 인 상한 초과 | 가정값(`limits_provisional: true`) 상한 초과 |
+| 출처·기준 시점·운영자 해석·claim 별 필수(01 §5) | `status: verified` | `status: draft` — 초안 미리보기는 허용하고 결과에 `[draft]` 로 남긴다 |
+| 캡션 2,200자·해시태그 30개·태그 모양·캡션의 금지 표현 | 항상 | — |
+
+### 배경 이미지 슬롯
+
+카드 장마다 슬롯 이름이 있다: `cover` · `<단>`(그 단의 첫 장) · `<단>-2`(둘째 장) · … 슬롯에 이미지 파일(jpg·png)을 지정하면 사진 전면 배경으로, 지정이 없으면 토큰 색 배경(슬레이트 블루→네이비 + 황동빛 한 점)이다. 출처 장(`sources`)은 늘 종이색이다. 지정 방법은 `createHtmlCardRenderer({ backgrounds })` 의 슬롯→파일 맵, CLI 는 `--backgrounds <폴더>`(폴더 안 `backgrounds.json` 또는 `<슬롯>.jpg|png` 이름). 생성형 배경은 렌더와 따로 만들어 둔다(카드 예시 v2 의 7장은 [`docs/design/card-reference/v2/bg/backgrounds.json`](design/card-reference/v2/bg/backgrounds.json) 으로 지정).
+
+### 테스트와 스냅샷
+
+- 도메인: 3종 스키마·봉투·claim 종류별 필수·검사(`packages/domain/src/content/*.test.ts`), 캡션·해시태그 한도.
+- 어댑터: 카드 계획·대체텍스트·배경 슬롯·거부 경로(`render-html/src/*.test.ts`), 실제 래스터로 크기(1080×1350)·결정성.
+- 스냅샷: `apps/cli/src/render.test.ts` 가 예시 4건(이전·이후·연구·연구 한국어)을 렌더해 **모든 카드의 sha256 을 커밋된 기준값**(`apps/cli/src/__fixtures__/render-golden.json`)과 비교한다. 대표 PNG 3장(`__fixtures__/*.png`)은 바이트까지 같아야 한다.
+- 일부러 카드를 바꿨을 때 기준값 갱신: Windows 에서 `win auto -- bash scripts/render-examples.sh <폴더>` → 결과 폴더를 가져와 눈으로 확인 → `node scripts/render-golden.mjs <폴더>`.

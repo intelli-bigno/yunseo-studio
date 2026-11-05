@@ -19,4 +19,5 @@
 pnpm install
 pnpm run check      # lint + typecheck + test
 pnpm run validate   # 프리셋·콘텐츠 검증 (--publish: 자리표시자가 남으면 실패)
+pnpm run render content/examples/pre-issue/us-midterms-three-repricings.yaml --out <폴더>   # 콘텐츠 정본 → 카드 PNG 세트 + 캡션·대체텍스트
 ```

@@ -65,7 +65,8 @@ presets/
   tone/tone.default.yaml              목소리·원칙·읽기 수준·이모지
   language/language.default.yaml      발행 언어(기본 en, 미확정)·운영자 UI 언어
   format/pre-issue-5.yaml             포맷 ① 이슈 이전 (5단, 카드 7장)
-  format/post-issue-research.yaml     포맷 ② 이슈 이후 (자리만 — 후속 PR 에서 post-issue-4 · research-5 둘로 나눔, §4)
+  format/post-issue-4.yaml            포맷 ② 이슈 이후 (4단)
+  format/research-5.yaml              포맷 ③ 트레이딩 연구 (스레드 5단계)
   compliance/banned-expressions.yaml  금지 표현 규칙 데이터
 ```
 
@@ -85,12 +86,15 @@ presets/
 
 | 종 | 형식 id | 한 줄 질문 | 언제 | 상태 |
 | --- | --- | --- | --- | --- |
-| ① 이슈 이전 | `pre-issue-5` | 이 사건을 어떻게 미리 생각할까 | 사건 **전날**(복잡하면 배경 설명 편 선행) | 활성 — 코드 스키마 있음 |
-| ② 이슈 이후 | `post-issue-4` | **무엇이 달라졌는가** | **충분한 자료를 확보한 뒤**(속보 경쟁 아님) | 설계 확정(이 문서) — 코드 스키마는 후속 |
-| ③ 트레이딩 연구 | `research-5` | **어떻게 판단하고 실행할 것인가** | 이슈 없는 날 | 설계 확정(이 문서) — 코드 스키마는 후속 |
+| ① 이슈 이전 | `pre-issue-5` | 이 사건을 어떻게 미리 생각할까 | 사건 **전날**(복잡하면 배경 설명 편 선행) | 활성 — 코드 스키마·프리셋·카드 렌더 |
+| ② 이슈 이후 | `post-issue-4` | **무엇이 달라졌는가** | **충분한 자료를 확보한 뒤**(속보 경쟁 아님) | 활성 — 코드 스키마·프리셋·카드 렌더 |
+| ③ 트레이딩 연구 | `research-5` | **어떻게 판단하고 실행할 것인가** | 이슈 없는 날 | 활성 — 코드 스키마·프리셋·카드 렌더 |
 
-> 이 절의 ②·③ 필드 표는 **정본 설계(v1 초안)** 다. 코드 스키마(`packages/domain`)·프리셋 파일(`presets/format/`)에 옮기는 일은 후속 PR 이다.
-> 그때 기존 `post-issue-research` 프리셋(자리표시)은 `post-issue-4` 와 `research-5` 둘로 나눈다.
+> 이 절의 ②·③ 필드 표가 **정본 설계**이고, 코드는 `packages/domain/src/content/`(`post-issue.ts`·`research.ts`)·`presets/format/`(`post-issue-4.yaml`·`research-5.yaml`)에 옮겼다(2026-11-05).
+> 세 종은 같은 진입점으로 읽는다 — `validateContentDoc(input)`(스키마 식별자로 분기), 렌더 전 검사 `contentBlockers(body, rules)`(금지 표현·글자 상한·출처/기준 시점 → `block`/`warn`).
+> 파일 필드 이름은 YAML 그대로(snake_case)이고 claim 은 평평하다: `source_url`·`accessed_at`·`quote`·`publisher`·`tier`(출처), `kind`·`basis`·`as_of`(구분), `based_on`·`condition`·`experience`.
+> **봉투 필드**(`as_of`·`importance`·`reels`·`revisions`·`type`)는 예전 파일에 없어도 읽는다(없으면 null·빈 배열). draft 에서는 비어 있어도 되고 `verified` 에서만 막는다.
+> 본문 문장 안의 `**핵심 구**` 는 카드에서 굵게 + 밑줄로 강조되고, 글자 수·금지 표현·수치 검사는 이 표기를 벗기고 한다.
 
 ### 4.1 공통 봉투 (3종 공통 필드)
 
@@ -124,7 +128,7 @@ presets/
 **정본 스키마**: `packages/domain/src/content/pre-issue.ts` (`pre-issue-5/v1`). 예시: `content/examples/pre-issue/us-midterms-three-repricings.yaml`.
 
 `draft` → `verified` 조건(`verificationBlockers(card)` 가 비어야 함): 일시·시간대 기입, 운영자 해석 기입, 모든 claim 에 출처(url·접근일·원문 인용), 본문 수치마다 claim.
-**후속 스키마 변경(②와의 연결용)**: `scenarios.items[]` 에 안정 키 `id` 를 추가한다(지금은 `label` 로 연결), `after_checks.checks[]` 에 `id`, 전체에 `as_of`, claim 에 §5 구분 필드를 추가한다.
+**②와의 연결용 필드(반영됨)**: `scenarios.items[].id`·`after_checks.checks[].id`(안정 키, 선택), 전체 `as_of`, claim 의 §5 구분 필드. `after_checks.closing`(선택)은 독자가 손에 쥘 것을 한 문장으로 닫는 칸이다.
 
 ### 4.3 포맷 ② 이슈 이후 `post-issue-4` — 무엇이 달라졌는가
 
