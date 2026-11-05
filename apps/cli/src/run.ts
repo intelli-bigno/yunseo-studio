@@ -1,12 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "yaml";
-import {
-  findBannedExpressions,
-  scanCardExpressions,
-  validatePreIssueCard,
-  verificationBlockers,
-} from "@yunseo/domain";
+import { contentBlockers, findBannedExpressions, validateContentDoc } from "@yunseo/domain";
 import { PresetError, brandPromoTexts, findPlaceholders, loadPresets } from "@yunseo/presets-schema";
 
 export interface RunResult {
@@ -50,19 +45,19 @@ export function runValidate(rootDir: string, options: { publish: boolean }): Run
   const contentDir = join(rootDir, "content");
   for (const file of yamlFiles(contentDir)) {
     const name = file.slice(rootDir.length + 1);
-    const result = validatePreIssueCard(parse(readFileSync(file, "utf8")) as unknown);
+    const result = validateContentDoc(parse(readFileSync(file, "utf8")) as unknown);
     if (!result.ok) {
       lines.push(...result.errors.map((m) => `✗ ${name}: ${m}`));
       failed = true;
       continue;
     }
-    for (const hit of scanCardExpressions(result.value, presets.bannedExpressions)) {
-      lines.push(`${hit.severity === "block" ? "✗" : "!"} ${name}: ${hit.path} ${hit.ruleId} 「${hit.matched}」`);
-      failed ||= hit.severity === "block";
-    }
-    const blockers = result.value.status === "verified" ? verificationBlockers(result.value) : [];
-    lines.push(...blockers.map((m) => `✗ ${name}: ${m}`));
-    failed ||= blockers.length > 0;
+    // 금지 표현·글자 상한·출처/기준 시점 — verified 는 block, draft 는 warn (검수 전에 채울 칸은 한 줄로 묶는다)
+    const { block, warn } = contentBlockers(result.value, { banned: presets.bannedExpressions, formats: presets.formats });
+    const toFill = warn.filter((f) => f.message.startsWith("[draft] "));
+    for (const f of block) lines.push(`✗ ${name}: ${f.path} ${f.message}`);
+    for (const f of warn.filter((x) => !toFill.includes(x))) lines.push(`! ${name}: ${f.path} ${f.message}`);
+    if (toFill.length > 0) lines.push(`· ${name}: 검수 전에 채울 칸 ${toFill.length}건 (draft)`);
+    failed ||= block.length > 0;
     lines.push(`✓ ${name} (${result.value.status})`);
   }
 

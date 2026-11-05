@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@yunseo/adapters-events-calendar": "workspace:*",
+    "@yunseo/adapters-render-html": "workspace:*",
     "@yunseo/application": "workspace:*",
     "@yunseo/domain": "workspace:*",
     "@yunseo/presets-schema": "workspace:*",

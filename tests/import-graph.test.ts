@@ -62,8 +62,10 @@ describe("import 그래프 — 계층 규칙", () => {
     }
   });
 
-  it("어댑터: application·domain 과 Node 내장만 — 다른 어댑터·화면 계층 없음 (규칙 3)", () => {
-    const bad = external(prod(inDir("packages/adapters"))).filter((e) => e.spec !== "@yunseo/application" && e.spec !== "@yunseo/domain" && !e.spec.startsWith("node:"));
+  it("어댑터: application·domain 과 Node 내장만 — 다른 어댑터·화면 계층 없음 (규칙 3). 렌더 어댑터만 래스터 라이브러리(satori·resvg)를 더 쓴다", () => {
+    const bad = external(prod(inDir("packages/adapters")))
+      .filter((e) => e.spec !== "@yunseo/application" && e.spec !== "@yunseo/domain" && !e.spec.startsWith("node:"))
+      .filter((e) => !(e.file.startsWith("packages/adapters/render-html/") && (e.spec === "satori" || e.spec === "@resvg/resvg-js")));
     expect(bad).toEqual([]);
   });
 
