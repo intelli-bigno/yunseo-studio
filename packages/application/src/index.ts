@@ -3,3 +3,4 @@ export * from "./ports";
 export * from "./views";
 export * from "./read-cache";
 export * from "./use-cases";
+export * from "./ops";

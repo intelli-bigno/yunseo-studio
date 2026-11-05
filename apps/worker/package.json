@@ -5,6 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts"
+    "start": "tsx src/main.ts",
+    "ops": "tsx src/ops-cli.ts"
+  },
+  "dependencies": {
+    "@yunseo/adapters-ops": "workspace:*",
+    "@yunseo/application": "workspace:*"
   }
 }

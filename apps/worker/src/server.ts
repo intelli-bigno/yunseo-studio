@@ -1,12 +1,23 @@
-// 헬스 체크 서버. 잡 큐 소비(docs/05-automation.md)는 M3 이후 — 지금은 살아 있음만 알린다.
+// 헬스 서버 — GET /health 하나. 상태 화면(대시보드 /status)이 이 응답으로 작업의 마지막 실행·다음 실행을 그린다.
 import { createServer, type Server } from "node:http";
+import type { OpsJobState } from "@yunseo/application";
 
-export function createWorkerServer(): Server {
+export interface WorkerHealth {
+  status: "ok";
+  app: "worker";
+  startedAt?: string;
+  revision?: string | null;
+  jobs?: OpsJobState[];
+}
+
+const basic = (): WorkerHealth => ({ status: "ok", app: "worker" });
+
+export function createWorkerServer(health: () => WorkerHealth = basic): Server {
   return createServer((req, res) => {
     const path = (req.url ?? "").split("?")[0];
     if (req.method === "GET" && path === "/health") {
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ status: "ok", app: "worker" }));
+      res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      res.end(JSON.stringify(health()));
       return;
     }
     res.writeHead(404, { "content-type": "application/json" });

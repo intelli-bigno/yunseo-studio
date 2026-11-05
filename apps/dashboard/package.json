@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@yunseo/adapters-ops": "workspace:*",
     "@yunseo/adapters-render-html": "workspace:*",
     "@yunseo/adapters-storage": "workspace:*",
     "@yunseo/application": "workspace:*",

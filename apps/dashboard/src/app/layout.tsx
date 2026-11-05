@@ -29,6 +29,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     { href: "/content", label: "콘텐츠", count: summary.unpublished },
     { href: "/publish", label: "발행", count: summary.ready },
     { href: "/performance", label: "성과", disabled: true },
+    { href: "/status", label: "운영" },
     { href: "/settings", label: "설정", disabled: true },
   ];
 
