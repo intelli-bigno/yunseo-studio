@@ -1,7 +1,7 @@
 # 10. 상시 운영 — Windows 상주 서비스·일일 백업·일정 실행·상태 화면 (L6)
 
 > **2026-11-05 상주 방식 변경 — Windows WSL Docker (사용자 지시).** 이 문서가 설명하는 「Windows 네이티브 Node + 작업 스케줄러」는 은퇴했다(작업·방화벽 규칙 제거, `ops/windows/` 코드는 남김).
-> 지금 상주는 `compose.yaml` 의 컨테이너 둘이고 주소는 **http://yunseo.localhost:8930**(두 Mac 의 ssh -L 터널)이다. 절차·정지/재시작·되돌리기는 [`ops/docker/README.md`](../ops/docker/README.md).
+> 지금 상주는 `compose.yaml` 의 컨테이너 하나(대시보드+워커)이고 주소는 **http://yunseo.localhost:8930**(두 Mac 의 ssh -L 터널)이다. 절차·정지/재시작·되돌리기는 [`ops/docker/README.md`](../ops/docker/README.md).
 > 아래 §2 배치·§3 보안 경계(Tailnet)·§6 명령은 옛 방식 기준이다. §4 일정 실행·백업, §5 상태 화면의 동작은 그대로다.
 
 대시보드와 워커를 `windows-desktop`(Tailnet `100.84.73.107`)에서 **재부팅해도 스스로 뜨는 상주 서비스**로 돌리고, SQLite 를 매일 백업하고, 상태·로그를 대시보드 `/status` 에서 본다.

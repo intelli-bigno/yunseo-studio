@@ -9,59 +9,57 @@ import { assertSafeHost } from "../apps/worker/src/config";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel: string) => readFileSync(join(root, rel), "utf8");
+const noComments = (src: string) => src.replace(/#.*$/gm, "");
 
 const compose = read("compose.yaml");
+const composeBody = noComments(compose);
 const dockerfile = read("Dockerfile");
+const entrypoint = read("ops/docker/entrypoint.sh");
 const install = read("ops/docker/mac-tunnel/install.sh");
 
-/** 최상위 services 아래 한 서비스 블록(다음 서비스·최상위 키 전까지) */
-function service(name: string): string {
-  const m = compose.match(new RegExp(`^  ${name}:\\n([\\s\\S]*?)(?=^  \\w[\\w-]*:\\n|^\\w)`, "m"));
-  if (!m) throw new Error(`서비스 없음: ${name}`);
-  return m[1]!;
-}
-
 describe("compose — 노출 경계", () => {
-  it("publish 하는 포트는 전부 127.0.0.1 로만 연다(LAN·Tailnet·인터넷 없음)", () => {
-    const ports = [...compose.matchAll(/^\s+- "([^"]*\d+:\d+(?:\/\w+)?)"$/gm)].map((m) => m[1]!);
+  it("publish 하는 포트는 127.0.0.1 의 대시보드 8930 하나뿐이다(LAN·Tailnet·인터넷·워커 포트 없음)", () => {
+    const ports = [...composeBody.matchAll(/^\s+- "([^"]*\d+:\d+(?:\/\w+)?)"$/gm)].map((m) => m[1]!);
     expect(ports).toEqual(["127.0.0.1:8930:8930"]);
   });
 
-  it("워커는 포트를 publish 하지 않고 대시보드와 네트워크를 공유하며 루프백에만 바인드한다", () => {
-    const worker = service("worker");
-    expect(worker).not.toMatch(/^\s+ports:/m);
-    expect(worker).toMatch(/network_mode: "service:dashboard"/);
-    expect(worker).toMatch(/HOST: 127\.0\.0\.1/);
-    expect(() => assertSafeHost("127.0.0.1")).not.toThrow();
-    expect(() => assertSafeHost("0.0.0.0")).toThrow(); // 코드의 바인드 검사는 그대로다 — 컨테이너 때문에 풀지 않았다
+  it("서비스는 하나이고 네트워크를 다른 컨테이너와 공유하지 않는다(대시보드 재시작 때 워커가 끊기는 구성 금지)", () => {
+    expect([...composeBody.matchAll(/^ {2}(\w[\w-]*):$/gm)].map((m) => m[1])).toEqual(["studio", "data"]);
+    expect(composeBody).not.toMatch(/network_mode/);
   });
 
-  it("대시보드는 컨테이너 안에서 0.0.0.0:8930 으로 듣고 헬스 확인이 있다", () => {
-    const d = service("dashboard");
-    expect(d).toMatch(/"-H", "0\.0\.0\.0", "-p", "8930"/);
-    expect(d).toMatch(/api\/health/);
-    expect(service("worker")).toMatch(/depends_on:\s+dashboard:\s+condition: service_healthy/);
+  it("워커는 컨테이너 안 루프백에만 바인드하고, 코드의 바인드 검사는 그대로다", () => {
+    expect(entrypoint).toMatch(/start worker \S+ env HOST=127\.0\.0\.1 PORT=8931 /);
+    expect(() => assertSafeHost("127.0.0.1")).not.toThrow();
+    expect(() => assertSafeHost("0.0.0.0")).toThrow();
+  });
+
+  it("대시보드는 컨테이너 안에서 0.0.0.0:8930 으로 듣고, 헬스 확인이 둘을 모두 본다", () => {
+    expect(entrypoint).toMatch(/start dashboard \S+ node \S+ start -H 0\.0\.0\.0 -p 8930/);
+    expect(composeBody).toContain("http://127.0.0.1:8930/api/health");
+    expect(composeBody).toContain("http://127.0.0.1:8931/health");
   });
 });
 
-describe("compose — 복귀·데이터", () => {
-  it("두 서비스 모두 unless-stopped 공통 설정을 쓴다", () => {
-    expect(compose).toMatch(/x-service: &service\n(?:.*\n)*?\s+restart: unless-stopped/);
-    expect(service("dashboard")).toMatch(/<<: \*service/);
-    expect(service("worker")).toMatch(/<<: \*service/);
+describe("복귀·데이터", () => {
+  it("unless-stopped, 하나가 죽으면 컨테이너째 재시작하도록 운명 공동체로 묶는다", () => {
+    expect(composeBody).toMatch(/restart: unless-stopped/);
+    expect(composeBody).toMatch(/init: true/);
+    expect(entrypoint).toMatch(/wait -n /);
+    expect(entrypoint).toMatch(/exit \$\(\(code == 0 \? 1 : code\)\)/); // 정상 종료(0)도 비정상으로 — 재시작 정책이 다시 올린다
+    expect(dockerfile).toContain('CMD ["bash", "/app/ops/docker/entrypoint.sh"]');
   });
 
-  it("SQLite 는 이름 있는 볼륨(/data)에 있고 볼륨 이름이 고정이다", () => {
-    expect(compose).toMatch(/STUDIO_DB: \/data\/studio\.db/);
-    expect(compose).toMatch(/volumes:\n\s+- data:\/data/);
-    expect(compose).toMatch(/^volumes:\n  data:\n    name: yunseo-studio-data$/m);
-    const body = compose.replace(/#.*$/gm, ""); // 주석은 근거 설명이라 뺀다
-    expect(body).not.toMatch(/\/mnt\/d/); // 9p 위 SQLite WAL 금지
+  it("SQLite 는 이름 있는 볼륨(/data)에 있고 볼륨 이름이 고정이다, /mnt/d(9p)는 쓰지 않는다", () => {
+    expect(composeBody).toMatch(/STUDIO_DB: \/data\/studio\.db/);
+    expect(composeBody).toMatch(/volumes:\n\s+- data:\/data/);
+    expect(composeBody).toMatch(/^volumes:\n {2}data:\n {4}name: yunseo-studio-data$/m);
+    expect(composeBody).not.toMatch(/\/mnt\/d/);
   });
 
   it("실제 운영 데이터 모드(STUDIO_CLOCK=system)와 KST", () => {
-    expect(compose).toMatch(/STUDIO_CLOCK: system/);
-    expect(compose).toMatch(/TZ: Asia\/Seoul/);
+    expect(composeBody).toMatch(/STUDIO_CLOCK: system/);
+    expect(composeBody).toMatch(/TZ: Asia\/Seoul/);
   });
 });
 
@@ -98,7 +96,7 @@ describe("Mac 터널 설치기", () => {
   });
 
   it("셸 스크립트 문법(bash -n)", () => {
-    for (const f of ["ops/docker/ctl.sh", "ops/docker/remote.sh", "ops/docker/mac-tunnel/install.sh"]) {
+    for (const f of ["ops/docker/ctl.sh", "ops/docker/remote.sh", "ops/docker/entrypoint.sh", "ops/docker/mac-tunnel/install.sh"]) {
       expect(() => execFileSync("bash", ["-n", join(root, f)]), f).not.toThrow();
     }
   });

@@ -1,6 +1,6 @@
 # ops/docker — Windows WSL Docker 상주 (2026-11-05 사용자 지시)
 
-대시보드(`yunseo-dashboard`)와 워커(`yunseo-worker`)를 windows-desktop 의 **WSL Docker** 에 상주시킨다. Mac 에서는 아무것도 띄우지 않는다(ssh 터널 클라이언트만).
+대시보드와 워커를 windows-desktop 의 **WSL Docker** 컨테이너 하나(`yunseo-studio`)에 상주시킨다. Mac 에서는 아무것도 띄우지 않는다(ssh 터널 클라이언트만).
 이 방식이 `docs/10-operations.md` 의 「Windows 네이티브 + 작업 스케줄러」를 **대체**한다(그 문서의 §2~§5 중 서비스·백업·상태 화면 동작은 그대로, 설치·실행 방식만 바뀜).
 
 ## 주소
@@ -20,10 +20,10 @@
 | 항목 | 값 |
 | --- | --- |
 | 이미지 | `yunseo-studio:local` (Dockerfile — `node:22-slim`(bookworm)+ffmpeg+DejaVu 서체+pnpm 11.13.1, 비루트 `node` 계정) |
-| 컨테이너 | `yunseo-dashboard`(`next start`, 8930) · `yunseo-worker`(tsx, 8931 — 대시보드와 네트워크 공유, 밖으로 publish 안 함) |
+| 컨테이너 | `yunseo-studio` 하나 — 안에서 대시보드(`next start`, 8930)와 워커(tsx, 8931 — 컨테이너 안 루프백 전용, publish 안 함)를 `entrypoint.sh` 가 띄운다 |
 | 재시작 정책 | `restart: unless-stopped` (직접 `stop` 한 것은 데몬이 올라와도 안 켜짐) |
 | 데이터 | 이름 있는 볼륨 `yunseo-studio-data` → `/data` (`studio.db`·`backups/`·`work/`). ext4 볼륨이라 SQLite WAL 이 안전하다 |
-| 로그 | `docker logs`(json-file 5MB×5). `/status` 화면의 파일 로그 칸은 비어 있다(`YUNSEO_DATA_DIR` 미설정) |
+| 로그 | `docker logs`(json-file 5MB×5, 줄마다 `[worker]`·`[dashboard]` 접두사). `/status` 화면의 파일 로그 칸은 비어 있다(`YUNSEO_DATA_DIR` 미설정) |
 | 워커 네트워크 | `network_mode: service:dashboard` — 워커는 컨테이너 안 `127.0.0.1:8931` 에만 열려 `assertSafeHost` 검사를 코드 수정 없이 지킨다 |
 | WSL 쪽 파일 | `~/Services/yunseo-studio/{current→src-<sha>, .docker-nocreds}` (WSL ext4) |
 | Git 허브 | `D:\Services\yunseo-studio\repo.git`(`deploy` 브랜치) — Mac 이 push, WSL 이 `git archive` 로 그 커밋만 뽑아 빌드 |
@@ -33,8 +33,8 @@
 ```bash
 ops/docker/ctl.sh status                  # 컨테이너·헬스·배포 커밋
 ops/docker/ctl.sh deploy                  # origin/main 배포(빌드→기동→헬스). --ref <커밋> 으로 특정 커밋/되돌리기, --dry-run
-ops/docker/ctl.sh stop                    # 정지 (worker → dashboard)
-ops/docker/ctl.sh start                   # 시작 (dashboard 헬스 후 worker)
+ops/docker/ctl.sh stop                    # 정지 (대시보드·워커 함께, 직접 멈춘 것은 재부팅 뒤에도 안 켜짐)
+ops/docker/ctl.sh start                   # 시작 + 헬스 대기
 ops/docker/ctl.sh restart
 ops/docker/ctl.sh logs 100                # 최근 100줄씩
 ops/docker/ctl.sh backup-now              # /data/backups 에 즉시 백업(VACUUM INTO, 14개 보존)
@@ -57,7 +57,7 @@ bash ops/docker/mac-tunnel/install.sh --uninstall
 
 ## 재부팅·WSL 재시작 뒤 복귀
 
-- 컨테이너는 `unless-stopped` — Docker Desktop(WSL 백엔드)이 올라오면 같은 정책의 다른 상주 컨테이너(postiz·bigno-studio 등)와 함께 따라 올라온다. 워커는 대시보드가 healthy 일 때 시작한다(`depends_on`).
+- 컨테이너는 `unless-stopped` — Docker Desktop(WSL 백엔드)이 올라오면 같은 정책의 다른 상주 컨테이너(postiz·bigno-studio 등)와 함께 따라 올라온다.
 - 워커는 기동 1분 뒤 놓친 백업을 따라잡고, 죽은 채 남은 「실행 중」 기록은 기동 때 실패로 닫는다.
 - Mac 터널은 launchd KeepAlive + RunAtLoad — Mac 재로그인·재부팅 뒤 자동. windows-desktop 이 꺼져 있는 동안은 연결 실패 로그가 쌓이다 켜지면 붙는다.
 
@@ -66,7 +66,8 @@ bash ops/docker/mac-tunnel/install.sh --uninstall
 1. **ssh 비대화 세션의 docker 자격증명 도우미 실패** — `error getting credentials … logon session does not exist`. `remote.sh` 가 빈 `DOCKER_CONFIG`(`~/Services/yunseo-studio/.docker-nocreds`)를 써서 우회한다. 베이스 이미지는 공개 이미지 `node:22-slim`(이미 받아 둔 태그)이라 자격증명이 필요 없다. 이 PC 의 docker 이미지를 `prune -a` 로 지우면 다시 못 받는다.
 2. **Git Bash 경로 변환** — ssh 로 WSL 명령에 `/home/…`·`/mnt/…` 인자를 넘길 때 MSYS 가 Windows 경로로 바꾼다 → `ctl.sh` 는 `MSYS_NO_PATHCONV=1` 을 붙인다.
 3. **SQLite 는 `/mnt/d`(9p)에 두지 않는다** — WAL 공유 메모리가 불안정하다. 그래서 볼륨(ext4)이다. 대가: 백업도 같은 볼륨(`/data/backups`)에 있어 Docker 디스크가 사라지면 같이 사라진다. 볼륨 밖 사본을 자동으로 만드는 작업은 아직 없다(`ctl.sh backup-now` 로 만든 사본을 필요할 때 `docker cp` 로 꺼낸다).
-4. **포트 8930** — 네이티브 서비스는 Tailnet IP 에 8930 을 썼다. Docker 는 루프백 8930 이라 충돌하지 않지만, 네이티브 서비스를 다시 켜지 않는다(DB 가 둘로 갈라진다).
+4. **컨테이너 둘 + `network_mode: service:` 는 쓰지 않는다** — 대시보드만 재시작되면 워커가 옛 네트워크 공간에 남아 서로 `ECONNREFUSED`(실측). 그래서 한 컨테이너 + `entrypoint.sh` 다. 또 `docker kill` 은 「직접 멈춤」으로 취급돼 재시작 정책이 안 돈다 — 크래시 복구 시험은 컨테이너 안 프로세스를 죽여서 한다.
+5. **포트 8930** — 네이티브 서비스는 Tailnet IP 에 8930 을 썼다. Docker 는 루프백 8930 이라 충돌하지 않지만, 네이티브 서비스를 다시 켜지 않는다(DB 가 둘로 갈라진다).
 
 ## 네이티브 서비스 은퇴 기록 (2026-11-05)
 

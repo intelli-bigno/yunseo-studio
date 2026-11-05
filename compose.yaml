@@ -1,83 +1,59 @@
 # yunseo-studio 상주 서비스 — Windows(WSL Docker)에서만 띄운다. Mac 에서 docker 실행 금지. 절차: ops/docker/README.md
 #
-# 노출 경계: 대시보드 포트는 WSL 루프백(127.0.0.1:8930)에만 연다 — Windows 루프백으로 전달된다. LAN·Tailnet·인터넷으로는 열지 않는다.
+# 노출 경계: 포트는 WSL 루프백(127.0.0.1:8930)에만 연다 — Windows 루프백으로 전달된다. LAN·Tailnet·인터넷으로는 열지 않는다.
 # 두 Mac 은 ssh -L 터널(ops/docker/mac-tunnel)로 붙고, 브라우저는 http://yunseo.localhost:8930 으로 연다.
 #
-# 워커는 대시보드와 네트워크 이름공간을 공유한다(network_mode: service:dashboard) — 워커가 컨테이너 안 루프백(127.0.0.1:8931)에만
-# 열려서 「루프백·Tailnet 밖 바인드 거부」 검사(apps/worker/src/config.ts assertSafeHost)를 코드 변경 없이 지키고, 포트도 밖으로 안 나간다.
+# 컨테이너 하나에 대시보드(8930)와 워커(8931)가 같이 산다(ops/docker/entrypoint.sh) — 워커는 컨테이너 안 루프백에만 열려서
+# 「루프백·Tailnet 밖 바인드 거부」 검사(apps/worker/src/config.ts assertSafeHost)를 코드 변경 없이 지키고 밖으로 안 나간다.
+# 둘이 한 컨테이너인 이유(별도 컨테이너+network_mode 공유는 대시보드 재시작 때 워커가 끊김)는 entrypoint.sh 머리말.
 name: yunseo-studio
 
-x-env: &env
-  NODE_ENV: production
-  NEXT_TELEMETRY_DISABLED: "1"
-  TZ: Asia/Seoul
-  # 실제 운영 데이터 모드(KST 오늘 기준). SQLite 는 이름 있는 볼륨(리눅스 ext4)에 둔다 — /mnt/d(9p)에서는 WAL 공유 메모리가 불안정하다.
-  STUDIO_CLOCK: system
-  STUDIO_DB: /data/studio.db
-  STUDIO_WORK_DIR: /data/work
-  YUNSEO_BACKUP_DIR: /data/backups
-  YUNSEO_BACKUP_KEEP: "14"
-  YUNSEO_WORKER_URL: http://127.0.0.1:8931
-  YUNSEO_DASHBOARD_URL: http://127.0.0.1:8930
-
-x-service: &service
-  image: yunseo-studio:local
-  restart: unless-stopped
-  init: true
-  security_opt:
-    - no-new-privileges:true
-  cap_drop:
-    - ALL
-  volumes:
-    - data:/data
-  logging:
-    driver: json-file
-    options:
-      max-size: 5m
-      max-file: "5"
-
 services:
-  dashboard:
-    <<: *service
+  studio:
     build:
       context: .
       args:
         YUNSEO_REVISION: ${YUNSEO_REVISION:-unknown}
-    container_name: yunseo-dashboard
-    working_dir: /app/apps/dashboard
-    command: ["node", "node_modules/next/dist/bin/next", "start", "-H", "0.0.0.0", "-p", "8930"]
+    image: yunseo-studio:local
+    container_name: yunseo-studio
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 20s
+    working_dir: /app
+    command: ["bash", "/app/ops/docker/entrypoint.sh"]
     ports:
       - "127.0.0.1:8930:8930"
     environment:
-      <<: *env
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      TZ: Asia/Seoul
+      # 실제 운영 데이터 모드(KST 오늘 기준). SQLite 는 이름 있는 볼륨(리눅스 ext4)에 둔다 — /mnt/d(9p)에서는 WAL 공유 메모리가 불안정하다.
+      STUDIO_CLOCK: system
+      STUDIO_DB: /data/studio.db
+      STUDIO_WORK_DIR: /data/work
+      YUNSEO_BACKUP_DIR: /data/backups
+      YUNSEO_BACKUP_KEEP: "14"
+      YUNSEO_WORKER_URL: http://127.0.0.1:8931
+      YUNSEO_DASHBOARD_URL: http://127.0.0.1:8930
+    volumes:
+      - data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     mem_limit: 2g
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "5"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8930/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      # 대시보드와 워커가 둘 다 응답해야 healthy
+      test: ["CMD", "node", "-e", "Promise.all(['http://127.0.0.1:8930/api/health','http://127.0.0.1:8931/health'].map(u=>fetch(u).then(r=>{if(!r.ok)throw 1}))).then(()=>process.exit(0),()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 30s
-
-  worker:
-    <<: *service
-    container_name: yunseo-worker
-    network_mode: "service:dashboard"
-    working_dir: /app/apps/worker
-    command: ["node", "--import", "tsx", "src/main.ts"]
-    depends_on:
-      dashboard:
-        condition: service_healthy
-    environment:
-      <<: *env
-      HOST: 127.0.0.1
-      PORT: "8931"
-    mem_limit: 512m
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8931/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
 
 volumes:
   data:

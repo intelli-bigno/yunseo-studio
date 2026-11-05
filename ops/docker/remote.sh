@@ -11,6 +11,7 @@ PROJECT=yunseo-studio
 VOLUME=yunseo-studio-data
 IMAGE=yunseo-studio:local
 URL=http://127.0.0.1:8930
+NAME=yunseo-studio
 
 # 비대화 세션(ssh)에서는 ~/.docker/config.json 의 credsStore(desktop.exe)가 "logon session does not exist" 로 실패한다(2026-10-18 기록).
 # 쓰는 이미지가 전부 공개 이미지라 자격증명이 필요 없다 — 빈 설정 폴더를 쓴다(compose·buildx 플러그인은 /usr/local/lib/docker/cli-plugins 라 영향 없음).
@@ -25,25 +26,23 @@ compose() { docker compose -p "$PROJECT" -f "$ROOT/current/compose.yaml" "$@"; }
 
 health_of() { docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$1" 2>/dev/null || echo missing; }
 
-# wait_healthy [컨테이너...] — 기본은 둘 다 healthy 가 될 때까지(최대 180초)
+# 컨테이너 헬스 = 대시보드와 워커가 둘 다 응답할 때 healthy (compose.yaml healthcheck). 최대 180초 기다린다.
 wait_healthy() {
-  local names=("$@") n i=0 ok
-  [ "${#names[@]}" -gt 0 ] || names=(yunseo-dashboard yunseo-worker)
+  local i=0
   while [ "$i" -lt 90 ]; do
-    ok=1
-    for n in "${names[@]}"; do [ "$(health_of "$n")" = healthy ] || ok=0; done
-    [ "$ok" = 1 ] && return 0
+    [ "$(health_of "$NAME")" = healthy ] && return 0
     sleep 2; i=$((i + 1))
   done
-  echo "헬스 대기 시간 초과: dashboard=$(health_of yunseo-dashboard) worker=$(health_of yunseo-worker)" >&2
+  echo "헬스 대기 시간 초과: $NAME=$(health_of "$NAME")" >&2
   return 1
 }
 
 status() {
   docker ps -a --filter "label=com.docker.compose.project=$PROJECT" --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
-  echo "revision: $(docker exec yunseo-dashboard printenv YUNSEO_REVISION 2>/dev/null || echo -)"
+  echo "restarts: $(docker inspect --format '{{.RestartCount}}' "$NAME" 2>/dev/null || echo -)"
+  echo "revision: $(docker exec "$NAME" printenv YUNSEO_REVISION 2>/dev/null || echo -)"
   echo "dashboard: $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$URL/api/health" || true)  ($URL/api/health)"
-  docker exec yunseo-worker node -e "fetch('http://127.0.0.1:8931/health').then(r=>r.text()).then(t=>console.log('worker: '+t.slice(0,160))).catch(e=>console.log('worker: 응답 없음 '+e.message))" 2>/dev/null || echo "worker: 컨테이너 없음/정지"
+  docker exec "$NAME" node -e "fetch('http://127.0.0.1:8931/health').then(r=>r.text()).then(t=>console.log('worker: '+t.slice(0,160))).catch(e=>console.log('worker: 응답 없음 '+e.message))" 2>/dev/null || echo "worker: 컨테이너 없음/정지"
 }
 
 case "$cmd" in
@@ -63,6 +62,10 @@ case "$cmd" in
     if docker image inspect "$IMAGE" >/dev/null 2>&1; then docker tag "$IMAGE" yunseo-studio:prev; fi
     export YUNSEO_REVISION="${sha:0:12}"
     compose build
+    # 2026-11-05 이전 구성(컨테이너 둘: yunseo-dashboard·yunseo-worker)이 남아 있으면 포트 8930 이 겹치므로 먼저 정상 종료해 지운다(볼륨은 그대로).
+    for old in yunseo-worker yunseo-dashboard; do
+      if docker inspect "$old" >/dev/null 2>&1; then docker stop "$old" >/dev/null; docker rm "$old" >/dev/null; echo "옛 컨테이너 제거: $old"; fi
+    done
     compose up -d --remove-orphans
     wait_healthy
     status
@@ -71,15 +74,11 @@ case "$cmd" in
     echo "deploy_done=1"
     ;;
   status) status ;;
-  stop) docker stop yunseo-worker yunseo-dashboard; status ;;
-  start) docker start yunseo-dashboard; wait_healthy yunseo-dashboard; docker start yunseo-worker; wait_healthy; status ;;
-  restart) docker restart yunseo-dashboard yunseo-worker; wait_healthy; status ;;
-  logs)
-    n="${1:-80}"
-    docker logs --tail "$n" yunseo-dashboard 2>&1 | sed 's/^/[dashboard] /'
-    docker logs --tail "$n" yunseo-worker 2>&1 | sed 's/^/[worker] /'
-    ;;
-  backup-now) docker exec -w /app/apps/worker yunseo-worker node --import tsx src/ops-cli.ts backup-now ;;
+  stop) docker stop "$NAME"; status ;;
+  start) docker start "$NAME"; wait_healthy; status ;;
+  restart) docker restart "$NAME"; wait_healthy; status ;;
+  logs) docker logs --tail "${1:-100}" "$NAME" 2>&1 ;;   # 줄마다 [worker]·[dashboard] 접두사
+  backup-now) docker exec -w /app/apps/worker "$NAME" node --import tsx src/ops-cli.ts backup-now ;;
   import-db)
     # 옛 네이티브 서비스의 DB(opsctl backup-now 사본)를 새 볼륨에 한 번 들여온다. 이미 DB 가 있으면 거부(--force 로만 덮어씀).
     file="${1:?import-db <sqlite 파일> [--force]}"

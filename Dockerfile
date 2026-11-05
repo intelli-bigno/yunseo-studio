@@ -1,4 +1,4 @@
-# yunseo-studio 상주 이미지 — 대시보드(Next.js)와 워커(tsx)가 같은 이미지를 쓴다. 실행 명령은 compose.yaml 이 정한다.
+# yunseo-studio 상주 이미지 — 대시보드(Next.js)와 워커(tsx)를 한 컨테이너에서 띄운다(ops/docker/entrypoint.sh).
 # 빌드·실행은 Windows(WSL Docker)에서만: ops/docker/README.md. Mac 에서 docker 실행 금지.
 # 빌드 입력은 `git archive` 로 뽑은 깨끗한 커밋 트리다(node_modules·.next 없음, .dockerignore 가 한 번 더 막는다).
 
@@ -26,6 +26,6 @@ RUN pnpm --filter @yunseo/app-dashboard run build
 ARG YUNSEO_REVISION=unknown
 ENV YUNSEO_REVISION=${YUNSEO_REVISION}
 
-WORKDIR /app/apps/dashboard
+# 대시보드(8930)와 워커(8931, 컨테이너 안 루프백 전용)를 같이 띄운다 — ops/docker/entrypoint.sh
 EXPOSE 8930
-CMD ["node", "node_modules/next/dist/bin/next", "start", "-H", "0.0.0.0", "-p", "8930"]
+CMD ["bash", "/app/ops/docker/entrypoint.sh"]
