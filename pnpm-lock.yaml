@@ -32,6 +32,12 @@ importers:
 
   apps/cli:
     dependencies:
+      '@yunseo/adapters-events-calendar':
+        specifier: workspace:*
+        version: link:../../packages/adapters/events-calendar
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../packages/application
       '@yunseo/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -44,6 +50,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@yunseo/adapters-events-calendar':
+        specifier: workspace:*
+        version: link:../../packages/adapters/events-calendar
       '@yunseo/adapters-metrics':
         specifier: workspace:*
         version: link:../../packages/adapters/metrics
@@ -99,12 +108,33 @@ importers:
 
   apps/worker:
     dependencies:
+      '@yunseo/adapters-events-calendar':
+        specifier: workspace:*
+        version: link:../../packages/adapters/events-calendar
       '@yunseo/adapters-ops':
         specifier: workspace:*
         version: link:../../packages/adapters/ops
       '@yunseo/application':
         specifier: workspace:*
         version: link:../../packages/application
+      '@yunseo/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+
+  packages/adapters/events-calendar:
+    dependencies:
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../application
+      '@yunseo/domain':
+        specifier: workspace:*
+        version: link:../../domain
+
+  packages/adapters/llm:
+    dependencies:
+      '@yunseo/application':
+        specifier: workspace:*
+        version: link:../../application
 
   packages/adapters/metrics:
     dependencies:

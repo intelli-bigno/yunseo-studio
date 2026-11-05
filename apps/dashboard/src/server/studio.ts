@@ -1,9 +1,10 @@
 // 조립부(composition root) — 어댑터를 만들고 유스케이스에 꽂는 곳이다. 대시보드에서 어댑터를 import 하는 유일한 파일(04 규칙 4).
 // 화면(app/·components/)은 `studio()` 로 유스케이스만 받는다. ESLint 와 tests/import-graph.test.ts 가 이 경계를 지킨다.
 import { resolve } from "node:path";
+import { createSqliteEventFeed, describeOfficialSources, type SqliteEventFeed } from "@yunseo/adapters-events-calendar";
 import { createFileCardAssets } from "@yunseo/adapters-render-html";
 import { createSqliteStudioRepository, SEED_TODAY } from "@yunseo/adapters-storage";
-import { createStudioUseCases, withReadCache, type Clock, type StudioUseCases } from "@yunseo/application";
+import { createEventUseCases, createStudioUseCases, withEventFeed, withReadCache, type Clock, type EventUseCases, type StudioUseCases } from "@yunseo/application";
 // [L2] 작성·검수·업로드 묶음 조립에 쓰는 것
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -19,13 +20,33 @@ function clock(): Clock {
 }
 
 function compose(): StudioUseCases {
-  const repo = withReadCache(sqliteRepo()); // [L2] 쓰기 유스케이스와 같은 연결 — 쓰기마다 revision 이 올라 읽기 캐시가 바로 낡는다
+  // [L4] 후보함·이번 주의 변수를 수집한 일정에서 채운다(수집한 일정이 없으면 시안 데이터 그대로). 읽기 캐시는 바깥에 씌운다
+  const repo = withReadCache(withEventFeed(sqliteRepo(), { feed: eventFeed(), clock: clock() })); // [L2] 쓰기 유스케이스와 같은 연결 — 쓰기마다 revision 이 올라 읽기 캐시가 바로 낡는다
   const here = process.cwd(); // next start 는 apps/dashboard, 저장소 루트에서 띄우면 루트
   const cards = createFileCardAssets({
     renderDirs: [resolve(here, "../../docs/design/card-reference/example/render"), resolve(here, "docs/design/card-reference/example/render")],
     v2Dir: process.env.CARD_V2_DIR,
   });
   return createStudioUseCases({ repo, clock: clock(), cards });
+}
+
+// [L4] 일정 수집 — 같은 DB 파일(STUDIO_DB)에 l4_* 테이블을 둔다. 연결은 프로세스에 하나(아래 slot 과 같은 이유)
+const l4 = globalThis as typeof globalThis & { __yunseoEventFeed?: SqliteEventFeed; __yunseoEvents?: EventUseCases };
+
+function eventFeed(): SqliteEventFeed {
+  const path = process.env.STUDIO_DB;
+  return (l4.__yunseoEventFeed ??= createSqliteEventFeed(path ? { path } : {}));
+}
+
+/** 수집 현황·판정·수동 입력 유스케이스 (편성 화면의 서버 액션과 /schedule/events 가 쓴다) */
+export function events(): EventUseCases {
+  return (l4.__yunseoEvents ??= createEventUseCases({
+    feed: eventFeed(),
+    clock: clock(),
+    sources: describeOfficialSources(),
+    now: () => new Date().toISOString().replace(/:\d{2}\.\d{3}Z$/, ":00Z"),
+    newId: () => globalThis.crypto.randomUUID(),
+  }));
 }
 
 // 연결·캐시는 프로세스에 하나만 — 개발 서버가 모듈을 다시 읽어도(HMR) DB 연결이 쌓이지 않게 globalThis 에 둔다.

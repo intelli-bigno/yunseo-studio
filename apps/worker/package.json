@@ -6,10 +6,13 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
-    "ops": "tsx src/ops-cli.ts"
+    "ops": "tsx src/ops-cli.ts",
+    "collect-events": "tsx src/collect-events-main.ts"
   },
   "dependencies": {
+    "@yunseo/adapters-events-calendar": "workspace:*",
     "@yunseo/adapters-ops": "workspace:*",
-    "@yunseo/application": "workspace:*"
+    "@yunseo/application": "workspace:*",
+    "@yunseo/domain": "workspace:*"
   }
 }

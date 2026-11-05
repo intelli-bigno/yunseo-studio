@@ -5,6 +5,7 @@ import Link from "next/link";
 import { weekday } from "@yunseo/domain";
 import { Badge, Calendar, CalendarDay, Card, CardHeader, DateTile, EmptySlot, Glyph, List, ListItem, Page, PageHeader, SegmentedItem, Segmented, Slot, Split, TextLink } from "@yunseo/ui";
 import { CandidateList } from "@/components/CandidateList";
+import { clearDecisionAction, decideEventAction } from "./actions";
 import { KindMark } from "@/components/ui";
 import { fmtWeekRange } from "@/lib/format";
 import { heroMedia } from "@/lib/media";
@@ -21,10 +22,13 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       <PageHeader
         title={month ? `${Number(view.today.slice(5, 7))}월` : fmtWeekRange(view.from, view.to)}
         actions={
+          <>
+            <TextLink as={Link} href="/schedule/events">일정 수집 · 수동 입력 →</TextLink>
           <Segmented label="보기">
             <SegmentedItem as={Link} href="/schedule" current={!month}>주</SegmentedItem>
             <SegmentedItem as={Link} href="/schedule?view=month" current={month}>월</SegmentedItem>
           </Segmented>
+          </>
         }
       />
       <Split
@@ -46,7 +50,8 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
             </Card>
             <Card>
               <CardHeader title="사건 후보 · G1" />
-              <CandidateList initial={view.candidates} />
+              {/* [L4] key: 서버 판정/수집이 바뀌면 클라이언트 상태를 새로 시작한다 */}
+              <CandidateList key={view.candidates.map((c) => `${c.id}:${c.decision ?? "-"}`).join("|")} initial={view.candidates} actions={{ decide: decideEventAction, clear: clearDecisionAction }} />
             </Card>
           </>
         }

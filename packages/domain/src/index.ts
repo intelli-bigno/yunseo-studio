@@ -4,3 +4,4 @@ export * from "./content";
 export * from "./story";
 export * from "./publish";
 export * from "./metrics";
+export * from "./events";
