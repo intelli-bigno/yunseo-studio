@@ -88,6 +88,8 @@ describe("검수 전 차단 사유", () => {
       "event.scheduled_at: 일시 없는 이벤트는 선정 불가",
       "event.timezone: 시간대 명시 필요",
       "operator_view: 운영자 고유 해석이 비어 있다",
+      "as_of: 기준 시점이 비어 있다",
+      "importance: major | watch 판정이 필요하다 (docs/02 §3.2)",
     ]);
   });
 
@@ -95,8 +97,24 @@ describe("검수 전 차단 사유", () => {
     const ready = card({
       event: { name: "e", kind: "data_release", scheduled_at: "2026-01-01T00:00:00Z", timezone: "America/New_York" },
       operator_view: "view",
+      as_of: "2026-01-01T00:00:00Z",
+      importance: "major",
     });
     expect(verificationBlockers(parsed(ready))).toEqual([]);
+  });
+
+  it("예전 파일(as_of·importance·type·revisions 가 없는)도 읽는다", () => {
+    const old = parsed(card());
+    expect(old).toMatchObject({ type: "pre_issue", as_of: null, importance: null, reels: null, revisions: [] });
+  });
+
+  it("봉투 필드가 틀리면 경로가 담긴 오류를 돌려준다", () => {
+    const result = validatePreIssueCard(card({ type: "research", as_of: "yesterday", importance: "huge", reels: { planned: "yes" } }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      const text = result.errors.join("\n");
+      for (const path of ["type", "as_of", "importance", "reels.planned"]) expect(text).toContain(path);
+    }
   });
 
   it("출처가 빠진 주장은 막는다", () => {
