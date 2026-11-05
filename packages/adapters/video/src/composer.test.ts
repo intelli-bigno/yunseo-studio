@@ -1,9 +1,9 @@
 // 통합 테스트 — 진짜 ffmpeg 로 짧은 릴스를 만들고 ffprobe·프레임 픽셀로 규격을 확인한다.
 // ffmpeg 가 없으면 건너뛰지 않고 실패한다: beforeAll 의 assertFfmpegReady 가 이유와 해결 방법을 담은 메시지를 던진다.
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_REEL_PRESET, REEL_TRANSITION_SEC, computeReelLayout, insideSafeArea, planReel, reelPresetIssues, type ReelPreset } from "@yunseo/domain";
 import { ReelComposeError, createFfmpegReelComposer } from "./composer";
@@ -140,6 +140,64 @@ describe("ffmpeg 가 있는 환경", () => {
     expect(Math.abs((probe.formatDurationSec ?? 0) - total)).toBeLessThan(0.4);
   }, 180_000);
 
+  it("상대 경로 음원·서체 폴더도 호출 위치 기준으로 읽는다 (ffmpeg 는 작업 폴더에서 돌아도 절대 경로를 받는다)", async () => {
+    const dir = join(root, "rel");
+    await mkdir(join(dir, "fonts"), { recursive: true });
+    const voice = join(dir, "voice.wav");
+    const music = join(dir, "music.wav");
+    await writeTone(BINS.ffmpegPath, voice, 2, 440);
+    await writeTone(BINS.ffmpegPath, music, 1, 220);
+    // ffmpeg 에 실제로 넘어간 인자를 기록하는 얇은 껍데기 — 진짜 ffmpeg 를 그대로 실행한다
+    const logPath = join(dir, "calls.log");
+    const wrapper = join(dir, "ffmpeg-wrap.sh");
+    await writeFile(wrapper, `#!/bin/sh\nprintf '%s\\n' "$*" >> '${logPath}'\nexec '${BINS.ffmpegPath}' "$@"\n`);
+    await chmod(wrapper, 0o755);
+
+    const cwd = process.cwd();
+    const relVoice = relative(cwd, voice);
+    const relMusic = relative(cwd, music);
+    const relFonts = relative(cwd, join(dir, "fonts"));
+    expect(isAbsolute(relVoice) || isAbsolute(relFonts), "시험 입력은 상대 경로다").toBe(false);
+
+    const cards = await writeCardFixtures(join(dir, "cards"), COLORS, ALT);
+    const reel = await composer({
+      ffmpegPath: wrapper,
+      fontsDir: relFonts,
+      tracks: [
+        { role: "voice", path: relVoice },
+        { role: "music", path: relMusic },
+      ],
+    }).compose(cards, join(dir, "out"));
+
+    const probe = await probeMedia(BINS, reel.video.path);
+    expect(probe.audio).toMatchObject({ codec: "aac", channels: 2 });
+    const calls = (await readFile(logPath, "utf8")).split("\n");
+    const render = calls.find((line) => line.includes("-filter_complex"));
+    expect(render, "합성 호출이 기록됐다").toBeDefined();
+    expect(render).toContain(`-i ${resolve(voice)}`);
+    expect(render).toContain(`-i ${resolve(music)}`);
+    expect(render).toContain(`fontsdir=${resolve(dir, "fonts")}`);
+    expect(render, "상대 경로가 그대로 넘어가지 않는다").not.toContain(`-i ${relVoice}`);
+    expect(render).not.toContain(`fontsdir=${relFonts}`);
+  }, 180_000);
+
+  it("합성이 실패하면 기존 정상 mp4·SRT 를 건드리지 않고 작업 폴더도 남기지 않는다", async () => {
+    const dir = join(root, "keep");
+    const cards = await writeCardFixtures(join(dir, "cards"), COLORS, ALT);
+    const out = join(dir, "out");
+    const good = await composer().compose(cards, out);
+    const before = { video: await readFile(good.video.path), srt: await readFile(good.subtitles!.path) };
+
+    // 존재하지만 오디오가 아닌 파일 → 사전 점검은 통과하고 ffmpeg 가 입력을 못 읽어 실패한다
+    const junk = join(dir, "junk.wav");
+    await writeFile(junk, "not audio at all");
+    await expect(composer({ tracks: [{ role: "voice", path: junk }] }).compose(cards, out)).rejects.toThrow("ffmpeg 실패");
+
+    expect((await readdir(out)).sort()).toEqual(["fixture-piece-reel.mp4", "fixture-piece-reel.srt"]);
+    expect((await readFile(good.video.path)).equals(before.video)).toBe(true);
+    expect((await readFile(good.subtitles!.path)).equals(before.srt)).toBe(true);
+  }, 180_000);
+
   it("프리셋이 무음 트랙을 끄면 오디오 스트림이 없다", async () => {
     const cards = await writeCardFixtures(join(root, "noaudio-cards"), COLORS, ALT);
     const reel = await composer({ preset: { ...FAST, audio: { ...FAST.audio, silentTrack: false } } }).compose(cards, join(root, "noaudio-out"));
@@ -174,7 +232,9 @@ describe("ffmpeg 가 있는 환경", () => {
 
   it("카드 파일이 없거나 PNG 가 아니면 이유를 모아 알린다", async () => {
     const cards = await writeCardFixtures(join(root, "badcard-cards"), COLORS, ALT);
-    const broken = { ...cards, cards: [cards.cards[0]!, { ...cards.cards[1]!, path: join(root, "missing.png") }, { ...cards.cards[2]!, path: join(root, "voice.wav") }] };
+    const notPng = join(root, "badcard-cards", "not-a-png.txt");
+    await writeFile(notPng, "this is not a PNG");
+    const broken = { ...cards, cards: [cards.cards[0]!, { ...cards.cards[1]!, path: join(root, "missing.png") }, { ...cards.cards[2]!, path: notPng }] };
     const error = await composer().compose(broken, join(root, "badcard-out")).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ReelComposeError);
     expect((error as Error).message).toContain("2번 카드 파일을 읽을 수 없다");

@@ -1,6 +1,6 @@
 // ReelComposer 구현 — 카드 세트 → 9:16 MP4(+SRT). 계획·배치 규칙은 domain, 여기서는 파일과 ffmpeg 만 다룬다.
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import type { CardRenderResult, RenderedFile, ReelComposer, ReelResult } from "@yunseo/application";
 import {
@@ -53,11 +53,14 @@ export function createFfmpegReelComposer(options: FfmpegReelComposerOptions = {}
   const preset = options.preset ?? DEFAULT_REEL_PRESET;
   const bins: FfmpegBinaries = { ffmpegPath: options.ffmpegPath ?? DEFAULT_BINARIES.ffmpegPath, ffprobePath: options.ffprobePath ?? DEFAULT_BINARIES.ffprobePath };
   const encoder: EncoderOptions = { ...DEFAULT_ENCODER, ...options.encoder };
-  const tracks = options.tracks ?? [];
 
   return {
     async compose(cards: CardRenderResult, outDir: string): Promise<ReelResult> {
       const warnings: string[] = [];
+      // 호출한 쪽의 작업 폴더 기준 상대 경로를 여기서 절대 경로로 굳힌다 — ffmpeg 는 작업 폴더(.reel-work-*)에서 실행되므로
+      // 상대 경로로 넘기면 존재 점검(stat)은 통과하고 ffmpeg 만 엉뚱한 곳을 본다
+      const tracks: readonly AudioSlot[] = (options.tracks ?? []).map((t) => ({ ...t, path: resolve(t.path) }));
+      const fontsDir = options.fontsDir === undefined ? undefined : resolve(options.fontsDir);
 
       // 1) 입력 점검 — 시작 전에 규칙 위반을 한꺼번에 알린다
       const presetIssues = [...reelPresetIssues(preset), ...reelLayoutIssues(computeReelLayout(preset))];
@@ -81,7 +84,7 @@ export function createFfmpegReelComposer(options: FfmpegReelComposerOptions = {}
         }
       }
       for (const track of tracks) {
-        if (!(await stat(resolve(track.path)).then((s) => s.isFile(), () => false))) cardProblems.push(`${track.role} 파일이 없다: ${track.path}`);
+        if (!(await stat(track.path).then((s) => s.isFile(), () => false))) cardProblems.push(`${track.role} 파일이 없다: ${track.path}`);
       }
       if (cardProblems.length > 0) throw new ReelComposeError("입력 파일에 문제가 있다", cardProblems);
 
@@ -97,7 +100,7 @@ export function createFfmpegReelComposer(options: FfmpegReelComposerOptions = {}
       // 3) ffmpeg 점검 — 없으면 건너뛰지 않고 실패한다
       await assertFfmpegReady(bins, { burnIn: preset.subtitle.burnIn });
 
-      // 4) SRT 는 항상 쓰고, ASS(번인용 중간 파일)는 작업 폴더에 둬서 끝나면 지운다
+      // 4) 산출물은 작업 폴더에서 만들어 규격 검사를 통과한 뒤에만 제자리로 옮긴다 — 실패하면 기존 정상 파일(mp4·SRT)이 그대로 남는다
       const absOut = resolve(outDir);
       await mkdir(absOut, { recursive: true });
       const stem = `${safeName(cards.pieceId)}-reel`;
@@ -106,35 +109,41 @@ export function createFfmpegReelComposer(options: FfmpegReelComposerOptions = {}
       const cues = plan.scenes.flatMap((s) =>
         s.cue === null ? [] : [{ startMs: Math.round((s.cue.startFrame * 1000) / plan.fps), endMs: Math.round((s.cue.endFrame * 1000) / plan.fps), text: s.cue.lines.join("\n") }],
       );
-      if (cues.length > 0) await writeFile(srtPath, buildSrt(cues), "utf8");
-      else await rm(srtPath, { force: true });
 
       const work = await mkdtemp(join(absOut, ".reel-work-"));
+      let probe: Awaited<ReturnType<typeof probeMedia>>;
       try {
+        const workVideo = join(work, `${stem}.mp4`);
+        const workSrt = join(work, `${stem}.srt`);
+        if (cues.length > 0) await writeFile(workSrt, buildSrt(cues), "utf8");
         const burn = preset.subtitle.burnIn && cues.length > 0;
         if (burn) await writeFile(join(work, "subtitles.ass"), buildAss(plan, preset), "utf8");
-        const args = buildFfmpegArgs({ plan, preset, cardPaths, assName: burn ? "subtitles.ass" : null, fontsDir: options.fontsDir, outPath: videoPath, tracks, encoder });
-        // 필터가 상대 경로(subtitles.ass)를 쓰므로 작업 폴더에서 실행한다 — 카드·출력은 절대 경로
+        const args = buildFfmpegArgs({ plan, preset, cardPaths, assName: burn ? "subtitles.ass" : null, fontsDir, outPath: workVideo, tracks, encoder });
+        // 필터가 상대 경로(subtitles.ass)를 쓰므로 작업 폴더에서 실행한다 — 카드·음원·서체 폴더·출력은 절대 경로
         const run = await runProcess(bins.ffmpegPath, args, { cwd: work });
         if (run.spawnError !== null || run.code !== 0) {
           throw new Error(`ffmpeg 실패(종료 코드 ${run.code ?? "없음"}): ${run.spawnError ?? run.stderr.trim().split("\n").slice(-12).join("\n")}`);
         }
         if (run.stderr.trim()) warnings.push(`reel/ffmpeg-warning: ${run.stderr.trim().split("\n").slice(-3).join(" | ")}`);
+
+        // 5) 산출물 규격 검사 — 약속한 모양이 아니면 성공으로 돌려보내지 않는다
+        probe = await probeMedia(bins, workVideo);
+        const specIssues = reelSpecIssues(probe, {
+          width: preset.canvas.width,
+          height: preset.canvas.height,
+          fps: preset.canvas.fps,
+          durationSec: plan.totalSec,
+          toleranceSec: 0.5,
+          expectAudio: tracks.length > 0 || preset.audio.silentTrack,
+        });
+        if (specIssues.length > 0) throw new ReelComposeError("산출 영상이 규격에 어긋난다", specIssues);
+
+        await rename(workVideo, videoPath);
+        if (cues.length > 0) await rename(workSrt, srtPath);
+        else await rm(srtPath, { force: true });
       } finally {
         await rm(work, { recursive: true, force: true });
       }
-
-      // 5) 산출물 규격 검사 — 약속한 모양이 아니면 성공으로 돌려보내지 않는다
-      const probe = await probeMedia(bins, videoPath);
-      const specIssues = reelSpecIssues(probe, {
-        width: preset.canvas.width,
-        height: preset.canvas.height,
-        fps: preset.canvas.fps,
-        durationSec: plan.totalSec,
-        toleranceSec: 0.5,
-        expectAudio: tracks.length > 0 || preset.audio.silentTrack,
-      });
-      if (specIssues.length > 0) throw new ReelComposeError("산출 영상이 규격에 어긋난다", specIssues);
 
       return {
         pieceId: cards.pieceId,
