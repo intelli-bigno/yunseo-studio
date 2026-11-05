@@ -1,0 +1,30 @@
+# yunseo-studio 상주 이미지 — 대시보드(Next.js)와 워커(tsx)가 같은 이미지를 쓴다. 실행 명령은 compose.yaml 이 정한다.
+# 빌드·실행은 Windows(WSL Docker)에서만: ops/docker/README.md. Mac 에서 docker 실행 금지.
+# 빌드 입력은 `git archive` 로 뽑은 깨끗한 커밋 트리다(node_modules·.next 없음, .dockerignore 가 한 번 더 막는다).
+
+FROM node:22-bookworm-slim
+
+ENV NEXT_TELEMETRY_DISABLED=1 CI=1 TZ=Asia/Seoul
+
+# ffmpeg·fonts-dejavu-core = 릴스 합성(L3/L7)에 필요 — .github/workflows/ci.yml 과 같은 구성이다.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates ffmpeg fonts-dejavu-core \
+ && rm -rf /var/lib/apt/lists/* \
+ && npm install -g pnpm@11.13.1 \
+ && install -d -o node -g node /app /data
+
+USER node
+WORKDIR /app
+COPY --chown=node:node . .
+
+RUN --mount=type=cache,target=/home/node/.local/share/pnpm/store,uid=1000,gid=1000 \
+    pnpm install --frozen-lockfile
+RUN pnpm --filter @yunseo/app-dashboard run build
+
+# 배포된 커밋 — /status 의 「배포 커밋」. 빌드 캐시를 깨지 않도록 빌드 뒤에 둔다.
+ARG YUNSEO_REVISION=unknown
+ENV YUNSEO_REVISION=${YUNSEO_REVISION}
+
+WORKDIR /app/apps/dashboard
+EXPOSE 8930
+CMD ["node", "node_modules/next/dist/bin/next", "start", "-H", "0.0.0.0", "-p", "8930"]
