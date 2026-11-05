@@ -5,3 +5,4 @@ export * from "./story";
 export * from "./publish";
 export * from "./metrics";
 export * from "./events";
+export * from "./reel";

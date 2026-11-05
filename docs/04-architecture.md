@@ -222,3 +222,17 @@
 - 어댑터: 카드 계획·대체텍스트·배경 슬롯·거부 경로(`render-html/src/*.test.ts`), 실제 래스터로 크기(1080×1350)·결정성.
 - 스냅샷: `apps/cli/src/render.test.ts` 가 예시 4건(이전·이후·연구·연구 한국어)을 렌더해 **모든 카드의 sha256 을 커밋된 기준값**(`apps/cli/src/__fixtures__/render-golden.json`)과 비교한다. 대표 PNG 3장(`__fixtures__/*.png`)은 바이트까지 같아야 한다.
 - 일부러 카드를 바꿨을 때 기준값 갱신: Windows 에서 `win auto -- bash scripts/render-examples.sh <폴더>` → 결과 폴더를 가져와 눈으로 확인 → `node scripts/render-golden.mjs <폴더>`.
+
+## 구현 현황 — 릴스 합성 (L3, 2026-11-05)
+
+카드 세트 → 릴스가 계약(`packages/application/src/pipeline/contracts.ts` 의 `ReelComposer`)을 사이에 두고 이어져 있다. 포트 이름은 위 표의 `VideoComposer` 대신 레인 공용 계약의 `ReelComposer` 를 쓴다.
+
+| 계층 | 위치 | 지금 있는 것 |
+| --- | --- | --- |
+| 도메인 | `packages/domain/src/reel` | 프리셋(`DEFAULT_REEL_PRESET` — 캔버스·안전영역·길이·전환·자막·오디오), 배치(`computeReelLayout`·`reelLayoutIssues`), 핵심 문장·줄바꿈(`keySentence`·`wrapSubtitle`), 장면 계획(`planReel` — 글자 수 기반 노출 시간, 15~45초 맞춤, 전환 겹침, 자막 시각), SRT(`buildSrt`). 전부 순수 함수, 외부 의존 0 |
+| 유스케이스 | `packages/application/src/pipeline/contracts.ts` | 레인 공용 계약(`CardRenderResult`·`ReelComposer`·`ReelResult` …). 이 레인은 계약 파일을 바이트 그대로 추가만 했다 |
+| 어댑터 | `packages/adapters/video` | `createFfmpegReelComposer` — 입력 점검(PNG·4:5) → `planReel` → ffmpeg 인자(`buildFfmpegArgs`, 순수) → 실행(`ffmpeg-runner`, 유일하게 프로세스를 띄우는 곳) → ffprobe 로 규격 검사(`reelSpecIssues`). 번인 자막은 PlayRes 를 영상 크기와 같게 둔 ASS(`buildAss`)로 새긴다 |
+| 인프라(조립) | `apps/cli/src/reel.ts` | `reel` 명령 — 어댑터를 만들어 꽂는 곳. `FFMPEG_PATH`·`FFPROBE_PATH` 환경 변수는 여기서만 읽는다 |
+
+- 테스트: 순수 함수(프리셋·배치·계획·SRT·ffmpeg 인자·ASS·ffprobe 해석)는 단위 테스트, 합성은 진짜 ffmpeg 통합 테스트(ffprobe 로 1080×1920·H.264·AAC·길이, 프레임 픽셀로 장면 순서·전환·자막이 안전영역 안인지). ffmpeg 가 없으면 건너뛰지 않고 이유와 해결 방법을 담아 실패한다.
+- 대시보드(`studio.ts`)에는 아직 꽂지 않았다 — 릴스 단계 화면 연결은 후속(`ReelComposer` 를 조립하는 `// [L3]` 블록 하나로 끝난다).

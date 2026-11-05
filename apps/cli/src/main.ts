@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { runEvents } from "./events";
 import { RENDER_USAGE, runRender } from "./render";
+import { runReel } from "./reel";
 import { runValidate } from "./run";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
@@ -19,7 +20,13 @@ if (command === "events") {
   const { code, lines } = await runRender(root, rest);
   console.log(lines.join("\n"));
   process.exit(code);
+} else if (command === "reel") {
+  // [L3] 릴스 합성 — `reel <cards-dir> --out <dir>`
+  const { code, lines } = await runReel(rest, process.env);
+  console.log(lines.join("\n"));
+  process.exit(code);
 } else {
   console.error(`사용법: validate [--publish]   (--publish: 자리표시자가 남아 있으면 실패)  |  events fetch --dry\n${RENDER_USAGE}`);
+  console.error("       reel <cards-dir> --out <dir>   (카드 PNG → 9:16 릴스 MP4+SRT, 옵션은 인자 없이 reel 실행)");
   process.exit(2);
 }
