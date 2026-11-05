@@ -1,6 +1,7 @@
 // [L2] 작성·검수 규칙 — 상태 기계(02 SOP)·사람 게이트 G1~G3·출처/기준 시점 검증·승인 무효화(04 Approval)·수정 이력(01 §6).
 // 전부 순수 함수다. 화면·저장소는 이 규칙을 부르기만 하고 우회할 수 없다(04 규칙 5): 허용 안 된 전이·조건 미충족은 예외.
 import { sha256Hex } from "./sha256";
+import { normalizeFields } from "./fields";
 import {
   CHECK_RESULT_STATUSES,
   SCENARIO_OUTCOMES,
@@ -181,7 +182,8 @@ function canonical(v: unknown): string {
 }
 
 /** 문장의 내용 칸(확인 표시 제외) */
-const claimContent = (c: PieceClaim) => ({ id: c.id, mark: c.mark, basis: c.basis, text: c.text, publisher: c.publisher ?? null, url: c.url ?? null, quote: c.quote ?? null, accessedAt: c.accessedAt ?? null, asOf: c.asOf ?? null, basedOn: c.basedOn ?? [] });
+// [L7] tier·condition 은 값이 있을 때만 들어간다(undefined 는 canonical 이 뺀다) — 예전 편의 해시·승인이 그대로 유지된다
+const claimContent = (c: PieceClaim) => ({ id: c.id, mark: c.mark, basis: c.basis, text: c.text, publisher: c.publisher ?? null, url: c.url ?? null, quote: c.quote ?? null, accessedAt: c.accessedAt ?? null, asOf: c.asOf ?? null, basedOn: c.basedOn ?? [], tier: c.tier || undefined, condition: c.condition?.trim() || undefined, experience: c.experience ?? undefined });
 
 /** 승인 대상 = 독자에게 나가는 내용. 상태·게이트·확인 표시·게시 예정 시각·자료 확보 체크는 빼고 본다 */
 export function contentOf(p: Piece): unknown {
@@ -196,6 +198,8 @@ export function contentOf(p: Piece): unknown {
     checks: p.checks ?? [],
     scenarioOutcomes: p.scenarioOutcomes ?? [],
     checkResults: p.checkResults ?? [],
+    // [L7] 구조 칸 — 비었으면 빼서 예전 편의 해시가 바뀌지 않게 한다
+    fields: p.fields && Object.keys(p.fields).length ? p.fields : undefined,
   };
 }
 
@@ -480,6 +484,8 @@ export function refresh(p: Piece, ctx: LinkContext = {}): Piece {
 
 // ───────────────────────────── 편집 ─────────────────────────────
 
+const TIERS: readonly (string | null | undefined)[] = ["primary", "major_media", "other"];
+
 export const CHANGE_KINDS = ["correction", "update", "clarification"] as const;
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 
@@ -496,6 +502,8 @@ export interface PiecePatch {
   scenarioOutcomes?: readonly ScenarioOutcome[];
   checkResults?: readonly CheckResult[];
   evidence?: EvidenceReady;
+  /** [L7] 구조 칸 전체(보낸 것으로 바꾼다) */
+  fields?: Readonly<Record<string, string>>;
 }
 
 export interface EditMeta {
@@ -579,6 +587,14 @@ export function applyEdit(before: Piece, patch: PiecePatch, meta: EditMeta, ctx:
     next.claims = patch.claims.map((c) => {
       const prev = old.get(c.id);
       const base: PieceClaim = { id: c.id, mark: c.mark, basis: c.basis, text: c.text, publisher: c.publisher || null, url: c.url?.trim() || null, quote: c.quote || null, accessedAt: c.accessedAt || null, asOf: c.asOf || null, verified: false, verifiedBy: null, verifiedAt: null, basedOn: [...(c.basedOn ?? [])] };
+      if (c.tier) {
+        if (!TIERS.includes(c.tier)) issues.push(`출처 등급 값: ${c.tier}`);
+        base.tier = c.tier;
+      }
+      if (c.condition?.trim()) base.condition = c.condition.trim();
+      if (c.experience && (c.experience.what.trim() || c.experience.when.trim() || c.experience.dataLocation.trim())) {
+        base.experience = { what: c.experience.what.trim(), when: c.experience.when.trim(), dataLocation: c.experience.dataLocation.trim() };
+      }
       // 확인 표시는 편집으로 켤 수 없다 — 내용이 그대로인 문장만 이전 확인을 이어받는다
       if (prev && prev.verified && claimContentKey(prev) === claimContentKey(base)) {
         return { ...base, verified: true, verifiedBy: prev.verifiedBy ?? null, verifiedAt: prev.verifiedAt ?? null };
@@ -609,6 +625,12 @@ export function applyEdit(before: Piece, patch: PiecePatch, meta: EditMeta, ctx:
   if (patch.evidence) {
     if (before.kind !== "post") issues.push("자료 확보 조건은 이후 편만");
     next.evidence = { ...patch.evidence };
+  }
+  if (patch.fields) {
+    const n = normalizeFields(before.kind, patch.fields);
+    issues.push(...n.issues);
+    if (Object.keys(n.fields).length) next.fields = n.fields;
+    else delete next.fields;
   }
 
   // 연결 무결성 — 이후 편이 응답한 시나리오·확인 항목은 이전 편에서 지울 수 없다
@@ -647,7 +669,8 @@ export function confirmClaim(p: Piece, claimId: string, actor: string, at: strin
   const c = p.claims.find((x) => x.id === claimId);
   if (!c) throw new AuthoringRuleError("invalid_edit", [`문장 ${claimId} 없음`]);
   if (!actor.trim()) throw new AuthoringRuleError("guard_failed", ["확인자 이름 필요"]);
-  if (p.status !== "drafted") throw new AuthoringRuleError("transition_not_allowed", [`${p.status} 에서는 문장 확인을 하지 않는다(작성 단계만)`]);
+  // [L7] 발행된 편도 확인한다 — 발행 뒤 정정(이유·독자 문구 필수)으로 바뀐 문장을 다시 확인해야 재승인(reapprove)이 열린다
+  if (p.status !== "drafted" && p.status !== "published") throw new AuthoringRuleError("transition_not_allowed", [`${p.status} 에서는 문장 확인을 하지 않는다(작성 단계·발행 뒤 정정만)`]);
   const issues = claimBlockers(c, p.claims);
   if (issues.length) throw new AuthoringRuleError("guard_failed", issues);
   return refresh({ ...p, claims: p.claims.map((x) => (x.id === claimId ? { ...x, verified: true, verifiedBy: actor.trim(), verifiedAt: at } : x)) });
@@ -678,6 +701,7 @@ export function diff(a: Piece, b: Piece): FieldChange[] {
   add("scenarioOutcomes", a.scenarioOutcomes ?? [], b.scenarioOutcomes ?? []);
   add("checkResults", a.checkResults ?? [], b.checkResults ?? []);
   add("evidence", a.evidence ?? null, b.evidence ?? null);
+  add("fields", a.fields ?? {}, b.fields ?? {});
   return out;
 }
 

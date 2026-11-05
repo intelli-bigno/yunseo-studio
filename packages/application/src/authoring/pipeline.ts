@@ -12,6 +12,8 @@ export interface PipelineDeps {
   renderer?: CardRenderer | null;
   /** 없으면 릴스 단계 비활성(묶음은 릴스 없이 만든다) */
   reels?: ReelComposer | null;
+  /** [L7] 릴스 합성기를 지금 쓸 수 있나(ffmpeg 점검 등). 이유 문자열이면 릴스 단계만 비활성 — 카드·묶음은 그대로. 프로세스에서 한 번만 부른다 */
+  reelsReady?: (() => Promise<string | null>) | null;
   /** 없으면 묶음 단계 비활성 */
   packager?: UploadPackager | null;
   /** 없으면 내려받기 비활성 */
@@ -59,7 +61,12 @@ export class PipelineStepError extends Error {
 
 const join = (...parts: string[]) => parts.map((p, i) => (i === 0 ? p.replace(/[\\/]+$/, "") : p.replace(/^[\\/]+|[\\/]+$/g, ""))).join("/");
 
-export function createPipelineUseCases({ store, clock, renderer = null, reels = null, packager = null, files = null, workDir, language }: PipelineDeps) {
+export function createPipelineUseCases({ store, clock, renderer = null, reels = null, reelsReady = null, packager = null, files = null, workDir, language }: PipelineDeps) {
+  let reelCheck: Promise<string | null> | null = null;
+  /** 릴스를 못 쓰는 이유(쓸 수 있으면 null) — 점검은 처음 한 번만 */
+  const reelGate = (): Promise<string | null> =>
+    reels && reelsReady ? (reelCheck ??= reelsReady().catch((e: unknown) => (e instanceof Error ? e.message : String(e)).split("\n")[0] ?? "점검 실패")) : Promise.resolve(null);
+
   const load = async (id: string): Promise<Piece> => {
     const p = await store.loadPiece(id);
     if (!p) throw new PieceNotFoundError(id);
@@ -74,12 +81,12 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
   /** 지금 내용 해시로 만든 산출물만 쓴다 */
   const current = (rec: PipelineRecord | null, hash: string) => (rec && rec.contentHash === hash ? rec : null);
 
-  function plan(p: Piece, rec: PipelineRecord | null): PipelineView {
+  function plan(p: Piece, rec: PipelineRecord | null, reelBlocked: string | null): PipelineView {
     const hash = contentHash(p);
     const cur = current(rec, hash);
     const { errors } = docOf(p);
     const renderReason = !renderer ? "카드 렌더러 미주입 — L1 렌더 통합 전" : errors.length ? `렌더 입력 오류 ${errors.length}건: ${errors[0]}` : null;
-    const reelReason = !reels ? "릴스 합성기 미주입 — L3 릴스 통합 전" : !cur?.render ? "카드 렌더 먼저" : null;
+    const reelReason = !reels ? "릴스 합성기 미주입 — L3 릴스 통합 전" : reelBlocked ? `릴스 합성 불가 — ${reelBlocked}` : !cur?.render ? "카드 렌더 먼저" : null;
     const bundleReason = !packager
       ? "업로드 묶음기 미주입"
       : !validApproval(p, "G3")
@@ -121,40 +128,40 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
   return {
     async status(id: string): Promise<PipelineView> {
       const p = await load(id);
-      return plan(p, await store.getPipeline(id));
+      return plan(p, await store.getPipeline(id), await reelGate());
     },
 
     /** 카드 렌더 — 미리보기용이라 승인 전에도 돈다 */
     async render(id: string): Promise<PipelineView> {
       const p = await load(id);
       const prev = await store.getPipeline(id);
-      ensure(plan(p, prev), "render");
+      ensure(plan(p, prev, null), "render");
       const { doc } = docOf(p);
       const result = await renderer!.render(doc!, outDir(p, "cards"));
       if (result.pieceId !== p.id) throw new PipelineStepError("render", `렌더 결과 편 id 불일치: ${result.pieceId}`);
       if (result.altTexts.length !== result.cards.length) throw new PipelineStepError("render", "대체 텍스트 수가 카드 수와 다름");
       // 새 렌더는 낡은 릴스·묶음을 지운다
       await store.savePipeline(record(p, prev, { render: result, reel: null, bundle: null }));
-      return plan(p, await store.getPipeline(id));
+      return plan(p, await store.getPipeline(id), await reelGate());
     },
 
     async composeReel(id: string): Promise<PipelineView> {
       const p = await load(id);
       const prev = await store.getPipeline(id);
-      ensure(plan(p, prev), "reel");
+      ensure(plan(p, prev, await reelGate()), "reel");
       const reel = await reels!.compose(prev!.render!, outDir(p, "reel"));
       await store.savePipeline(record(p, prev, { reel, bundle: null }));
-      return plan(p, await store.getPipeline(id));
+      return plan(p, await store.getPipeline(id), await reelGate());
     },
 
     /** 업로드 묶음 — 유효한 G3 승인본 + 지금 내용으로 만든 카드(+ 있으면 릴스) */
     async bundle(id: string): Promise<PipelineView> {
       const p = await load(id);
       const prev = await store.getPipeline(id);
-      ensure(plan(p, prev), "bundle");
+      ensure(plan(p, prev, null), "bundle");
       const bundle = await packager!.bundle(prev!.render!, prev!.reel ?? null, outDir(p, "bundle"));
       await store.savePipeline(record(p, prev, { bundle }));
-      return plan(p, await store.getPipeline(id));
+      return plan(p, await store.getPipeline(id), await reelGate());
     },
 
     /** 미리보기 — 지금 내용으로 렌더한 카드 n 번째(0부터) */

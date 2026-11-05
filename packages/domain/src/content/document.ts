@@ -190,7 +190,12 @@ export function contentBlockers(body: ContentBody, rules: ContentRules): Content
   const warn: ContentFinding[] = [];
   const push = (f: ContentFinding) => (f.severity === "block" ? block : warn).push(f);
 
-  for (const { path, text } of collectContentTexts(body)) {
+  // claims 의 문장·발행처도 캡션·대체 텍스트·검수 화면으로 독자에게 닿는다 — 금지 표현 검사에 넣는다(수치 검사 입력에는 넣지 않는다: claim 자체가 출처다)
+  const claimTexts: ContentText[] = body.claims.flatMap((c, i) => [
+    { path: `claims[${i}].text`, text: c.text },
+    ...(c.publisher === undefined ? [] : [{ path: `claims[${i}].publisher`, text: c.publisher }]),
+  ]);
+  for (const { path, text } of [...collectContentTexts(body), ...claimTexts]) {
     for (const hit of findBannedExpressions(text, "body", rules.banned)) {
       push({ severity: hit.severity, code: "banned_expression", path, message: `금지 표현 「${hit.matched}」 (${hit.ruleId})` });
     }

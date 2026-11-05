@@ -1,6 +1,7 @@
 // 요소 트리 → PNG. satori 가 글자를 글리프 경로로 바꿔 SVG 를 만들고, resvg 가 래스터로 그린다.
 // 브라우저·시스템 서체가 없다: 같은 입력이면 같은 바이트가 나온다(결정적). 이미지 생성·네트워크 호출 없음.
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
 import satori from "satori";
@@ -17,12 +18,13 @@ export interface Rasterizer {
   png(element: El): Promise<Uint8Array>;
 }
 
-export function createRasterizer(): Rasterizer {
+/** fontsDir: 서체 폴더(기본 패키지의 fonts/). 번들러를 거쳐 import.meta.url 이 원본 위치를 가리키지 않는 곳(대시보드)은 경로를 직접 준다 */
+export function createRasterizer(fontsDir?: string): Rasterizer {
   let fonts: { name: string; data: Buffer; weight: 400 | 600 | 800; style: "normal" }[] | undefined;
   const load = () =>
     (fonts ??= FONT_FILES.map(({ weight, file }) => ({
       name: FONT_FAMILY,
-      data: readFileSync(fileURLToPath(new URL(`../fonts/${file}`, import.meta.url))),
+      data: readFileSync(fontsDir ? join(fontsDir, file) : fileURLToPath(new URL(`../fonts/${file}`, import.meta.url))),
       weight,
       style: "normal" as const,
     })));

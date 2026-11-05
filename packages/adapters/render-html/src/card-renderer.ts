@@ -3,9 +3,9 @@
 // block 이 하나라도 있으면 아무것도 쓰지 않고 거부한다. warn 은 결과의 warnings 에 담는다.
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import type { CardRenderResult, CardRenderer, ContentDocument, RenderedFile } from "@yunseo/application";
+import { lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { basename, join } from "node:path";
+import { RENDER_MANIFEST, toRenderManifest, type CardRenderResult, type CardRenderer, type ContentDocument, type RenderedFile } from "@yunseo/application";
 import {
   buildPublishText,
   contentBlockers,
@@ -34,6 +34,8 @@ export interface HtmlCardRendererOptions {
   disclosure?: string | null;
   /** 슬롯 이름 → 배경 이미지 파일. 지정이 없으면 토큰 색 배경 */
   backgrounds?: Backgrounds | undefined;
+  /** 서체 폴더(Pretendard WOFF 3종). 없으면 패키지의 fonts/ */
+  fontsDir?: string;
   /** 테스트에서 래스터라이저를 바꿔 끼운다 */
   rasterizer?: Rasterizer;
 }
@@ -82,7 +84,7 @@ function planContext(body: ContentBody, strings: Strings, rules: ContentRules, d
 }
 
 export function createHtmlCardRenderer(options: HtmlCardRendererOptions): CardRenderer {
-  const rasterizer = options.rasterizer ?? createRasterizer();
+  const rasterizer = options.rasterizer ?? createRasterizer(options.fontsDir);
 
   return {
     async render(doc: ContentDocument, outDir: string): Promise<CardRenderResult> {
@@ -115,8 +117,9 @@ export function createHtmlCardRenderer(options: HtmlCardRendererOptions): CardRe
       if (brandName === null) warnings.push("채널 이름이 정해지지 않았다(TBD) — 카드에 자리표시를 그렸다. 게시 전에 확정해야 한다");
       if (body.status === "draft") warnings.push("draft 이므로 카드에 초안 표시를 그렸다 — 게시 불가");
 
-      // 3) 카드 그리기
+      // 3) 카드 그리기 — 같은 폴더에 다시 그리면 이전 렌더가 만든 카드만 먼저 지운다(장 수가 줄면 옛 카드가 남아 섞인다)
       await mkdir(outDir, { recursive: true });
+      await removePreviousRender(outDir);
       const cards: RenderedFile[] = [];
       const width = String(pages.length).length;
       for (const [index, page] of pages.entries()) {
@@ -133,7 +136,7 @@ export function createHtmlCardRenderer(options: HtmlCardRendererOptions): CardRe
         cards.push({ name, path, bytes: bytes.byteLength, sha256: sha256(bytes) });
       }
 
-      return {
+      const result: CardRenderResult = {
         pieceId: body.id,
         cards,
         caption: publish.caption,
@@ -141,8 +144,35 @@ export function createHtmlCardRenderer(options: HtmlCardRendererOptions): CardRe
         altTexts: pages.map((page, index) => altTextOf(page, index, pages.length, strings)),
         warnings,
       };
+      // 매니페스트(render.json) — 릴스 CLI·사람이 이 폴더만 보고 카드 세트를 읽는다
+      await writeFile(join(outDir, RENDER_MANIFEST), `${JSON.stringify(toRenderManifest(result), null, 2)}\n`);
+      return result;
     },
   };
+}
+
+/**
+ * 같은 폴더의 이전 렌더 결과만 지운다 — 기존 render.json 에 적힌 cards[].name 과 render.json 자신.
+ * 사용자 폴더(--out ~/Downloads, 배경 폴더, 다른 편과 공유한 폴더)의 다른 PNG·파일은 건드리지 않는다.
+ * render.json 이 없거나 읽을 수 없으면 아무 PNG 도 지우지 않는다. 이름은 파일 이름 하나(basename 일치)인 .png 만 인정해 폴더 밖으로 나갈 수 없다.
+ */
+async function removePreviousRender(outDir: string): Promise<void> {
+  const manifestPath = join(outDir, RENDER_MANIFEST);
+  let names: string[];
+  try {
+    const manifest: unknown = JSON.parse(await readFile(manifestPath, "utf8"));
+    const cards = (manifest as { cards?: unknown } | null)?.cards;
+    names = Array.isArray(cards) ? cards.flatMap((c: unknown) => (typeof (c as { name?: unknown } | null)?.name === "string" ? [(c as { name: string }).name] : [])) : [];
+  } catch {
+    return; // 매니페스트 없음·깨짐 — 이 폴더의 파일이 렌더러가 만든 것인지 알 수 없다
+  }
+  for (const name of names) {
+    if (name === RENDER_MANIFEST || basename(name) !== name || !/\.png$/i.test(name)) continue;
+    const path = join(outDir, name);
+    const stat = await lstat(path).catch(() => null);
+    if (stat !== null && (stat.isFile() || stat.isSymbolicLink())) await rm(path, { force: true });
+  }
+  await rm(manifestPath, { force: true });
 }
 
 /** 슬롯에 지정된 배경 파일 → data URI. 지정이 없으면 null(토큰 색 배경), 파일이 없으면 오류 */

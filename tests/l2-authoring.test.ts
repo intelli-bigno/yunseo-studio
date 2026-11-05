@@ -157,7 +157,7 @@ describe("렌더 → 업로드 묶음 (계약 포트로만)", () => {
   it("승인본만 묶고, zip 을 내려받을 수 있다", async () => {
     const id = (await uc.createPiece({ kind: "research", title: "달러와 채권", slot: "2026-11-10T10:00", viewpoint: "쓰지 않는 때를 먼저", actor })).id;
     const v = (await uc.getAuthoring(id))!;
-    await uc.savePiece(id, { expectedRevision: v.revision, patch: { stages: v.piece.stages.map((s, i) => ({ key: s.key, body: i === 0 ? "가설: 환율이 결정한다" : "" })) }, meta: { actor } });
+    await uc.savePiece(id, { expectedRevision: v.revision, patch: { stages: v.piece.stages.map((s, i) => ({ key: s.key, body: i === 0 ? "가설: 환율이 결정한다" : "" })), fields: { stage: "idea", "idea.hypothesis": "환율이 먼저 움직인다", "idea.falsifier": "채권이 먼저 움직인다" } }, meta: { actor } });
     for (const action of ["select", "start_draft", "verify", "request_review"] as const) await uc.act(id, { expectedRevision: await rev(id), action, input: { actor } });
     const rendered1 = await pipe.render(id);
     expect(rendered1.render?.cards).toHaveLength(2);

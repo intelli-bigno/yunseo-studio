@@ -99,7 +99,8 @@ export function createMetricsUseCases({ repo, metrics, clock }: MetricsDeps) {
       const today = clock.today();
       const [pieces, queue, snapshots, imports] = await Promise.all([pieceRefs(), repo.listQueue(), metrics.listSnapshots(), metrics.listImports(5)]);
       const rows = pieceRows(pieces, snapshots);
-      const start = weekStartOf(weekOf && parseMetricDate(weekOf) ? weekOf : today);
+      // [L7] 정규화한 날짜로 주를 정한다 — 「2026.11.5」처럼 읽히기만 하는 값을 그대로 넘기면 주 계산이 깨져 500 이 났다. 못 읽으면 이번 주
+      const start = weekStartOf((weekOf ? parseMetricDate(weekOf) : null) ?? today);
       const expects = (p: PieceRef, platform: MetricPlatform) => {
         const ch = channelsOf(p.id, queue);
         return platform === "instagram" ? ch.includes("feed") || ch.includes("reels") : ch.includes("reels");
@@ -182,6 +183,13 @@ export function createMetricsUseCases({ repo, metrics, clock }: MetricsDeps) {
       if ("error" in date) blockers.push(date.error);
       if (blockers.length > 0 || "error" in date) return { ok: false, errors: blockers };
       const result = rowsToSnapshots({ table, mapping, platform: input.platform, capturedAt: date.date, watchUnit, index: await pieceIndex() });
+      // [L7] 직접 입력과 같은 값 규칙(음수·정수·100% 상한)을 CSV 행에도 적용한다 — 어긋난 행은 건너뛰고 이유를 남긴다
+      const checked = result.snapshots.filter((snap) => {
+        const problems = validateMetricValues(input.platform, snap.values);
+        if (problems.length) result.skipped.push({ rowNumber: Number(/(\d+)행/.exec(snap.note)?.[1] ?? 0), label: snap.pieceId, reason: problems.join(", ") });
+        return problems.length === 0;
+      });
+      result.snapshots = checked;
       if (result.snapshots.length > 0) await metrics.upsertSnapshots(result.snapshots);
       await metrics.saveMapping(input.platform, signature, mapping);
       await metrics.logImport({ platform: input.platform, capturedAt: date.date, rows: table.rows.length, imported: result.snapshots.length, unmatched: result.unmatched.length, skipped: result.skipped.length });

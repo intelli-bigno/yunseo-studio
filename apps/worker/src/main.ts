@@ -14,6 +14,7 @@ if (stale) log(`이전 실행에서 끝나지 않은 기록 ${stale}건을 실�
 
 const registry = registerJobs(new JobRegistry(), {
   backup: config.dbPath && config.backupDir ? { dbPath: config.dbPath, dir: config.backupDir, keep: config.backupKeep } : null,
+  events: config.dbPath ? { dbPath: config.dbPath } : null,
   health: { dashboardHealthUrl: config.dashboardHealthUrl, prune: (n) => journal.prune(n) },
   log,
 });

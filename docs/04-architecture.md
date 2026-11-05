@@ -142,7 +142,7 @@
 
 ### 렌더 → 미리보기 → 업로드 묶음 — 계약 포트로만 (`pipeline/contracts.ts`)
 
-- `createPipelineUseCases({ renderer, reels, packager, files })` — `CardRenderer`(L1)·`ReelComposer`(L3)가 **주입되지 않으면 해당 단계는 비활성 + 이유**(가짜 구현 없음). 조립부(`server/studio.ts` 의 `[L2]` 블록)는 지금 둘 다 `null` 이고, 통합 Worker 가 꽂는다.
+- `createPipelineUseCases({ renderer, reels, packager, files })` — `CardRenderer`(L1)·`ReelComposer`(L3)가 **주입되지 않으면 해당 단계는 비활성 + 이유**(가짜 구현 없음). 조립부(`server/studio.ts`)의 `[L7]` 블록이 둘 다 꽂는다(아래 「통합 배선 — L7」).
 - 렌더 입력은 `toContentBody(piece)`: ① 은 기존 정본 스키마 `pre-issue-5/v1` 검증기를 통과해야 하고, ②·③ 은 공통 봉투 `post-issue-4/v1`·`research-5/v1`(잠정 — 코드 스키마가 생기면 바꾼다).
 - 묶음은 **유효한 G3 승인본 + 지금 내용으로 렌더한 카드**만. `ZipUploadPackager`(publisher-manual)가 렌더 기록의 크기·sha256 과 실제 파일을 대조한 뒤 `cards/NN.png`·`caption.txt`·`hashtags.txt`·`alt-text.txt`·(`reel.mp4`·자막)·`manifest.json`(`upload-bundle/v1`: 파일별 크기·sha256·역할, 경고) 을 zip 으로 묶는다(외부 패키지 없이 `node:zlib`).
 
@@ -236,3 +236,23 @@
 
 - 테스트: 순수 함수(프리셋·배치·계획·SRT·ffmpeg 인자·ASS·ffprobe 해석)는 단위 테스트, 합성은 진짜 ffmpeg 통합 테스트(ffprobe 로 1080×1920·H.264·AAC·길이, 프레임 픽셀로 장면 순서·전환·자막이 안전영역 안인지). ffmpeg 가 없으면 건너뛰지 않고 이유와 해결 방법을 담아 실패한다.
 - 대시보드(`studio.ts`)에는 아직 꽂지 않았다 — 릴스 단계 화면 연결은 후속(`ReelComposer` 를 조립하는 `// [L3]` 블록 하나로 끝난다).
+
+## 구현 현황 — 통합 배선 (L7, 2026-11-05)
+
+원고 1편이 한 흐름으로 돈다: 작성(대시보드) → G1~G3 → 「카드 렌더」 → 「릴스 합성」 → 「업로드 묶음」 → zip 내려받기. L5 dry-run 게시 계획도 같은 산출물을 읽는다.
+
+| 연결 | 방법 |
+| --- | --- |
+| L2 → L1 | `createPipelineUseCases({ renderer: createHtmlCardRenderer(...) })`. 프리셋(금지 표현·포맷·브랜드·발행 언어)은 저장소 `presets/` 에서 읽고, 못 읽으면 렌더러를 꽂지 않는다(금지 표현 검사 없는 렌더 금지 → 「렌더러 미주입」 비활성) |
+| L2 정본 → L1 스키마 | `toContentBody` 가 3종 모두 정식 스키마로 낸다. 단 본문은 「첫 줄 = 카드 제목, 다음 줄부터 점」, 그 밖은 구조 칸(`story/fields.ts`). 목록 칸은 한 줄에 하나, 열은 `|` (예: 판단 갱신 `유지|수정|폐기 | 이전 판단 | 이유 | 근거 id`) |
+| L2 → L3 | `reels: createFfmpegReelComposer(...)` + `reelsReady`(ffmpeg 점검, 프로세스에서 한 번). ffmpeg 가 없거나 기능이 빠졌으면 **릴스 단계만** 「릴스 합성 불가 — 이유」 로 비활성, 카드·묶음은 그대로(묶음은 릴스 없이) |
+| L1 → L3 | 렌더러가 카드 폴더에 `render.json`(= `CardRenderResult`, 상대 경로)을 쓰고, `reel` CLI 가 같은 이름을 먼저 찾는다(예전 이름 `render-result.json`·`cards.json` 도 읽음). 다시 렌더하면 폴더의 이전 PNG·매니페스트를 먼저 지운다 |
+| 서체 | 카드·릴스 자막 모두 저장소 `packages/adapters/render-html/fonts`(Pretendard, OFL). 릴스는 합성 때 작업 폴더 `fonts/` 로 복사해 상대 경로로 넘긴다(Windows 절대 경로의 `:`·`\` 는 ffmpeg 필터 값에 못 쓴다). 시스템 서체 설치 없음 |
+| L2 → L5 | `createPipelinePublishSource` — 지금 내용 해시로 만든 렌더·릴스만, 카드 크기는 파일을 열어 잰다 |
+| L4 → L6 | 워커 작업 `collect-events-0610`·`collect-events-1810`(KST). 원천이 연간 일정을 미리 공개해 하루 2회면 충분하고, 03:30 백업과 겹치지 않게 분을 10 으로 둔다. 원천 하나라도 실패하면 작업 실패로 기록 |
+
+같이 고친 것(리뷰 참고):
+- 발행 뒤 정정한 문장을 다시 확인할 수 있다(`confirmClaim` 이 `published` 도 허용) → 재승인(`reapprove`) 경로가 열린다.
+- 금지 표현 검사가 `claims[].text`·`publisher` 도 본다(캡션·대체 텍스트·검수 화면으로 독자에게 닿는다).
+- 성과 `/performance?week=` 는 정규화한 날짜로 주를 정한다(못 읽으면 이번 주). CSV 가져오기도 직접 입력과 같은 `validateMetricValues` 를 거치고 어긋난 행은 건너뛴 이유를 남긴다.
+- 편 문장에 출처 등급(tier)·시나리오 조건(condition)·직접 경험 기록(experience) 칸을 더했다 — 정식 claim 규칙(01 §5)이 요구한다. 값이 없으면 기존 해시가 그대로라 예전 승인이 풀리지 않는다.

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -144,6 +144,69 @@ describe("createHtmlCardRenderer — 렌더 전 검사", () => {
   it("래스터가 규격 밖 크기를 내면 실패한다", async () => {
     const wrong: Rasterizer = { png: async () => fakePng(1080, 1080) };
     await expect(make({ rasterizer: wrong }).render(doc(preIssueInput()), tmp())).rejects.toThrow("크기 오류: 1080x1080");
+  });
+});
+
+describe("createHtmlCardRenderer — 같은 폴더에 다시 그리기 (렌더러가 만든 파일만 지운다)", () => {
+  const ONE_PX = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  const files = (dir: string) => readdirSync(dir).sort();
+
+  it("render.json 이 없는 폴더(사용자 폴더·배경 폴더·공유 폴더)의 PNG 와 다른 파일은 하나도 지우지 않는다", async () => {
+    const out = tmp();
+    writeFileSync(join(out, "keep.png"), "mine");
+    writeFileSync(join(out, "01-cover.png"), "someone else's file with a card-like name");
+    writeFileSync(join(out, "notes.txt"), "notes");
+    const bg = join(out, "tool.png"); // --backgrounds 와 같은 폴더
+    writeFileSync(bg, ONE_PX);
+    await make({ backgrounds: { tool: bg } }).render(doc(researchInput()), out);
+    expect(readFileSync(join(out, "keep.png"), "utf8")).toBe("mine");
+    expect(readFileSync(join(out, "notes.txt"), "utf8")).toBe("notes");
+    expect(readFileSync(bg)).toEqual(ONE_PX);
+    // 이름이 겹치는 카드는 새 렌더가 덮어쓴다(그 자리는 렌더러의 출력 이름이다)
+    expect(files(out)).toEqual(["01-cover.png", "02-tool.png", "03-tool-2.png", "04-sources.png", "keep.png", "notes.txt", "render.json", "tool.png"]);
+  });
+
+  it("이전 렌더보다 장 수가 줄면 남는 옛 카드만 지우고 남의 PNG·캡션은 남긴다", async () => {
+    const out = tmp();
+    writeFileSync(join(out, "keep.png"), "mine");
+    await make().render(doc(preIssueInput()), out); // 8장
+    writeFileSync(join(out, "caption.txt"), "caption");
+    expect(files(out)).toEqual(["01-cover.png", "02-why_it_matters.png", "03-market_expectation.png", "04-scenarios.png", "05-scenarios-2.png", "06-transmission.png", "07-after_checks.png", "08-sources.png", "caption.txt", "keep.png", "render.json"]);
+
+    const result = await make().render(doc(researchInput()), out); // 4장
+    expect(result.cards).toHaveLength(4);
+    expect(files(out)).toEqual(["01-cover.png", "02-tool.png", "03-tool-2.png", "04-sources.png", "caption.txt", "keep.png", "render.json"]);
+    expect(readFileSync(join(out, "keep.png"), "utf8")).toBe("mine");
+    const manifest = JSON.parse(readFileSync(join(out, "render.json"), "utf8")) as { cards: { name: string }[] };
+    expect(manifest.cards.map((c) => c.name)).toEqual(["01-cover.png", "02-tool.png", "03-tool-2.png", "04-sources.png"]);
+  });
+
+  it("render.json 에 폴더 밖·하위 경로·PNG 가 아닌 이름이 적혀 있어도 그 파일은 지우지 않는다", async () => {
+    const parent = tmp();
+    const out = join(parent, "out");
+    mkdirSync(join(out, "sub"), { recursive: true });
+    writeFileSync(join(parent, "outside.png"), "outside");
+    writeFileSync(join(out, "sub", "inner.png"), "inner");
+    writeFileSync(join(out, "notes.txt"), "notes");
+    writeFileSync(join(out, "old-card.png"), "old rendered card");
+    const names = ["../outside.png", "sub/inner.png", "notes.txt", "/etc/hosts.png", "sub", "old-card.png", 7, null];
+    writeFileSync(join(out, "render.json"), JSON.stringify({ cards: names.map((name) => ({ name })) }));
+    await make().render(doc(researchInput()), out);
+    expect(readFileSync(join(parent, "outside.png"), "utf8")).toBe("outside");
+    expect(readFileSync(join(out, "sub", "inner.png"), "utf8")).toBe("inner");
+    expect(readFileSync(join(out, "notes.txt"), "utf8")).toBe("notes");
+    expect(existsSync(join(out, "old-card.png"))).toBe(false); // 매니페스트에 적힌 정상 이름은 지운다
+  });
+
+  it("render.json 이 깨졌거나 모양이 달라도 PNG 를 지우지 않고 새 매니페스트로 덮어쓴다", async () => {
+    for (const broken of ["{not json", "[]", "null", JSON.stringify({ cards: "x" })]) {
+      const out = tmp();
+      writeFileSync(join(out, "keep.png"), "mine");
+      writeFileSync(join(out, "render.json"), broken);
+      await make().render(doc(researchInput()), out);
+      expect(readFileSync(join(out, "keep.png"), "utf8")).toBe("mine");
+      expect((JSON.parse(readFileSync(join(out, "render.json"), "utf8")) as { cards: unknown[] }).cards).toHaveLength(4);
+    }
   });
 });
 

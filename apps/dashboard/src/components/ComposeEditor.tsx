@@ -1,7 +1,7 @@
 "use client";
 // 작성 — 단 목록 · 가운데 쓰기 · 오른쪽 점검. 종류마다 단만 바뀐다. [L2] 자동 저장 아님: 「저장」을 눌러야 SQLite 에 남는다(읽은 버전으로 낙관적 동시성).
 import { useState } from "react";
-import type { CheckItem, ChangeKind, Piece, ScenarioItem } from "@yunseo/domain";
+import { KIND_FIELDS, type CheckItem, type ChangeKind, type FieldSpec, type Piece, type ScenarioItem } from "@yunseo/domain";
 import { Badge, Button, Card, CardHeader, Check, CheckList, EmptyState, Field, FieldRow, Glyph, Input, List, ListItem, Metric, Notice, Select, Split, Stack, Text, Textarea, type Media } from "@yunseo/ui";
 import { savePieceAction } from "@/app/content/actions";
 import { Outcome, useServerAction } from "./AuthoringKit";
@@ -21,6 +21,33 @@ const LIMIT = 220; // 본문 카드 글자 상한(가정값 — 프리셋 limits
 const nextId = (prefix: string, ids: string[]) => `${prefix}${ids.reduce((m, id) => Math.max(m, Number(id.replace(/\D/g, "")) || 0), 0) + 1}`;
 const CHANGE_LABEL: Record<ChangeKind, string> = { correction: "정정(사실 오류)", update: "갱신(판단이 바뀜)", clarification: "명확화(표현만)" };
 
+/** [L7] 구조 칸 하나 — 정본 스키마(01 §4) 필드 중 단 본문으로 못 채우는 것 */
+function StructField({ spec, value, onChange }: { spec: FieldSpec; value: string; onChange: (v: string) => void }) {
+  const label = spec.hint ? `${spec.label} — ${spec.hint}` : spec.label;
+  if (spec.type === "select")
+    return (
+      <Field label={label}>
+        <Select value={value} onChange={(e) => onChange(e.target.value)}>
+          <option value="">고르기</option>
+          {spec.options?.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </Select>
+      </Field>
+    );
+  if (spec.type === "text")
+    return (
+      <Field label={label}>
+        <Input value={value} onChange={(e) => onChange(e.target.value)} />
+      </Field>
+    );
+  return (
+    <Field label={label}>
+      <Textarea value={value} placeholder={spec.hint ?? ""} onChange={(e) => onChange(e.target.value)} />
+    </Field>
+  );
+}
+
 export function ComposeEditor({ piece, revision, actor, blockers, preIssueOptions, art }: ComposeProps) {
   const [title, setTitle] = useState(piece.title);
   const [slot, setSlot] = useState(piece.slot.slice(0, 16));
@@ -29,6 +56,7 @@ export function ComposeEditor({ piece, revision, actor, blockers, preIssueOption
   const [stages, setStages] = useState(piece.stages);
   const [scenarios, setScenarios] = useState<ScenarioItem[]>(piece.scenarios ?? []);
   const [checks, setChecks] = useState<CheckItem[]>(piece.checks ?? []);
+  const [fields, setFields] = useState<Record<string, string>>(piece.fields ?? {});
   const [changeKind, setChangeKind] = useState<ChangeKind | "">("");
   const [reason, setReason] = useState("");
   const [readerNote, setReaderNote] = useState("");
@@ -41,6 +69,19 @@ export function ComposeEditor({ piece, revision, actor, blockers, preIssueOption
 
   if (piece.kind === "story" || !cur) return <Card><EmptyState media={art} title="스토리 편은 여기서 쓰지 않음" /></Card>;
 
+  // [L7] 구조 칸 — 편 머리(모든 단 공통)와 지금 단의 칸. 연구 편은 고른 연구 단계의 칸만
+  const specs = KIND_FIELDS[piece.kind];
+  const researchStage = fields["stage"] || "idea";
+  const headFields = specs.filter((f) => f.stage === null);
+  const stageFields = specs.filter((f) => f.stage === cur.key && (!f.researchStage || f.researchStage === researchStage));
+  const setField = (key: string, value: string) =>
+    setFields((xs) => {
+      const next = { ...xs };
+      if (value) next[key] = value;
+      else delete next[key];
+      return next;
+    });
+
   const dirty =
     title !== piece.title ||
     slot !== piece.slot.slice(0, 16) ||
@@ -48,7 +89,8 @@ export function ComposeEditor({ piece, revision, actor, blockers, preIssueOption
     pre !== (piece.preIssueId ?? "") ||
     JSON.stringify(stages) !== JSON.stringify(piece.stages) ||
     JSON.stringify(scenarios) !== JSON.stringify(piece.scenarios ?? []) ||
-    JSON.stringify(checks) !== JSON.stringify(piece.checks ?? []);
+    JSON.stringify(checks) !== JSON.stringify(piece.checks ?? []) ||
+    JSON.stringify(fields) !== JSON.stringify(piece.fields ?? {});
   const empty = stages.filter((s) => !s.body.trim()).length;
 
   const save = () =>
@@ -61,6 +103,7 @@ export function ComposeEditor({ piece, revision, actor, blockers, preIssueOption
           slot,
           viewpoint,
           stages: stages.map((s) => ({ key: s.key, body: s.body })),
+          fields,
           ...(piece.kind === "pre" ? { scenarios, checks } : {}),
           ...(piece.kind === "post" ? { preIssueId: pre || null } : {}),
         },
@@ -117,6 +160,9 @@ export function ComposeEditor({ piece, revision, actor, blockers, preIssueOption
             <Input mono type="datetime-local" value={slot} onChange={(e) => setSlot(e.target.value)} />
           </Field>
         </FieldRow>
+        {headFields.map((spec) => (
+          <StructField key={spec.key} spec={spec} value={fields[spec.key] ?? ""} onChange={(v) => setField(spec.key, v)} />
+        ))}
         <Field label="핵심 관점 한 문장 (운영자 해석)">
           <Textarea invalid={!viewpoint.trim()} value={viewpoint} onChange={(e) => setViewpoint(e.target.value)} />
         </Field>
@@ -142,6 +188,10 @@ export function ComposeEditor({ piece, revision, actor, blockers, preIssueOption
           <Metric value={cur.body.length} unit={`/ ${LIMIT}`} label="글자" tone={cur.body.length > LIMIT ? "alert" : "default"} />
         </Stack>
         <Textarea tall value={cur.body} placeholder="첫 줄 = 카드 제목, 다음 줄부터 점" onChange={(e) => setStages((xs) => xs.map((s, n) => (n === i ? { ...s, body: e.target.value } : s)))} />
+        {stageFields.map((spec) => (
+          <StructField key={spec.key} spec={spec} value={fields[spec.key] ?? ""} onChange={(v) => setField(spec.key, v)} />
+        ))}
+        {piece.kind === "research" && researchStage !== cur.key && <Text size="label" tone="mute">이 편의 연구 단계는 「{researchStage}」 — 이 단은 카드에 들어가지 않는다</Text>}
         <Stack direction="row" gap={2} justify="end">
           <Button disabled={i === 0} onClick={() => setI(i - 1)}>이전</Button>
           <Button disabled={i === stages.length - 1} onClick={() => setI(i + 1)}>다음</Button>

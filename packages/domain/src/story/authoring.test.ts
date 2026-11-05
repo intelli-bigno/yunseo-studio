@@ -334,11 +334,53 @@ describe("렌더 입력(콘텐츠 정본 본문)", () => {
     expect(r.ok).toBe(false);
   });
 
-  it("이후·연구 편은 공통 봉투", () => {
+  it("[L7] 이후 편은 정식 스키마 post-issue-4/v1 — 구조 칸이 비면 검증기가 막고, 채우면 통과", () => {
     const a = { ...newPiece({ id: "A", kind: "post", title: "t", slot: "2026-11-08T21:00", viewpoint: "v", preIssueId: "P-1" }) };
     a.stages = a.stages.map((s) => ({ ...s, body: "x" }));
+    const empty = toContentBody(a);
+    expect(empty.ok).toBe(false);
+    if (!empty.ok) expect(empty.errors.join("\n")).toMatch(/actual_result/);
+    a.fields = {
+      "result_vs_expectation.actual_result": "결과",
+      "result_vs_expectation.expectation_gap": "차이",
+      "judgment_update.items": "수정 | 이전 판단 | 이유 | c1, c2",
+      "next_variables.items": "변수 | 왜 | 볼 곳 | 다음 주",
+    };
     const r = toContentBody(a);
     expect(r.ok && r.kind).toBe("post-issue");
+    expect(r.ok && r.schema).toBe("post-issue-4/v1");
     expect(r.ok && (r.body as { links: unknown }).links).toEqual({ pre_issue_id: "P-1" });
+    expect(r.ok && (r.body as { stages: { judgment_update: unknown } }).stages.judgment_update).toEqual({ headline: "x", items: [{ judgment: "이전 판단", status: "revised", reason: "이유", based_on: ["c1", "c2"] }] });
+  });
+
+  it("[L7] 연구 편은 research-5/v1 — 고른 단계 하나만 담고, 시각은 KST 시간대를 붙인다", () => {
+    const r0 = { ...newPiece({ id: "R", kind: "research", title: "주제", slot: "2026-11-08T21:00", viewpoint: "v" }) };
+    r0.stages = r0.stages.map((s) => ({ ...s, body: s.key === "conditions" ? "언제 쓰나" : "" }));
+    r0.fields = { stage: "conditions", "conditions.applies_when": "추세장\n거래량 많을 때", "conditions.not_when": "발표 직전", "conditions.risk_limits": "손실 한도는 미리 정한다" };
+    r0.claims = [fact("c1", { asOf: "2026-11-02T09:00" })];
+    const r = toContentBody(r0);
+    expect(r.ok && r.schema).toBe("research-5/v1");
+    const body = r.ok ? (r.body as unknown as { stage: string; stages: Record<string, unknown>; thread: unknown; as_of: string; claims: { as_of: string; kind: string }[] }) : null;
+    expect(body?.stage).toBe("conditions");
+    expect(Object.keys(body?.stages ?? {})).toEqual(["conditions"]);
+    expect(body?.thread).toEqual({ id: "R", topic: "주제" });
+    expect(body?.as_of).toBe("2026-11-02T09:00+09:00");
+    expect(body?.claims[0]).toMatchObject({ kind: "fact", as_of: "2026-11-02T09:00+09:00" });
+  });
+
+  it("[L7] 구조 칸은 종류별 표에 있는 키·값만 저장된다", () => {
+    const p = readyPre();
+    expect(() => applyEdit(p, { fields: { nope: "x" } }, who)).toThrow(/모르는 칸/);
+    expect(() => applyEdit(p, { fields: { event_kind: "moon" } }, who)).toThrow(/고를 수 없는 값/);
+    const ok = applyEdit(p, { fields: { event_kind: "central_bank", timezone: "  " } }, who);
+    expect(ok.piece.fields).toEqual({ event_kind: "central_bank" });
+    expect(ok.changes.map((c) => c.path)).toContain("fields");
+  });
+
+  it("[L7] 발행 뒤 정정한 문장을 다시 확인할 수 있다(재승인 경로)", () => {
+    const p = { ...readyPre(), status: "published" as const };
+    const edited = applyEdit(p, { claims: p.claims.map((c) => (c.id === "c1" ? { ...c, text: "발표는 11월 4일이다." } : c)) }, { ...who, reason: "날짜 오류", changeKind: "correction", readerNote: "날짜를 바로잡았습니다" }).piece;
+    expect(edited.claims.find((c) => c.id === "c1")?.verified).toBe(false);
+    expect(confirmClaim(edited, "c1", "윤서", AT).claims.find((c) => c.id === "c1")?.verified).toBe(true);
   });
 });

@@ -6,7 +6,9 @@ const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   // workspace 패키지는 TS 원본을 내보낸다 — Next 가 함께 변환한다.
-  transpilePackages: ["@yunseo/design-tokens", "@yunseo/ui", "@yunseo/domain", "@yunseo/application", "@yunseo/adapters-storage", "@yunseo/adapters-render-html", "@yunseo/adapters-events-calendar", "@yunseo/adapters-metrics", "@yunseo/adapters-publisher-instagram", "@yunseo/adapters-publisher-youtube", "@yunseo/presets-schema", "@yunseo/adapters-publisher-manual"],
+  transpilePackages: ["@yunseo/design-tokens", "@yunseo/ui", "@yunseo/domain", "@yunseo/application", "@yunseo/adapters-storage", "@yunseo/adapters-render-html", "@yunseo/adapters-events-calendar", "@yunseo/adapters-metrics", "@yunseo/adapters-publisher-instagram", "@yunseo/adapters-publisher-youtube", "@yunseo/presets-schema", "@yunseo/adapters-publisher-manual", "@yunseo/adapters-video"],
+  // [L7] 카드 렌더(L1)는 네이티브 모듈(@resvg/resvg-js, .node 바이너리)과 satori(yoga wasm)를 쓴다 — 번들에 넣지 않고 Node 가 그대로 읽게 한다
+  serverExternalPackages: ["@resvg/resvg-js", "satori"],
   // Windows 실행기 개발 등급은 작업당 프로세스·스레드 256 상한이다. Turbopack 빌드는 워커마다 네이티브 스레드를
   // 띄워 spawn EAGAIN 으로 죽어서(2026-11-04 실측) 빌드는 webpack(package.json) + 워커 2개로 한다. dev 는 Turbopack 그대로.
   experimental: { cpus: 2 },

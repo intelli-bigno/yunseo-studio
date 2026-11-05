@@ -1,6 +1,7 @@
 // 통합 테스트 — 진짜 ffmpeg 로 짧은 릴스를 만들고 ffprobe·프레임 픽셀로 규격을 확인한다.
 // ffmpeg 가 없으면 건너뛰지 않고 실패한다: beforeAll 의 assertFfmpegReady 가 이유와 해결 방법을 담은 메시지를 던진다.
-import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
@@ -143,6 +144,8 @@ describe("ffmpeg 가 있는 환경", () => {
   it("상대 경로 음원·서체 폴더도 호출 위치 기준으로 읽는다 (ffmpeg 는 작업 폴더에서 돌아도 절대 경로를 받는다)", async () => {
     const dir = join(root, "rel");
     await mkdir(join(dir, "fonts"), { recursive: true });
+    // [L7] 저장소의 Pretendard(L1 이 둔 서체) — 합성은 작업 폴더로 복사해 상대 경로 fonts 로 넘긴다
+    await copyFile(fileURLToPath(new URL("../../render-html/fonts/Pretendard-Regular.woff", import.meta.url)), join(dir, "fonts", "Pretendard-Regular.woff"));
     const voice = join(dir, "voice.wav");
     const music = join(dir, "music.wav");
     await writeTone(BINS.ffmpegPath, voice, 2, 440);
@@ -176,7 +179,7 @@ describe("ffmpeg 가 있는 환경", () => {
     expect(render, "합성 호출이 기록됐다").toBeDefined();
     expect(render).toContain(`-i ${resolve(voice)}`);
     expect(render).toContain(`-i ${resolve(music)}`);
-    expect(render).toContain(`fontsdir=${resolve(dir, "fonts")}`);
+    expect(render, "서체는 작업 폴더로 복사한 fonts 를 쓴다(Windows 경로 글자 회피)").toContain("fontsdir=fonts,");
     expect(render, "상대 경로가 그대로 넘어가지 않는다").not.toContain(`-i ${relVoice}`);
     expect(render).not.toContain(`fontsdir=${relFonts}`);
   }, 180_000);

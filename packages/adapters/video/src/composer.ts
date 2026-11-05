@@ -1,6 +1,6 @@
 // ReelComposer 구현 — 카드 세트 → 9:16 MP4(+SRT). 계획·배치 규칙은 domain, 여기서는 파일과 ffmpeg 만 다룬다.
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import type { CardRenderResult, RenderedFile, ReelComposer, ReelResult } from "@yunseo/application";
 import {
@@ -26,7 +26,7 @@ export interface FfmpegReelComposerOptions extends Partial<FfmpegBinaries> {
   tracks?: readonly AudioSlot[];
   /** 카드별 자막 문장을 직접 줄 때(카드 수와 같은 길이). 없으면 카드의 대체 텍스트(altTexts)에서 첫 문장을 쓴다 */
   subtitleTexts?: readonly string[];
-  /** 서체 폴더 — 서체를 이름만으로 못 찾는 환경용. 영문·숫자·._/- 만 */
+  /** 서체 폴더 — 서체를 이름만으로 못 찾는 환경용(저장소의 Pretendard 등). 합성 때 작업 폴더로 복사해 쓰므로 경로 글자 제한이 없다 */
   fontsDir?: string;
   encoder?: Partial<EncoderOptions>;
 }
@@ -118,7 +118,16 @@ export function createFfmpegReelComposer(options: FfmpegReelComposerOptions = {}
         if (cues.length > 0) await writeFile(workSrt, buildSrt(cues), "utf8");
         const burn = preset.subtitle.burnIn && cues.length > 0;
         if (burn) await writeFile(join(work, "subtitles.ass"), buildAss(plan, preset), "utf8");
-        const args = buildFfmpegArgs({ plan, preset, cardPaths, assName: burn ? "subtitles.ass" : null, fontsDir, outPath: workVideo, tracks, encoder });
+        // [L7] 서체는 작업 폴더의 fonts/ 로 복사해 상대 경로로 넘긴다 — Windows 절대 경로(C:\…)는 필터 값에 쓸 수 없는 글자(: \)가 있다
+        let workFonts: string | undefined;
+        if (burn && fontsDir !== undefined) {
+          const files = (await readdir(fontsDir)).filter((f) => /\.(?:ttf|otf|ttc|woff2?)$/i.test(f));
+          if (files.length === 0) throw new ReelComposeError("서체 폴더에 서체 파일이 없다", [fontsDir]);
+          await mkdir(join(work, "fonts"));
+          for (const f of files) await copyFile(join(fontsDir, f), join(work, "fonts", f));
+          workFonts = "fonts";
+        }
+        const args = buildFfmpegArgs({ plan, preset, cardPaths, assName: burn ? "subtitles.ass" : null, fontsDir: workFonts, outPath: workVideo, tracks, encoder });
         // 필터가 상대 경로(subtitles.ass)를 쓰므로 작업 폴더에서 실행한다 — 카드·음원·서체 폴더·출력은 절대 경로
         const run = await runProcess(bins.ffmpegPath, args, { cwd: work });
         if (run.spawnError !== null || run.code !== 0) {
