@@ -6,4 +6,5 @@ language: language/language.default.yaml
 compliance: compliance/banned-expressions.yaml
 formats:
   - format/pre-issue-5.yaml
-  - format/post-issue-research.yaml
+  - format/post-issue-4.yaml
+  - format/research-5.yaml

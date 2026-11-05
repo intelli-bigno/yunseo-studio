@@ -3,18 +3,47 @@ id: pre-issue-5
 kind: pre_issue
 status: active
 publish_timing: 기본 전날 발행. 복잡한 사건은 그보다 앞서 배경 설명 게시물을 먼저 낸다
-limits_provisional: true     # max_chars 는 시안 렌더 전 가정값
+limits_provisional: true     # max_chars 는 카드 예시 3종 첫 렌더(2026-11-05)로 조정한 가정값 — 운영 첫 편 뒤 다시 본다
 stages:                      # 5단 — 순서 정본 (packages/domain STAGE_KEYS 와 같아야 한다)
   - { id: why_it_matters,     label: 왜 중요한가,                       question: 이 사건이 바꾸는 변수는 무엇인가 }
   - { id: market_expectation, label: 현재 시장은 무엇을 예상하는가,       question: 이미 가격에 담긴 기대는 무엇인가 }
   - { id: scenarios,          label: 결과별 시나리오,                     question: 결과가 갈리면 각각 무엇이 달라지는가 }
   - { id: transmission,       label: 어떤 경로로 자산·업종에 영향을 주는가, question: 결과가 어떤 길로 시장에 닿는가 }
   - { id: after_checks,       label: 발표 이후 무엇을 확인할 것인가,       question: 독자가 직접 확인할 신호는 무엇인가 }
-cards:                       # 표지 + 5단 + 출처 = 7장
+# 표지 + 5단 + 출처. max_chars 는 카드 한 장의 글 영역 상한이다. 시나리오는 두 장으로 나뉜다(조건 / 읽는 법, 카드 예시 v2).
+# pages: 카드 장면별 질문 말풍선(q)과 기본 답 띠(a) — 언어 코드별. 첫 장의 답 띠는 콘텐츠의 headline 이 우선한다.
+cards:
   - { slot: cover,              stage: null,               max_chars: 90 }
-  - { slot: why_it_matters,     stage: why_it_matters,     max_chars: 220 }
-  - { slot: market_expectation, stage: market_expectation, max_chars: 220 }
-  - { slot: scenarios,          stage: scenarios,          max_chars: 220 }
-  - { slot: transmission,       stage: transmission,       max_chars: 220 }
-  - { slot: after_checks,       stage: after_checks,       max_chars: 220 }
-  - { slot: sources,            stage: null,               max_chars: null }
+  - slot: why_it_matters
+    stage: why_it_matters
+    max_chars: 300
+    pages:
+      - q: { en: "Why does this matter?", ko: "이 사건이 왜 중요할까요?" }
+  - slot: market_expectation
+    stage: market_expectation
+    max_chars: 300
+    pages:
+      - q: { en: "What does the market assume now?", ko: "지금 시장은 무엇을 예상할까요?" }
+  - slot: scenarios
+    stage: scenarios
+    max_chars: 220
+    pages:
+      - q: { en: "What if the result differs?", ko: "결과가 다르면 어떻게 될까요?" }
+      - q: { en: "And how would each one read?", ko: "그럼 각각은 어떻게 읽힐까요?" }
+        a: { en: "Same data, different readings", ko: "같은 자료, 다른 해석" }
+  - slot: transmission
+    stage: transmission
+    max_chars: 300
+    pages:
+      - q: { en: "How does it reach prices?", ko: "가격에는 어떻게 닿을까요?" }
+  - slot: after_checks
+    stage: after_checks
+    max_chars: 400
+    pages:
+      - q: { en: "What do I check afterwards?", ko: "끝난 뒤 무엇을 확인할까요?" }
+  - slot: sources
+    stage: null
+    max_chars: null
+    pages:
+      - q: { en: "Where does this come from?", ko: "이 내용은 어디서 왔을까요?" }
+        a: { en: "Sources and times, claim by claim", ko: "주장마다 출처와 시점을 적습니다" }

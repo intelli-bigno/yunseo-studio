@@ -1,0 +1,45 @@
+# 포맷 ② 이슈 이후 — 무엇이 달라졌는가. 충분한 자료를 확보한 뒤 낸다(속보 경쟁이 아니다).
+# 정본 설계는 docs/01-content-sot.md §4.3. 이전 편(pre-issue-5)의 시나리오·확인 항목을 id 로 가리켜 닫는다.
+id: post-issue-4
+kind: post_issue
+status: active
+publish_timing: 충분한 자료를 확보한 뒤(evidence_ready) — 기한 없음, 서두르지 않는다
+limits_provisional: true     # max_chars 는 카드 예시 3종 첫 렌더(2026-11-05)로 조정한 가정값 — 운영 첫 편 뒤 다시 본다
+stages:                      # 4단 — 순서 정본 (packages/domain POST_STAGE_KEYS 와 같아야 한다)
+  - { id: result_vs_expectation, label: 실제 결과는 예상과 어떻게 달랐나,   question: 결과가 사전 시나리오·기대와 어떻게 달랐는가 }
+  - { id: market_reaction,       label: 확인된 시장 반응은 무엇인가,        question: 관측된 반응은 무엇인가 }
+  - { id: judgment_update,       label: 유지되거나 달라진 판단 근거는 무엇인가, question: 이전 판단 중 무엇이 유지되고 무엇이 달라졌는가 }
+  - { id: next_variables,        label: 다음으로 확인할 변수는 무엇인가,      question: 이제 무엇을 지켜볼 것인가 }
+# 표지 + 4단 + 출처. 첫 단은 세 장(결과·기대와의 차이 / 시나리오 대응 / 확인 항목 대응)으로 나뉜다. 내용이 없는 장(사전 시나리오 없음 등)은 그리지 않는다.
+cards:
+  - { slot: cover,                stage: null,                   max_chars: 90 }
+  - slot: result_vs_expectation
+    stage: result_vs_expectation
+    max_chars: 220
+    pages:
+      - q: { en: "What actually happened?", ko: "실제로 무슨 일이 있었나요?" }
+      - q: { en: "How did it compare with the scenarios?", ko: "사전 시나리오와 비교하면 어땠나요?" }
+        a: { en: "Each scenario, answered plainly", ko: "시나리오마다 솔직하게 답합니다" }
+      - q: { en: "Which checks could we close?", ko: "어떤 확인 항목을 닫을 수 있었나요?" }
+        a: { en: "Closing the loop on the earlier post", ko: "이전 편의 확인 항목을 닫습니다" }
+  - slot: market_reaction
+    stage: market_reaction
+    max_chars: 300
+    pages:
+      - q: { en: "How did markets react?", ko: "시장은 어떻게 반응했나요?" }
+  - slot: judgment_update
+    stage: judgment_update
+    max_chars: 260
+    pages:
+      - q: { en: "What stays, and what changes?", ko: "무엇이 유지되고 무엇이 달라졌나요?" }
+  - slot: next_variables
+    stage: next_variables
+    max_chars: 300
+    pages:
+      - q: { en: "What do we watch next?", ko: "다음에는 무엇을 볼까요?" }
+  - slot: sources
+    stage: null
+    max_chars: null
+    pages:
+      - q: { en: "Where does this come from?", ko: "이 내용은 어디서 왔을까요?" }
+        a: { en: "Sources and times, claim by claim", ko: "주장마다 출처와 시점을 적습니다" }

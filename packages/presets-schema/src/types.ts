@@ -1,4 +1,4 @@
-import type { BannedExpressionRule } from "@yunseo/domain";
+import type { BannedExpressionRule, FormatPage } from "@yunseo/domain";
 
 /** 아직 정해지지 않은 값의 자리표시자. 남아 있으면 게시 단계에서 차단한다 (docs/01 §3). */
 export const PLACEHOLDER = "TBD";
@@ -53,12 +53,15 @@ export interface FormatStage {
 export interface FormatCard {
   slot: string;
   stage: string | null;
+  /** 카드 한 장의 글 영역 글자 수 상한 */
   max_chars: number | null;
+  /** 카드 장면별 질문(Q)·기본 답(A) — 언어 코드별 문구. 없으면 한 장 */
+  pages?: FormatPage[];
 }
 export interface FormatPreset {
   id: string;
-  /** pre_issue: 사건 이전 / post_issue: 사건 이후 분석·연구 */
-  kind: "pre_issue" | "post_issue";
+  /** pre_issue: 사건 이전 / post_issue: 사건 이후 / research: 트레이딩 연구 */
+  kind: "pre_issue" | "post_issue" | "research";
   /** active: 사용 중 / reserved: 자리만 둠 */
   status: "active" | "reserved";
   publish_timing: string;

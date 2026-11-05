@@ -2,6 +2,8 @@
 // 파일(YAML) 필드 이름을 그대로 쓴다(snake_case) — 사본·변환 층을 두지 않는다 (docs/01-content-sot.md).
 import { Issues, type ValidationResult } from "../validation";
 import { findBannedExpressions, type BannedExpressionRule, type ExpressionHit } from "../compliance/expressions";
+import { blockFinding, type ContentFinding } from "./claims";
+import { envelopeFindings, findingLine, plainText, readEnvelope, unsourcedNumbers, type ContentText, type Envelope } from "./envelope";
 
 export const PRE_ISSUE_SCHEMA = "pre-issue-5/v1";
 
@@ -18,17 +20,9 @@ export type StageKey = (typeof STAGE_KEYS)[number];
 export const EVENT_KINDS = ["election", "central_bank", "data_release", "policy", "speech", "other"] as const;
 export type EventKind = (typeof EVENT_KINDS)[number];
 
-/** draft: 작성 중 / verified: 출처·일시·운영자 해석까지 갖춰 검수 단계로 넘길 수 있음 */
-export const CARD_STATUSES = ["draft", "verified"] as const;
-export type CardStatus = (typeof CARD_STATUSES)[number];
-
-export interface Claim {
-  text: string;
-  source_url?: string;
-  accessed_at?: string;
-  quote?: string;
-}
 export interface Scenario {
+  /** 이후 편(post-issue-4)의 scenario_outcomes 가 가리키는 안정 키. 없으면 label 로 연결한다 */
+  id?: string;
   label: string;
   condition: string;
   reading: string;
@@ -39,16 +33,15 @@ export interface TransmissionPath {
   touches: string[];
 }
 export interface AfterCheck {
+  /** 이후 편의 check_results 가 가리키는 안정 키 */
+  id?: string;
   what: string;
   where: string;
 }
 
-export interface PreIssueCard {
+export interface PreIssueCard extends Envelope {
   schema: typeof PRE_ISSUE_SCHEMA;
-  id: string;
-  status: CardStatus;
-  /** 발행 언어 코드. 프리셋 language 와 같아야 게시 가능(후속). */
-  language: string;
+  type: "pre_issue";
   event: {
     name: string;
     kind: EventKind;
@@ -63,12 +56,9 @@ export interface PreIssueCard {
     market_expectation: { headline: string; points: string[] };
     scenarios: { headline: string; items: Scenario[] };
     transmission: { headline: string; paths: TransmissionPath[] };
-    after_checks: { headline: string; checks: AfterCheck[] };
+    /** closing: 독자가 손에 쥘 것을 한 문장으로 닫는 칸(선택) */
+    after_checks: { headline: string; checks: AfterCheck[]; closing?: string };
   };
-  /** 수치·고유명사·날짜가 든 사실 주장 + 출처. 사실 수치를 쓰지 않은 카드는 빈 배열. */
-  claims: Claim[];
-  /** 운영자 도메인 지식·경험으로 얹는 고유 해석. verified 에서 필수. */
-  operator_view: string | null;
 }
 
 export function validatePreIssueCard(input: unknown): ValidationResult<PreIssueCard> {
@@ -87,9 +77,8 @@ export function validatePreIssueCard(input: unknown): ValidationResult<PreIssueC
 
   const card: PreIssueCard = {
     schema: PRE_ISSUE_SCHEMA,
-    id: e.text(root["id"], "id"),
-    status: e.oneOf(root["status"], CARD_STATUSES, "status", "draft"),
-    language: e.text(root["language"], "language"),
+    type: "pre_issue",
+    ...readEnvelope(e, root, "pre_issue"),
     event: {
       name: e.text(event["name"], "event.name"),
       kind: e.oneOf(event["kind"], EVENT_KINDS, "event.kind", "other"),
@@ -112,11 +101,13 @@ export function validatePreIssueCard(input: unknown): ValidationResult<PreIssueC
         items: e.array(scenarios["items"], "stages.scenarios.items", 2).map((raw, i) => {
           const p = `stages.scenarios.items[${i}]`;
           const s = e.record(raw, p);
-          return {
+          const item: Scenario = {
             label: e.text(s["label"], `${p}.label`),
             condition: e.text(s["condition"], `${p}.condition`),
             reading: e.text(s["reading"], `${p}.reading`),
           };
+          if (s["id"] !== undefined) item.id = e.text(s["id"], `${p}.id`);
+          return item;
         }),
       },
       transmission: {
@@ -136,30 +127,20 @@ export function validatePreIssueCard(input: unknown): ValidationResult<PreIssueC
         checks: e.array(checks["checks"], "stages.after_checks.checks", 1).map((raw, i) => {
           const p = `stages.after_checks.checks[${i}]`;
           const c = e.record(raw, p);
-          return { what: e.text(c["what"], `${p}.what`), where: e.text(c["where"], `${p}.where`) };
+          const item: AfterCheck = { what: e.text(c["what"], `${p}.what`), where: e.text(c["where"], `${p}.where`) };
+          if (c["id"] !== undefined) item.id = e.text(c["id"], `${p}.id`);
+          return item;
         }),
+        ...(checks["closing"] === undefined ? {} : { closing: e.text(checks["closing"], "stages.after_checks.closing") }),
       },
     },
-    claims: e.array(root["claims"], "claims").map((raw, i) => {
-      const p = `claims[${i}]`;
-      const c = e.record(raw, p);
-      const claim: Claim = { text: e.text(c["text"], `${p}.text`) };
-      for (const key of ["source_url", "accessed_at", "quote"] as const) {
-        if (c[key] !== undefined) claim[key] = e.text(c[key], `${p}.${key}`);
-      }
-      return claim;
-    }),
-    operator_view: e.textOrNull(root["operator_view"], "operator_view"),
   };
   return e.result(card);
 }
 
-export interface CardText {
-  path: string;
-  text: string;
-}
+export type CardText = ContentText;
 
-/** 독자에게 보이는 모든 문장과 그 위치. 금지 표현·수치 검사의 공통 입력. */
+/** 독자에게 보이는 모든 문장과 그 위치. 금지 표현·수치 검사의 공통 입력. 강조 표기(**)는 벗긴다 */
 export function collectCardTexts(card: PreIssueCard): CardText[] {
   const s = card.stages;
   const out: CardText[] = [
@@ -186,8 +167,9 @@ export function collectCardTexts(card: PreIssueCard): CardText[] {
     const p = `stages.after_checks.checks[${i}]`;
     out.push({ path: `${p}.what`, text: x.what }, { path: `${p}.where`, text: x.where });
   });
+  if (s.after_checks.closing !== undefined) out.push({ path: "stages.after_checks.closing", text: s.after_checks.closing });
   if (card.operator_view !== null) out.push({ path: "operator_view", text: card.operator_view });
-  return out;
+  return out.map((t) => ({ path: t.path, text: plainText(t.text) }));
 }
 
 export interface CardExpressionHit extends ExpressionHit {
@@ -203,24 +185,19 @@ export function scanCardExpressions(card: PreIssueCard, rules: readonly BannedEx
 
 /** 숫자가 든 본문 문장 중 claims 에 같은 숫자가 없는 것. 수치는 출처 있는 claim 으로만 쓴다 (편집 원칙 3). */
 export function findUnsourcedNumbers(card: PreIssueCard): CardText[] {
-  const claimed = new Set(card.claims.flatMap((c) => c.text.match(/\d[\d,.]*/g) ?? []));
-  return collectCardTexts(card).filter(({ text }) => {
-    const numbers = text.match(/\d[\d,.]*/g) ?? [];
-    return numbers.some((n) => !claimed.has(n));
-  });
+  return unsourcedNumbers(collectCardTexts(card), card.claims);
+}
+
+/** draft → verified 로 올리기 전에 막는 사유(구조화). 비어 있어야 올릴 수 있다. */
+export function preIssueFindings(card: PreIssueCard): ContentFinding[] {
+  const out: ContentFinding[] = [];
+  if (card.event.scheduled_at === null) out.push(blockFinding("verification", "event.scheduled_at", "일시 없는 이벤트는 선정 불가"));
+  if (card.event.timezone === null) out.push(blockFinding("verification", "event.timezone", "시간대 명시 필요"));
+  out.push(...envelopeFindings(card, collectCardTexts(card), { importance: true }));
+  return out;
 }
 
 /** draft → verified 로 올리기 전에 막는 사유. 비어 있어야 올릴 수 있다. */
 export function verificationBlockers(card: PreIssueCard): string[] {
-  const blockers: string[] = [];
-  if (card.event.scheduled_at === null) blockers.push("event.scheduled_at: 일시 없는 이벤트는 선정 불가");
-  if (card.event.timezone === null) blockers.push("event.timezone: 시간대 명시 필요");
-  if (card.operator_view === null) blockers.push("operator_view: 운영자 고유 해석이 비어 있다");
-  card.claims.forEach((c, i) => {
-    if (!c.source_url || !c.accessed_at || !c.quote) {
-      blockers.push(`claims[${i}]: 출처(source_url·accessed_at·quote) 누락`);
-    }
-  });
-  for (const t of findUnsourcedNumbers(card)) blockers.push(`${t.path}: 출처 없는 수치`);
-  return blockers;
+  return preIssueFindings(card).map(findingLine);
 }

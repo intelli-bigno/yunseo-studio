@@ -1,0 +1,38 @@
+# 트레이딩 연구(research-5) 예시 1건 — 스레드 「이벤트 전에 기준선 적기」의 도구 단계(tool).
+# 성과 수치를 쓰지 않았다. 한계(limits)와 검증 범위(verified_scope)를 도구와 같이 낸다 — 비어 있으면 verified 불가.
+schema: research-5/v1
+id: baseline-worksheet
+type: research
+status: draft
+language: en
+as_of: null
+thread:
+  id: baseline-notes
+  topic: Writing down your baseline before an event
+stage: tool
+links:
+  origin_post_id: null
+  conditions_post_id: null
+cover:
+  title: A one-page worksheet for writing down your baseline
+  hook: A small tool, with its limits stated first.
+stages:
+  tool:
+    headline: A page you fill in before the event
+    name: Baseline worksheet
+    purpose: Record what you expect **before** an event, so you can compare it with what happens.
+    how_to_use:
+      - Write the event and the time it is scheduled for.
+      - Note what you think the market already assumes, and where you read it.
+      - After the result, add what happened next to each line.
+    inputs: Your own notes and one public calendar
+    outputs: A dated page you can compare line by line
+    limits: It records your own baseline. It does not predict the result, and it does not tell you what to do.
+    verified_scope: Tried by hand on past events that have a public schedule. Not tested on thinly covered markets or on intraday moves.
+    applies_when:
+      - The event has a public schedule
+    not_when:
+      - Prices move before you can write anything down
+    distribution_note: Plain text. Copy it into any notes app.
+claims: []
+operator_view: null

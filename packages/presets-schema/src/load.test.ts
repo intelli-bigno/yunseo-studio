@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { STAGE_KEYS, findBannedExpressions } from "@yunseo/domain";
+import { POST_STAGE_KEYS, RESEARCH_STAGES, STAGE_KEYS, findBannedExpressions } from "@yunseo/domain";
 import { PresetError, brandPromoTexts, findPlaceholders, loadPresets } from "./index";
 
 const presetsDir = fileURLToPath(new URL("../../../presets", import.meta.url));
@@ -12,7 +12,7 @@ describe("loadPresets (저장소의 실제 프리셋)", () => {
   const bundle = loadPresets(presetsDir);
 
   it("active.yaml 조합을 읽어 스키마 검증을 통과한다", () => {
-    expect(bundle.formats.map((f) => f.id)).toEqual(["pre-issue-5", "post-issue-research"]);
+    expect(bundle.formats.map((f) => f.id)).toEqual(["pre-issue-5", "post-issue-4", "research-5"]);
     expect(bundle.versionHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
@@ -38,9 +38,29 @@ describe("loadPresets (저장소의 실제 프리셋)", () => {
     expect(format?.cards.map((c) => c.slot)).toEqual(["cover", ...STAGE_KEYS, "sources"]);
   });
 
-  it("이슈 이후 포맷은 자리만 있고 비어 있다", () => {
-    const format = bundle.formats.find((f) => f.id === "post-issue-research");
-    expect(format).toMatchObject({ status: "reserved", stages: [], cards: [] });
+  it("이슈 이후 포맷의 4단은 도메인 정본(POST_STAGE_KEYS)과 같고 카드는 표지+4단+출처다", () => {
+    const format = bundle.formats.find((f) => f.id === "post-issue-4");
+    expect(format).toMatchObject({ kind: "post_issue", status: "active" });
+    expect(format?.stages.map((s) => s.id)).toEqual([...POST_STAGE_KEYS]);
+    expect(format?.cards.map((c) => c.slot)).toEqual(["cover", ...POST_STAGE_KEYS, "sources"]);
+  });
+
+  it("연구 포맷의 5단계는 도메인 정본(RESEARCH_STAGES)과 같고 슬롯은 표지+단계별+출처다", () => {
+    const format = bundle.formats.find((f) => f.id === "research-5");
+    expect(format).toMatchObject({ kind: "research", status: "active" });
+    expect(format?.stages.map((s) => s.id)).toEqual([...RESEARCH_STAGES]);
+    expect(format?.cards.map((c) => c.slot)).toEqual(["cover", ...RESEARCH_STAGES, "sources"]);
+  });
+
+  it("카드 장면(pages)마다 영어·한국어 질문이 있고, 시나리오·도구는 두 장이다", () => {
+    for (const format of bundle.formats) {
+      for (const card of format.cards.filter((c) => c.slot !== "cover")) {
+        expect(card.pages?.length, `${format.id}/${card.slot}`).toBeGreaterThan(0);
+        for (const page of card.pages ?? []) expect(Object.keys(page.q).sort(), `${format.id}/${card.slot}`).toEqual(["en", "ko"]);
+      }
+    }
+    expect(bundle.formats[0]?.cards.find((c) => c.slot === "scenarios")?.pages).toHaveLength(2);
+    expect(bundle.formats[2]?.cards.find((c) => c.slot === "tool")?.pages).toHaveLength(2);
   });
 
   it("금지 표현: 브리프의 4개는 block, 「지표」는 브랜드 전면 문구에서만", () => {
@@ -102,7 +122,8 @@ describe("loadPresets (오류 처리)", () => {
       "language/language.default.yaml": real("language/language.default.yaml"),
       "compliance/banned-expressions.yaml": real("compliance/banned-expressions.yaml"),
       "format/pre-issue-5.yaml": real("format/pre-issue-5.yaml"),
-      "format/post-issue-research.yaml": real("format/post-issue-research.yaml"),
+      "format/post-issue-4.yaml": real("format/post-issue-4.yaml"),
+      "format/research-5.yaml": real("format/research-5.yaml"),
     });
     try {
       loadPresets(dir);
