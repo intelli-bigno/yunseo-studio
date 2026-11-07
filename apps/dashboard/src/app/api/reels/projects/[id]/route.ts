@@ -1,5 +1,7 @@
 // [W3 릴스] 프로젝트 하나 — 불러오기(GET) · 저장(PUT {project, revision}) · 지우기(DELETE)
+import { REELS_OPS_MAX_BYTES } from "@yunseo/application";
 import type { ReelsProject } from "@/lib/reels-timeline";
+import { readJsonObject } from "@/server/http";
 import { isReelsProjectId, loadReelsProject, reelsProjectProblems, reelsStore } from "@/server/reels";
 import { reelsOps } from "@/server/reels-ops";
 
@@ -16,7 +18,9 @@ export async function GET(_req: Request, ctx: Ctx): Promise<Response> {
 export async function PUT(req: Request, ctx: Ctx): Promise<Response> {
   const { id } = await ctx.params;
   if (!isReelsProjectId(id) || !reelsStore().get(id)) return notFound();
-  const body = (await req.json().catch(() => ({}))) as { project?: unknown; revision?: unknown };
+  const read = await readJsonObject(req, REELS_OPS_MAX_BYTES);
+  if (!read.ok) return read.response;
+  const body = read.value;
   const problems = reelsProjectProblems(body.project);
   if (problems.length) return Response.json({ error: "모양이 틀렸다", problems }, { status: 400 });
   if (typeof body.revision !== "number") return Response.json({ error: "revision 이 없다" }, { status: 400 });

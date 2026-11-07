@@ -1,0 +1,7 @@
+assets/luts/*.cube — film-warm · teal-orange · mono
+
+이 LUT 들은 이 저장소가 공식(scripts/gen-luts.mjs)으로 직접 만든 것이다. 외부 LUT 를 복사·변형하지 않았다.
+CC0 1.0 Universal (퍼블릭 도메인 헌정) — 누구나 출처 표시 없이 복제·수정·상업적 이용 가능.
+https://creativecommons.org/publicdomain/zero/1.0/
+
+id = 파일 이름(확장자 제외). 편집기 color.lut.id 로 고르고, strength(0~1)로 원본과 섞는다(lut3d → blend).

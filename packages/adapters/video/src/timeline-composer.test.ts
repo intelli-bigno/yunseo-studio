@@ -1,7 +1,9 @@
 // [W5 릴스] 타임라인 합성기 — 필터 그래프 생성 단위 테스트(ffmpeg 없이) + 짧은 샘플 렌더 통합 테스트 1개(진짜 ffmpeg, Windows 실행기).
+import { existsSync } from "node:fs";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { emptyProjectV2, type ReelsProjectV2 } from "@yunseo/domain";
 import { assertFfmpegReady, runProcess, type FfmpegBinaries } from "./ffmpeg-runner";
@@ -31,7 +33,14 @@ describe("buildTimelineGraph(순수)", () => {
   const g = buildTimelineGraph({ project: sample(), media: (id) => MEDIA[id], asset: () => "logo.png", assName: "reel.ass", outPath: "out.mp4" });
 
   it("스레드 상한 2 · 1080x1920 · 30fps · 길이 = 타임라인 끝", () => {
-    expect(g.args.slice(0, 8)).toEqual(["-hide_banner", "-y", "-threads", "2", "-filter_threads", "2", "-filter_complex_threads", "2"]);
+    expect(g.args.slice(0, 6)).toEqual(["-hide_banner", "-y", "-filter_threads", "2", "-filter_complex_threads", "2"]);
+    // 스레드 수가 코어 수와 무관하다 — 입력마다 디코더 1개(-threads 1 이 그 입력 앞에), 인코더는 출력 옵션 -threads 2
+    const inputs = g.args.flatMap((a, i) => (a === "-i" ? [i] : []));
+    expect(inputs.length).toBeGreaterThan(1);
+    for (const at of inputs) expect(g.args.slice(0, at).lastIndexOf("-threads")).toBeGreaterThan(Math.max(0, ...inputs.filter((x) => x < at)));
+    expect(g.args.filter((a) => a === "-threads").length).toBe(inputs.length + 1);
+    const enc = g.args.indexOf("libx264");
+    expect(g.args.slice(enc, enc + 7)).toEqual(["libx264", "-preset", "medium", "-crf", "20", "-threads", "2"]);
     expect(g.filter).toContain("color=c=black:s=1080x1920:r=30:d=3.6");
     expect(g.durationMs).toBe(3600);
     expect(g.args[g.args.lastIndexOf("-t") + 1]).toBe("3.6");
@@ -185,6 +194,48 @@ describe("composeTimeline(ffmpeg)", () => {
       // 워터마크(흰색, 오른쪽 아래)
       const [wr, wg, wb] = pixelAt(f2, 1080 - 40 - 50, 1920 - 40 - 20);
       expect(Math.min(wr, wg, wb)).toBeGreaterThan(200);
+    },
+    180_000,
+  );
+});
+
+// ── 통합: 저장소 LUT(assets/luts/*.cube)로 색보정 실측 ─────────
+const LUTS = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..", "..", "..", "assets", "luts");
+
+describe("composeTimeline(ffmpeg) — 저장소 LUT 색보정", () => {
+  it(
+    "mono 는 빨강을 휘도 회색으로, film-warm 은 회색을 따뜻하게(R>G>B) 바꾼다 · 없는 LUT 는 경고 후 원본",
+    async () => {
+      await assertFfmpegReady(BINS, { burnIn: false });
+      const dir = await mkdtemp(join(tmpdir(), "yunseo-lut-"));
+      try {
+        const make = (name: string, color: string) =>
+          runProcess(BINS.ffmpegPath, ["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", `color=c=${color}:s=320x180:r=30:d=2`, "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-qp", "0", join(dir, name)]);
+        await make("red.mp4", "0xFF0000");
+        await make("gray.mp4", "0x808080");
+        const p = emptyProjectV2("LUT");
+        const clip = (id: string, start: number, sourceId: string, lut: string) =>
+          ({ id, trackId: "t-video", start, in: 0, out: 1000, speed: 1, sourceId, sourceKind: "video", sourceMs: 2000, color: { brightness: 0, contrast: 0, saturation: 0, temperature: 0, lut: { id: lut, strength: 1 } } }) as const;
+        p.clips.push(clip("m", 0, "red", "mono"), clip("w", 1000, "gray", "film-warm"), clip("x", 2000, "gray", "no-such-lut"));
+        const media: Record<string, TimelineMedia> = { red: { path: join(dir, "red.mp4"), kind: "video", hasAudio: false }, gray: { path: join(dir, "gray.mp4"), kind: "video", hasAudio: false } };
+        const lut = (id: string) => (existsSync(join(LUTS, `${id}.cube`)) ? join(LUTS, `${id}.cube`) : undefined);
+        const out = await composeTimeline({ project: p, media: (id) => media[id], lut, outDir: join(dir, "out"), bins: BINS, encoder: { preset: "ultrafast", crf: 18, threads: 2 } });
+        expect(out.warnings.some((w) => w.includes("no-such-lut"))).toBe(true);
+        // 빨강(255,0,0) → 휘도 0.2126 ≈ 54 회색
+        const [mr, mg, mb] = pixelAt(await grabFrame(BINS.ffmpegPath, out.videoPath, 0.5), 540, 960);
+        expect(Math.max(mr, mg, mb) - Math.min(mr, mg, mb)).toBeLessThan(12);
+        expect(Math.abs(mr - 54)).toBeLessThan(14);
+        // 회색(128) → film-warm (≈143, 133, 108)
+        const [wr, wg, wb] = pixelAt(await grabFrame(BINS.ffmpegPath, out.videoPath, 1.5), 540, 960);
+        expect(wr - wg).toBeGreaterThan(4);
+        expect(wg - wb).toBeGreaterThan(14);
+        expect(Math.abs(wr - 143)).toBeLessThan(12);
+        // 없는 LUT 는 원본 회색 그대로
+        const [xr, xg, xb] = pixelAt(await grabFrame(BINS.ffmpegPath, out.videoPath, 2.5), 540, 960);
+        expect(Math.max(xr, xg, xb) - Math.min(xr, xg, xb)).toBeLessThan(8);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
     },
     180_000,
   );

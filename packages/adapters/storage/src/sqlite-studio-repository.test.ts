@@ -81,11 +81,11 @@ describe("SQLite 저장소 (StudioRepository 계약)", () => {
 describe("마이그레이션 버전 테이블", () => {
   it("새 DB 는 전 버전을 한 번씩 적용하고, 다시 열면 아무것도 안 한다", () => {
     const db = new DatabaseSync(":memory:");
-    expect(migrate(db)).toEqual(MIGRATIONS.map((m) => m.version));
-    expect(migrate(db)).toEqual([]);
+    expect(migrate(db, undefined, undefined, { workDir: "/data/work" })).toEqual(MIGRATIONS.map((m) => m.version));
+    expect(migrate(db, undefined, undefined, { workDir: "/data/work" })).toEqual([]);
     const versions = (db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as { version: number }[]).map((r) => r.version);
-    expect(versions).toEqual([1, 2]);
-    expect(SCHEMA_VERSION).toBe(2);
+    expect(versions).toEqual([1, 2, 3]);
+    expect(SCHEMA_VERSION).toBe(3);
     db.close();
   });
 
@@ -94,11 +94,11 @@ describe("마이그레이션 버전 테이블", () => {
     try {
       const path = join(dir, "old.sqlite");
       const old = new DatabaseSync(path);
-      old.exec(MIGRATIONS[0]!.sql);
+      old.exec(MIGRATIONS[0]!.sql!);
       old.prepare("INSERT INTO pieces (position, id, kind, title, slot, status, gates, blocker, viewpoint, stages, claims) VALUES (0,'P-OLD','pre','옛 편','2026-11-01T21:00','drafted',?,NULL,'',?,?)").run(JSON.stringify({ G1: "passed", G2: "todo", G3: "todo" }), "[]", "[]");
       old.close();
       const repo = open({ path });
-      expect(repo.schemaVersions()).toEqual([1, 2]);
+      expect(repo.schemaVersions()).toEqual([1, 2]); // 작업 폴더를 모르면 경로 마이그레이션(v3)은 미룬다
       const p = await repo.loadPiece("P-OLD");
       expect(p?.revision).toBe(1);
       expect(p?.approvals).toEqual([]);
@@ -111,10 +111,61 @@ describe("마이그레이션 버전 테이블", () => {
 
   it("실패한 마이그레이션은 되돌리고 버전도 남기지 않는다", () => {
     const db = new DatabaseSync(":memory:");
-    expect(() => migrate(db, [...MIGRATIONS, { version: 3, name: "broken", sql: "CREATE TABLE t (a); INSERT INTO nope VALUES (1);" }])).toThrow();
-    expect(db.prepare("SELECT 1 FROM schema_migrations WHERE version = 3").get()).toBeUndefined();
+    expect(() => migrate(db, [...MIGRATIONS, { version: 99, name: "broken", sql: "CREATE TABLE t (a); INSERT INTO nope VALUES (1);" }])).toThrow();
+    expect(db.prepare("SELECT 1 FROM schema_migrations WHERE version = 99").get()).toBeUndefined();
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 't'").get()).toBeUndefined();
     db.close();
+  });
+});
+
+describe("마이그레이션 v3 — 파이프라인 기록의 옛 Windows 절대경로를 작업 폴더로 한 번 옮겨 적는다", () => {
+  const OLD = "C:\\Users\\yjh99\\AppData\\Local\\Temp\\yunseo-studio-work";
+  const HASH = "abcdef0123456789";
+  const at = (dir: string, sep: string, step: string, name: string) => [dir, "P-1", HASH.slice(0, 12), step, name].join(sep);
+  const f = (path: string) => ({ name: path.split(/[\\/]/).pop()!, path, bytes: 3, sha256: "x" });
+  const seedOld = (db: DatabaseSync) => {
+    migrate(db); // v1·v2 만(작업 폴더 모름)
+    db.prepare("INSERT INTO pipeline_results (piece_id, content_hash, render, reel, bundle, updated_at) VALUES (?,?,?,?,?,?)").run(
+      "P-1",
+      HASH,
+      JSON.stringify({ pieceId: "P-1", cards: [f(at(OLD, "\\", "cards", "01-cover.png")), f(`${OLD}\\..\\..\\secret\\02-why.png`), f(at("/data/work", "/", "cards", "03-end.png"))], caption: "", hashtags: [], altTexts: [], warnings: [] }),
+      JSON.stringify({ pieceId: "P-1", video: f(at(OLD, "\\", "reel", "P-1-reel.mp4")), durationSec: 1, subtitles: null, warnings: [] }),
+      null,
+      "2026-11-05T12:30+09:00",
+    );
+  };
+  const read = (db: DatabaseSync) => db.prepare("SELECT render, reel, bundle FROM pipeline_results WHERE piece_id = 'P-1'").get() as { render: string; reel: string; bundle: string | null };
+
+  it("작업 폴더 밖 경로만 <폴더>/<편>/<해시12>/<단계>/<이름> 으로 바꾸고, 이름·크기·해시·안쪽 경로는 그대로 · 두 번째부터는 아무 일도 없다", () => {
+    const db = new DatabaseSync(":memory:");
+    seedOld(db);
+    expect(migrate(db, undefined, undefined, { workDir: "/data/work/" })).toEqual([3]);
+    const r = read(db);
+    const render = JSON.parse(r.render) as { cards: { name: string; path: string; bytes: number; sha256: string }[] };
+    expect(render.cards.map((c) => c.path)).toEqual([at("/data/work", "/", "cards", "01-cover.png"), at("/data/work", "/", "cards", "02-why.png"), at("/data/work", "/", "cards", "03-end.png")]);
+    expect(render.cards[0]).toMatchObject({ name: "01-cover.png", bytes: 3, sha256: "x" });
+    expect((JSON.parse(r.reel) as { video: { path: string } }).video.path).toBe(at("/data/work", "/", "reel", "P-1-reel.mp4"));
+    expect(r.bundle).toBeNull();
+    const before = JSON.stringify(read(db));
+    expect(migrate(db, undefined, undefined, { workDir: "/elsewhere" })).toEqual([]);
+    expect(JSON.stringify(read(db))).toBe(before);
+    db.close();
+  });
+
+  it("저장소를 workDir 과 함께 열면 적용된다", async () => {
+    const dir = tmp();
+    try {
+      const path = join(dir, "old.sqlite");
+      const db = new DatabaseSync(path);
+      seedOld(db);
+      db.close();
+      const repo = open({ path, workDir: "/data/work" });
+      expect(repo.schemaVersions()).toEqual([1, 2, 3]);
+      expect((await repo.getPipeline("P-1"))?.render?.cards[0]?.path).toBe(at("/data/work", "/", "cards", "01-cover.png"));
+    } finally {
+      while (opened.length) opened.pop()!.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

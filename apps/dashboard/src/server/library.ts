@@ -129,7 +129,7 @@ export function referenceAsset(parts: string[]): string | null {
 }
 
 // ── 파일 응답(영상은 구간 요청 지원 — 탐색·이어보기) ─────────────────
-const TYPES: Record<string, string> = { mp4: "video/mp4", png: "image/png", jpg: "image/jpeg" };
+const TYPES: Record<string, string> = { mp4: "video/mp4", png: "image/png", jpg: "image/jpeg", mp3: "audio/mpeg", wav: "audio/wav", m4a: "audio/mp4", ogg: "audio/ogg", flac: "audio/flac" };
 
 export function fileResponse(req: Request, path: string | null, opts: { download?: string } = {}): Response {
   if (!path) return new Response("not found", { status: 404 });
