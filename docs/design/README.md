@@ -16,7 +16,7 @@
 ## 대시보드 방향 (2026-11-07 정리)
 
 대시보드 시안·UI 레퍼런스(Pinterest 48+30개 무드보드, Broadsheet·Terminal·Swiss·Private Ledger 3안, Atelier Noir·Club Green·Graphite Cockpit v2 3안)는 데이터·파일째 지웠다. 이력은 git(2026-11-07 이전 커밋)에 있다.
-채택한 Club Green 톤은 `packages/design-tokens`(토큰)와 `packages/ui`(컴포넌트)가 기준이다. 남은 레퍼런스는 카드뉴스 수집분([card-reference/](card-reference/README.md))뿐이다.
+채택 톤은 Ink & Brass(2026-11-07, 근거 [palette/README.md](palette/README.md) · 로고 [logo/README.md](logo/README.md)) — 옛 Club Green 을 대체했고, `packages/design-tokens`(토큰)와 `packages/ui`(컴포넌트)가 기준이다. 남은 레퍼런스는 카드뉴스 수집분([card-reference/](card-reference/README.md))뿐이다.
 
 ## 두 안 비교
 

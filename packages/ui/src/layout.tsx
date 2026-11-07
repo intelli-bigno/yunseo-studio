@@ -24,12 +24,16 @@ export function Sidebar({ brand, children, foot }: { brand: ReactNode; children:
   );
 }
 
-export function Brand({ mark, name }: { mark: string; name: string }) {
+export function Brand({ mark, logo, name }: { mark?: string; logo?: string; name: string }) {
   return (
     <div className="ui-brand">
-      <span className="ui-crest" aria-hidden>
-        {mark}
-      </span>
+      {logo ? (
+        <img className="ui-crest ui-crest-img" src={logo} alt="" aria-hidden />
+      ) : (
+        <span className="ui-crest" aria-hidden>
+          {mark}
+        </span>
+      )}
       <span className="ui-brand-name">{name}</span>
     </div>
   );

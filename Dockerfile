@@ -1,4 +1,4 @@
-# yunseo-studio 상주 이미지 — 대시보드(Next.js)와 워커(tsx)를 한 컨테이너에서 띄운다(ops/docker/entrypoint.sh).
+# YS-Studio(yunseo-studio) 상주 이미지 — 대시보드(Next.js)와 워커(tsx)를 한 컨테이너에서 띄운다(ops/docker/entrypoint.sh).
 # 빌드·실행은 Windows(WSL Docker)에서만: ops/docker/README.md. Mac 에서 docker 실행 금지.
 # 빌드 입력은 `git archive` 로 뽑은 깨끗한 커밋 트리다(node_modules·.next 없음, .dockerignore 가 한 번 더 막는다).
 
