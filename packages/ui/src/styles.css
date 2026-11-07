@@ -505,19 +505,23 @@ img { display: block; max-width: 100%; }
 .ui-editor-strip { min-width: 0; }
 .ui-editor-side { position: sticky; top: var(--sp-4); display: flex; flex-direction: column; min-width: 0; max-height: calc(100vh - var(--sp-8)); background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-md); overflow: hidden; }
 .ui-editor-side-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-.ui-editor-side-main { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ui-editor-side-main { --ed-bar: calc(var(--sp-8) * 1.75); position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 /* 폭 조절 경계 — 오른쪽 패널 왼쪽 가장자리 */
 .ui-editor-split { position: absolute; z-index: 6; top: 0; bottom: 0; left: 0; width: var(--sp-2); cursor: col-resize; touch-action: none; }
 .ui-editor-split::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: transparent; }
 .ui-editor-split:hover::after, .ui-editor-split:focus-visible::after { background: var(--c-accent); }
-/* 속성 시트 — 오른쪽 패널 아래에 붙어(흐름 안) 접는다. 열리면 위 그리드가 그만큼 줄어 둘 다 따로 스크롤되고 서로 가리지 않는다(접으면 머리 줄만) */
-.ui-sheet { flex: none; max-height: 50%; display: flex; flex-direction: column; background: var(--c-raised); border-top: 1px solid var(--c-line-strong); overflow: hidden; }
+/* 속성 시트 — 오른쪽 패널 아래에 붙어(흐름 안) 접는다. 열리면 위 그리드가 그만큼 줄어 둘 다 따로 스크롤되고 서로 가리지 않는다(접으면 머리 줄만).
+   레퍼런스 우선: 시트 높이는 패널의 45% 와 (50% − 고정 바 높이) 중 작은 쪽까지 — 바 아래 그리드가 항상 패널 높이의 절반 이상 보이고, 넘치는 속성은 시트 안에서 스크롤된다 */
+.ui-sheet { flex: none; max-height: max(calc(var(--button-height) * 3), min(45%, calc(50% - var(--ed-bar)))); display: flex; flex-direction: column; background: var(--c-raised); border-top: 1px solid var(--c-line-strong); overflow: hidden; }
 .ui-sheet-head { flex: none; display: flex; align-items: center; gap: var(--sp-2); width: 100%; height: var(--button-height); padding: 0 var(--sp-3); background: var(--c-raised); border: 0; color: var(--c-accent); font-size: var(--fs-label); font-weight: 700; cursor: pointer; text-align: left; }
 .ui-sheet-head:hover { background: color-mix(in srgb, var(--c-accent) 8%, var(--c-raised)); }
 .ui-sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--c-line); }
 /* 패널 위 고정 줄·본문 여백 */
 .ui-panel-bar { position: sticky; top: 0; z-index: 2; display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); background: var(--c-surface); border-bottom: 1px solid var(--c-line); }
 .ui-panel-pad { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3); }
+.ui-panel-bar .ui-row > .ui-input { flex: 1 1 0; width: auto; }
+.ui-panel-bar .ui-row > .ui-select { flex: 0 1 auto; max-width: 45%; }
+.ui-panel-bar .ui-row > :not(.ui-input):not(.ui-select) { flex: none; white-space: nowrap; }
 /* 레퍼런스 메이슨리 — 열 너비 ~2 단위(128), 최대 4열: 패널이 좁으면 2열, 넓히면 3~4열 */
 .ui-refgrid { columns: calc(var(--sp-8) * 2) 4; column-gap: var(--sp-2); }
 .ui-ref { display: block; width: 100%; margin: 0 0 var(--sp-2); padding: 0; break-inside: avoid; border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-sunken); overflow: hidden; cursor: grab; }
@@ -585,6 +589,11 @@ img { display: block; max-width: 100%; }
 .ui-deck-strip { flex: 1; display: flex; flex-direction: row; gap: var(--sp-3); min-width: 0; overflow-x: auto; padding-bottom: var(--sp-1); }
 .ui-deck-actions { flex: none; display: flex; flex-direction: column; justify-content: center; gap: var(--sp-1); padding-left: var(--sp-3); border-left: 1px solid var(--c-line); }
 .ui-deck-actions .ui-btn { height: calc(var(--button-height) - var(--sp-3)); padding: 0 var(--sp-3); }
+.ui-deck-action-icon { font-weight: 700; }
+.ui-deck-strip::-webkit-scrollbar { height: var(--ed-scroll, calc(var(--sp-1) * 1.5)); }
+.ui-deck-strip::-webkit-scrollbar-track { background: transparent; }
+.ui-deck-strip::-webkit-scrollbar-thumb { background: var(--c-line-strong); border-radius: var(--r-sm); }
+@supports not selector(::-webkit-scrollbar) { .ui-deck-strip { scrollbar-width: thin; scrollbar-color: var(--c-line-strong) transparent; } }
 .ui-deck-thumb-wrap { flex: none; width: calc(var(--sp-8) * 1.3); display: flex; flex-direction: column; gap: var(--sp-1); align-items: stretch; min-width: 0; border-radius: var(--r-sm); }
 .ui-deck-thumb-wrap.is-drop { outline: 2px dashed var(--c-accent); outline-offset: 2px; }
 .ui-deck-thumb[draggable="true"] { cursor: grab; }
@@ -636,12 +645,18 @@ img { display: block; max-width: 100%; }
   .ui-page.is-fit .ui-editor-side { position: static; max-height: none; }
   .ui-page.is-fit .ui-editor-center { min-height: 0; }
   .ui-page.is-fit .ui-editor-stage { flex: 1 1 0; min-height: 0; padding: var(--sp-3); gap: var(--sp-2); }
-  .ui-page.is-fit .ui-editor-strip { flex: none; }
-  .ui-page.is-fit .ui-deck-bar { padding: var(--sp-2) var(--sp-3); }
-  /* 썸네일 높이는 규격과 상관없이 같다(--ar = 가로/세로). 아래 번호·도구 줄이 들어갈 최소 폭만 지킨다 */
-  .ui-page.is-fit .ui-deck-thumb-wrap { width: auto; min-width: calc(var(--sp-8) * 1.4); align-items: center; }
-  .ui-page.is-fit .ui-deck-thumb { width: calc(var(--sp-8) * 1.25 * var(--ar, 0.8)); }
-  .ui-page.is-fit .ui-deck-thumb-foot { align-self: stretch; }
+  /* 장 목록은 가운데 칸(캔버스 영역) 전체 폭을 쓴다 — 동작 단추는 아이콘 한 줄 폭만 차지하고, 썸네일은 낮게(56) 줄여 1440 에서 6장 이상 보인다.
+     가로 스크롤바는 얇게(--ed-scroll) 하되 장 목록 높이에 처음부터 포함해, 장이 늘어 스크롤바가 생겨도 캔버스 높이가 변하지 않는다 */
+  .ui-page.is-fit .ui-editor-strip { --ed-thumb: calc(var(--sp-8) * 0.875); --ed-scroll: calc(var(--sp-1) * 1.5); flex: none; }
+  .ui-page.is-fit .ui-deck-bar { gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); }
+  .ui-page.is-fit .ui-deck-strip { gap: var(--sp-2); padding-bottom: 0; height: calc(var(--ed-thumb) + var(--sp-1) + var(--sp-4) + var(--ed-scroll)); overflow-y: hidden; }
+  .ui-page.is-fit .ui-deck-actions { gap: calc(var(--sp-1) / 2); padding-left: var(--sp-2); }
+  .ui-page.is-fit .ui-deck-actions .ui-btn { width: var(--sp-5); height: var(--sp-5); padding: 0; }
+  .ui-page.is-fit .ui-deck-action-text { display: none; }
+  /* 썸네일 높이는 규격과 상관없이 같다(--ar = 가로/세로). 번호가 들어갈 최소 폭만 지킨다 */
+  .ui-page.is-fit .ui-deck-thumb-wrap { width: auto; min-width: var(--sp-6); align-items: center; }
+  .ui-page.is-fit .ui-deck-thumb { width: calc(var(--ed-thumb) * var(--ar, 0.8)); }
+  .ui-page.is-fit .ui-deck-thumb-foot { align-self: stretch; min-height: var(--sp-4); }
   .ui-canvas-fit { flex: 1 1 0; min-height: calc(var(--sp-8) * 3); width: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
   .ui-canvas-fit .ui-canvas:not(.is-mini) { width: min(100cqw, calc(100cqh * var(--ar, 1))); max-width: none; }
 }

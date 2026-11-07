@@ -4,7 +4,7 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { addCard, createDeck, moveCardTo } from "@yunseo/domain";
-import { DeckStrip, DeckThumb } from "@yunseo/ui";
+import { DeckAction, DeckStrip, DeckThumb } from "@yunseo/ui";
 
 const KEY = "text/x-cards-card";
 
@@ -105,5 +105,20 @@ describe("장 목록 — 장 3개", () => {
     const left = classList();
     thumbEl(1, vi.fn()).wrap.onDragLeave({ currentTarget: left.el });
     expect(left.removed).toEqual(["is-drop"]);
+  });
+});
+
+describe("장 목록 동작 단추 — 줄이 좁을 때는 아이콘만", () => {
+  it("이름(aria-label·title)은 항상 있고 글자는 따로 감싸 CSS 가 숨긴다", () => {
+    const html = renderToStaticMarkup(createElement(DeckAction, { icon: "+", label: "장 추가", primary: true, onClick: () => undefined }));
+    expect(html).toContain('aria-label="장 추가"');
+    expect(html).toContain('title="장 추가"');
+    expect(html).toContain("ui-btn-primary");
+    expect(html).toContain('<span class="ui-deck-action-icon" aria-hidden="true">+</span>');
+    expect(html).toContain('<span class="ui-deck-action-text">장 추가</span>');
+  });
+
+  it("끌 수 없는 상태(disabled)가 그대로 전달된다", () => {
+    expect(renderToStaticMarkup(createElement(DeckAction, { icon: "×", label: "장 삭제", disabled: true }))).toContain("disabled");
   });
 });

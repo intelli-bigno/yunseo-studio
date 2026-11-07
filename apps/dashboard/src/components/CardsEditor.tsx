@@ -59,6 +59,7 @@ import {
   CanvasFit,
   CanvasGuides,
   ColorField,
+  DeckAction,
   DeckStrip,
   DeckThumb,
   EditorLayout,
@@ -90,6 +91,7 @@ import { drawCard, exportName, type Ctx2D, type LoadedImage } from "@/lib/cards-
 import { filterRefs, refSets } from "@/lib/ref-filter";
 import { CardView, cssFamily } from "./CardView";
 import { CardsToolbar } from "./CardsToolbar";
+import { browserStorage, loadSheetOpen, saveSheetOpen } from "./sheet-memory";
 
 export interface EditorAsset {
   id: string;
@@ -288,12 +290,9 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     const t = setTimeout(() => setMsg(null), 6000);
     return () => clearTimeout(t);
   }, [msg]);
-  // 요소를 고르면 오른쪽 패널과 그 위 속성 시트를 바로 펼친다
+  // 요소를 고르면 오른쪽 패널을 펼친다 — 속성 시트는 사용자가 접어 둔 상태를 그대로 둔다(접기 기억)
   useEffect(() => {
-    if (selected) {
-      setRightOpen(true);
-      setSheetOpen(true);
-    }
+    if (selected) setRightOpen(true);
   }, [selected]);
   useEffect(() => {
     try {
@@ -302,7 +301,13 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     } catch {
       /* 저장소를 못 쓰면 기본 폭 */
     }
+    setSheetOpen(loadSheetOpen(browserStorage()));
   }, []);
+  const toggleSheet = () => {
+    const next = !sheetOpen;
+    setSheetOpen(next);
+    saveSheetOpen(browserStorage(), next);
+  };
   const resizeRight = (r: number) => {
     setRatio(r);
     try {
@@ -727,22 +732,20 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
           </SegmentedItem>
         </Segmented>
         {tab === "ref" && (
-          <>
+          <Stack direction="row" gap={2} align="center">
             <Input aria-label="레퍼런스 검색" type="search" placeholder="검색 — 제목·태그" value={query} onChange={(e) => setQuery(e.target.value)} />
-            <Stack direction="row" gap={2} align="center">
-              <Select aria-label="묶음" value={refSet} onChange={(e) => setRefSet(e.target.value)}>
-                <option value="">모든 묶음 {refs.length}</option>
-                {sets.map((g) => (
-                  <option key={g.name} value={g.name}>
-                    {g.name} {g.count}
-                  </option>
-                ))}
-              </Select>
-              <Text tone="mute">
-                {shownRefs.length}/{refs.length}
-              </Text>
-            </Stack>
-          </>
+            <Select aria-label="묶음" value={refSet} onChange={(e) => setRefSet(e.target.value)}>
+              <option value="">모든 묶음 {refs.length}</option>
+              {sets.map((g) => (
+                <option key={g.name} value={g.name}>
+                  {g.name} {g.count}
+                </option>
+              ))}
+            </Select>
+            <Text tone="mute">
+              {shownRefs.length}/{refs.length}
+            </Text>
+          </Stack>
         )}
       </PanelBar>
       {tab === "ref" && (
@@ -909,7 +912,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
         sheet={layer ? props : undefined}
         sheetTitle={layer ? `속성 — ${layer.name}` : ""}
         sheetOpen={sheetOpen}
-        onToggleSheet={() => setSheetOpen((v) => !v)}
+        onToggleSheet={toggleSheet}
         stage={
           <CanvasFit>
             <CardView card={card} preset={deck.preset} watermark={wm} selected={selected} onLayerDown={(l, e) => startDrag(l, "move", e)} onHandleDown={(l, m, e) => startDrag(l, m, e)} onDrop={onDrop}>
@@ -922,15 +925,9 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
             label="장 목록(끌어서 순서 바꾸기)"
             actions={
               <>
-                <Button variant="primary" onClick={addCardAfter} disabled={deck.cards.length >= DECK_LIMITS.cards}>
-                  + 장 추가
-                </Button>
-                <Button variant="secondary" onClick={() => dupCard(at)} disabled={deck.cards.length >= DECK_LIMITS.cards}>
-                  장 복제
-                </Button>
-                <Button variant="secondary" onClick={() => delCard(at)} disabled={deck.cards.length <= 1}>
-                  장 삭제
-                </Button>
+                <DeckAction primary icon="+" label="장 추가" onClick={addCardAfter} disabled={deck.cards.length >= DECK_LIMITS.cards} />
+                <DeckAction icon="⧉" label="장 복제" onClick={() => dupCard(at)} disabled={deck.cards.length >= DECK_LIMITS.cards} />
+                <DeckAction icon="×" label="장 삭제" onClick={() => delCard(at)} disabled={deck.cards.length <= 1} />
               </>
             }
           >
@@ -944,18 +941,6 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
                 onClick={() => (setIndex(i), setSelected(null))}
                 dragKey={DND_CARD}
                 onDropAt={reorder}
-                tools={
-                  i === at ? (
-                    <>
-                      <IconButton label={`${i + 1}번째 장 복제`} onClick={() => dupCard(i)}>
-                        ⧉
-                      </IconButton>
-                      <IconButton label={`${i + 1}번째 장 삭제`} disabled={deck.cards.length <= 1} onClick={() => delCard(i)}>
-                        ×
-                      </IconButton>
-                    </>
-                  ) : undefined
-                }
               >
                 <CardView card={c} preset={deck.preset} watermark={wm} mini />
               </DeckThumb>

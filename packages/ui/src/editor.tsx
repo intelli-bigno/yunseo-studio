@@ -331,6 +331,18 @@ export function DeckStrip({ label, children, actions }: { label: string; childre
   );
 }
 
+/** 덱 줄 동작 단추 — 넓지 않은 줄(화면 높이 고정 편집)에서는 아이콘만, 좁은 화면에서는 글자까지 보인다. 이름은 항상 label */
+export function DeckAction({ label, icon, primary = false, ...rest }: Omit<ComponentPropsWithoutRef<"button">, "className" | "style" | "children" | "aria-label"> & { label: string; icon: string; primary?: boolean }) {
+  return (
+    <button type="button" className={cx("ui-btn", primary ? "ui-btn-primary" : "ui-btn-secondary")} aria-label={label} title={label} {...rest}>
+      <span className="ui-deck-action-icon" aria-hidden>
+        {icon}
+      </span>
+      <span className="ui-deck-action-text">{label}</span>
+    </button>
+  );
+}
+
 /** 장 썸네일 — 끌어서 순서를 바꾼다(onDropAt 에 놓인 자리). tools 는 현재 장 위에 겹치는 작은 버튼들. ratio(가로/세로)를 주면 화면 높이 고정 편집에서 규격이 달라도 썸네일 높이를 같게 맞춘다 */
 export function DeckThumb({ index, current, label, onClick, children, tools, ratio, dragKey, onDropAt }: {
   index: number;
