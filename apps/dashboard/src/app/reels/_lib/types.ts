@@ -1,109 +1,58 @@
-// [릴스 편집기] 클라이언트 타입 — docs/12-reels-ops-schema.md 가 정본(§1 타임라인 v2 · §2 요청·응답 · §3 오류 코드 · §4 op 목록).
-// 엔진(packages/domain/src/reel/timeline.ts)이 main 에 들어오면 이 파일의 모델 타입을 도메인 export 로 바꾼다 — 화면은 이 파일만 import 한다.
+// [릴스 편집기] 타입 — 모델·상수·오류 코드는 엔진(@yunseo/domain, packages/domain/src/reel/timeline.ts·ops.ts)이 정본이다.
+// 화면은 이 파일만 import 하고, 여기서 도메인 export 를 그대로 다시 내보낸다. 이 파일에 새로 두는 것은
+// 화면 전용(자산 목록 줄 SourceRef)과 요청·응답의 타입 있는 모양(Op 합집합·OpRequest·OpSuccess)뿐이다 — 문서: docs/12-reels-ops-schema.md §2~§4.
+import {
+  DEFAULT_CLIP_AUDIO,
+  DEFAULT_COLOR,
+  DEFAULT_TRANSFORM,
+  KEY_PROPS,
+  REELS_DEFAULT_MS,
+  REELS_MAX_MS,
+  REELS_MIN_CLIP_MS,
+  REELS_OP_ERROR_STATUS,
+  REELS_SPEED,
+  REELS_V2_TRACK_KINDS,
+  REELS_VOLUME_DB,
+  REEL_TRANSITIONS,
+  TRANSITION_DIRECTIONS,
+  type Clip,
+  type ClipAudio,
+  type Color,
+  type Component,
+  type Keyframe,
+  type KeyEase,
+  type KeyProp,
+  type Ms,
+  type OpEffects,
+  type ReelTransitionName,
+  type ReelsProjectV2,
+  type TextBody,
+  type Track,
+  type TrackKind,
+  type Transform,
+  type Transition,
+  type Unit,
+} from "@yunseo/domain";
 
-export type Ms = number; // 정수, 0 이상
-export type Unit = number; // 0~1 캔버스 비율
+export type { Clip, ClipAudio, Color, Component, Keyframe, KeyEase, KeyProp, Ms, OpEffects, ReelsProjectV2, TextBody, Track, TrackKind, Transform, Transition, Unit };
+export { DEFAULT_COLOR, DEFAULT_TRANSFORM, KEY_PROPS };
 
-export const TRACK_KINDS = ["video", "text", "subtitle", "audio", "overlay"] as const;
-export type TrackKind = (typeof TRACK_KINDS)[number];
+// ── 도메인 이름 → 화면에서 쓰던 이름 ──
+export const TRACK_KINDS = REELS_V2_TRACK_KINDS;
+export const TRANSITION_KINDS = REEL_TRANSITIONS;
+export type TransitionKind = ReelTransitionName;
+export type Direction = (typeof TRANSITION_DIRECTIONS)[number];
+export type Corner = Extract<Component, { type: "watermark" }>["corner"];
 
-export interface Track {
-  id: string;
-  kind: TrackKind;
-  name: string;
-  muted?: boolean;
-  hidden?: boolean;
-  locked?: boolean;
-  /** −60~+12, 기본 0 */
-  volumeDb?: number;
-}
+export const DEFAULT_AUDIO = DEFAULT_CLIP_AUDIO;
+export const MIN_CLIP_MS: number = REELS_MIN_CLIP_MS;
+export const MAX_MS: number = REELS_MAX_MS;
+export const DEFAULT_IMAGE_MS: number = REELS_DEFAULT_MS.image;
+export const DEFAULT_TEXT_MS: number = REELS_DEFAULT_MS.text;
+export const SPEED_RANGE: readonly [number, number] = [REELS_SPEED.min, REELS_SPEED.max];
+export const DB_RANGE: readonly [number, number] = [REELS_VOLUME_DB.min, REELS_VOLUME_DB.max];
 
-export interface Transform {
-  cx: Unit;
-  cy: Unit;
-  scale: number;
-  rotation: number;
-  opacity: number;
-}
-
-export const KEY_PROPS = ["cx", "cy", "scale", "rotation", "opacity", "volumeDb"] as const;
-export type KeyProp = (typeof KEY_PROPS)[number];
-export type KeyEase = "linear" | "ease-in-out" | "hold";
-export interface Keyframe {
-  id: string;
-  prop: KeyProp;
-  /** 클립 시작 기준 */
-  at: Ms;
-  value: number;
-  ease: KeyEase;
-}
-
-export interface Color {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-  temperature: number;
-  lut?: { id: string; strength: number } | null;
-}
-
-export const TRANSITION_KINDS = ["cut", "crossfade", "dip", "slide"] as const;
-export type TransitionKind = (typeof TRANSITION_KINDS)[number];
-export type Direction = "left" | "right" | "up" | "down";
-export interface Transition {
-  kind: TransitionKind;
-  durationMs: Ms;
-  direction?: Direction;
-}
-
-export interface TextBody {
-  value: string;
-  style: string;
-  runs?: { from: number; to: number; color?: string; bold?: boolean }[];
-  box?: { cx: Unit; cy: Unit; w: Unit };
-}
-
-export type Corner = "tl" | "tr" | "bl" | "br";
-export type Component =
-  | { type: "sticker"; assetId: string }
-  | { type: "watermark"; assetId: string; corner: Corner; marginPx?: number }
-  | { type: "card"; sourceId: string }
-  | { type: "title" | "badge" | "cta"; text: string };
-
-export interface ClipAudio {
-  volumeDb: number;
-  fadeInMs: Ms;
-  fadeOutMs: Ms;
-  fadeCurve: "linear" | "ease";
-}
-
-export interface Clip {
-  id: string;
-  trackId: string;
-  start: Ms;
-  in: Ms;
-  out: Ms;
-  speed: number;
-  sourceId?: string;
-  sourceKind?: "video" | "image" | "audio";
-  sourceMs?: Ms;
-  text?: TextBody;
-  component?: Component;
-  transform?: Transform;
-  keyframes?: Keyframe[];
-  color?: Color;
-  audio?: ClipAudio;
-  transition?: Transition;
-}
-
-export interface ReelsProjectV2 {
-  version: 2;
-  title: string;
-  canvas: { width: 1080; height: 1920; fps: 30 };
-  tracks: Track[];
-  clips: Clip[];
-}
-
-/** 편집에 쓰는 자산 목록 한 줄(서버가 준다) */
+/** 편집에 쓰는 자산 목록 한 줄(서버가 준다) — 화면 전용 */
 export interface SourceRef {
   id: string;
   kind: "video" | "image" | "audio";
@@ -113,19 +62,7 @@ export interface SourceRef {
   durationMs?: number;
 }
 
-// ── 한도(문서 §1.1 · 현행 v1 상수와 같다) ──
-export const MIN_CLIP_MS = 100;
-export const MAX_MS = 180_000;
-export const DEFAULT_IMAGE_MS = 3000;
-export const DEFAULT_TEXT_MS = 3000;
-export const SPEED_RANGE = [0.25, 4] as const;
-export const DB_RANGE = [-60, 12] as const;
-
-export const DEFAULT_TRANSFORM: Transform = { cx: 0.5, cy: 0.5, scale: 1, rotation: 0, opacity: 1 };
-export const DEFAULT_COLOR: Color = { brightness: 0, contrast: 0, saturation: 0, temperature: 0, lut: null };
-export const DEFAULT_AUDIO: ClipAudio = { volumeDb: 0, fadeInMs: 0, fadeOutMs: 0, fadeCurve: "linear" };
-
-// ── op (문서 §4) ──
+// ── op (문서 §4) — 서버는 느슨한 { op: string } & Record 로 받고 인자를 검사한다. 화면은 이 합집합으로 만든다 ──
 export type Op =
   | { op: "add_clip"; trackId: string; sourceId?: string; start?: Ms; in?: Ms; out?: Ms; id?: string; mode?: "place" | "insert" }
   | { op: "remove_clip"; clipId: string; ripple?: boolean }
@@ -161,12 +98,6 @@ export interface OpRequest {
   dryRun?: boolean;
 }
 
-export interface OpEffects {
-  created: string[];
-  updated: string[];
-  removed: string[];
-}
-
 export interface OpSuccess {
   revision: number;
   opId: string;
@@ -183,28 +114,6 @@ export interface OpFailure {
   revision?: number;
 }
 
-/** 문서 §3 오류 코드 */
-export const OP_ERROR_CODES = [
-  "BAD_REQUEST",
-  "UNKNOWN_OP",
-  "INVALID_ARGUMENT",
-  "PROJECT_NOT_FOUND",
-  "CLIP_NOT_FOUND",
-  "TRACK_NOT_FOUND",
-  "KEYFRAME_NOT_FOUND",
-  "SOURCE_NOT_FOUND",
-  "REVISION_CONFLICT",
-  "ID_EXISTS",
-  "NOTHING_TO_UNDO",
-  "NOTHING_TO_REDO",
-  "TRACK_KIND_MISMATCH",
-  "TRACK_LOCKED",
-  "CLIP_OVERLAP",
-  "OUT_OF_RANGE",
-  "SPLIT_AT_EDGE",
-  "INVALID_PROJECT",
-  "SRT_PARSE_ERROR",
-  "BATCH_FAILED",
-  "TOO_LARGE",
-] as const;
+/** 문서 §3 오류 코드 — 엔진 표(REELS_OP_ERROR_STATUS)의 키 */
+export const OP_ERROR_CODES = Object.keys(REELS_OP_ERROR_STATUS) as (keyof typeof REELS_OP_ERROR_STATUS)[];
 export type OpErrorCode = (typeof OP_ERROR_CODES)[number];

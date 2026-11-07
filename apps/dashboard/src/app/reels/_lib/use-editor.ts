@@ -63,11 +63,15 @@ export function useEditor(projectId: string, initial: { project: ReelsProjectV2;
     setRevision(r);
   }, []);
 
+  // 다시 읽기는 엔진 GET /api/reels/:id/ops — v2 그대로 온다(/projects/:id 는 v1 투영이라 v2 편집이 빠진다)
   const reload = useCallback(async () => {
-    const r = await fetch(`/api/reels/projects/${encodeURIComponent(projectId)}`, { signal: abort.current?.signal ?? null });
-    const body = (await r.json()) as { project?: unknown; revision?: number };
+    const r = await fetch(`/api/reels/${encodeURIComponent(projectId)}/ops`, { signal: abort.current?.signal ?? null });
+    const body = (await r.json()) as { project?: unknown; revision?: number; undo?: { available: boolean; redo: boolean } };
     const p = toV2(body.project);
-    if (r.ok && p && typeof body.revision === "number") apply(p, body.revision);
+    if (r.ok && p && typeof body.revision === "number") {
+      apply(p, body.revision);
+      if (body.undo) setUndo(body.undo);
+    }
   }, [projectId, apply]);
 
   const run = useCallback(

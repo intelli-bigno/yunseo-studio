@@ -14,6 +14,7 @@ import type { Clip, ReelsProjectV2, SourceRef } from "../_lib/types";
 import { useEditor } from "../_lib/use-editor";
 import { AssetsPanel } from "./AssetsPanel";
 import { EffectsPanel } from "./EffectsPanel";
+import { ExportButton } from "./ExportButton";
 import { InspectorPanel } from "./InspectorPanel";
 import { TimelinePanel } from "./TimelinePanel";
 
@@ -236,6 +237,7 @@ function Editor({ projects, id, initial, sources }: { projects: ReelsEditorProps
           {ed.message && <Notice tone={ed.message.tone}>{ed.message.text}</Notice>}
           <Stack direction="row" gap={3} align="center" wrap>
             <Text tone="mute" mono>{ed.pending > 0 ? "보내는 중…" : `${ed.revision}판`}</Text>
+            <ExportButton key={id} projectId={id} empty={project.clips.length === 0} pending={ed.pending > 0} />
             <Button variant="ghost" onClick={() => void destroy()}>프로젝트 지우기</Button>
           </Stack>
         </>

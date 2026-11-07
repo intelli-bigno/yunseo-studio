@@ -82,6 +82,16 @@ export function reelsOps(): ReelsOpsUseCases {
   }));
 }
 
+/** 내보낸 판의 폴더 — STUDIO_WORK_DIR/reels-projects/<id>/r<revision>/ (exportReelsProject 가 쓰고, 받기 라우트가 읽는다) */
+const exportDir = (id: string, revision: number) => join(studioWorkDir(), "reels-projects", id, `r${revision}`);
+
+/** 내보낸 mp4·srt 파일 경로 — 프로젝트 id·판 번호 모양이 틀리거나 파일이 없으면 null */
+export function exportedReelFile(id: string, revision: string, kind: "video" | "srt"): string | null {
+  if (!isReelsProjectId(id) || !/^\d{1,9}$/.test(revision)) return null;
+  const file = join(exportDir(id, Number(revision)), `${id}.${kind === "video" ? "mp4" : "srt"}`);
+  return existsSync(file) ? file : null;
+}
+
 /** 프로젝트 지금 판을 1080x1920 MP4 로 — STUDIO_WORK_DIR/reels-projects/<id>/r<revision>/ */
 export async function exportReelsProject(id: string) {
   if (!isReelsProjectId(id)) return null;
@@ -98,7 +108,7 @@ export async function exportReelsProject(id: string) {
   }
   const missing = project.clips.filter((c) => c.sourceId && !resolved.has(c.sourceId)).map((c) => c.id);
   if (missing.length) throw new Error(`원본 파일이 없는 클립: ${missing.join(", ")}`);
-  const outDir = join(studioWorkDir(), "reels-projects", id, `r${rec.revision}`);
+  const outDir = exportDir(id, rec.revision);
   const out = await reelsTimelineTools().compose({
     project,
     media: (sid) => resolved.get(sid),
