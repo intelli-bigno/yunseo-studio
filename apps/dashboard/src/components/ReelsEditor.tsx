@@ -12,7 +12,6 @@ import {
   addClip,
   addTrack,
   applySourceDuration,
-  end,
   fmtTime,
   fracToMs,
   moveClip,

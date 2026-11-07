@@ -45,7 +45,7 @@ export async function listReelsSources(): Promise<ReelsSource[]> {
     const v = g.versions[0]!;
     const base = `/api/reels/${g.pieceId}/${v.renderId}`;
     out.push({ id: `${g.pieceId}/${v.renderId}/video`, kind: "video", label: `${g.title} · 쇼츠`, src: `${base}/video`, ...(v.hasCover ? { poster: `${base}/cover` } : {}) });
-    let files: string[] = [];
+    let files: string[];
     try {
       files = readdirSync(cardsDir(g.pieceId, v.renderId)).filter((f) => CARD_FILE.test(f)).sort();
     } catch {
