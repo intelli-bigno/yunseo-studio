@@ -471,15 +471,40 @@ img { display: block; max-width: 100%; }
 
 /* ── [cards] 카드 편집기 — 덱 줄 · 캔버스 · 패널. 넓으면 세 칸, 1184 아래는 패널이 아래로, 640 아래는 덱 줄이 가로로 ── */
 /* 세 칸 — 왼쪽 스티커 · 가운데(캔버스 + 아래 장 목록) · 오른쪽 자산·속성. 양쪽은 접으면 얇은 띠 */
-.ui-editor { display: grid; grid-template-columns: calc(var(--sp-8) * 4.4) minmax(0, 1fr) calc(var(--sp-8) * 4.4); gap: var(--sp-4); align-items: start; width: 100%; min-width: 0; }
-.ui-editor.is-left-closed { grid-template-columns: calc(var(--sp-6) + var(--sp-2)) minmax(0, 1fr) calc(var(--sp-8) * 4.4); }
-.ui-editor.is-right-closed { grid-template-columns: calc(var(--sp-8) * 4.4) minmax(0, 1fr) calc(var(--sp-6) + var(--sp-2)); }
-.ui-editor.is-left-closed.is-right-closed { grid-template-columns: calc(var(--sp-6) + var(--sp-2)) minmax(0, 1fr) calc(var(--sp-6) + var(--sp-2)); }
+.ui-editor { --ed-left: calc(var(--sp-8) * 3.4); --ed-right-w: clamp(calc(var(--sp-8) * 4.5), var(--ed-right, 40%), calc(100% - var(--ed-left) - var(--sp-4) * 2 - var(--sp-8) * 4)); display: grid; grid-template-columns: var(--ed-left) minmax(0, 1fr) var(--ed-right-w); gap: var(--sp-4); align-items: start; width: 100%; min-width: 0; }
+.ui-editor.is-left-closed { --ed-left: calc(var(--sp-6) + var(--sp-2)); }
+.ui-editor.is-right-closed { --ed-right-w: calc(var(--sp-6) + var(--sp-2)); }
 .ui-editor-center { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
 .ui-editor-stage { display: flex; flex-direction: column; gap: var(--sp-3); align-items: center; min-width: 0; padding: var(--sp-5); background: var(--c-raised); border: 1px solid var(--c-line); border-radius: var(--r-md); }
 .ui-editor-strip { min-width: 0; }
 .ui-editor-side { position: sticky; top: var(--sp-4); display: flex; flex-direction: column; min-width: 0; max-height: calc(100vh - var(--sp-8)); background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-md); overflow: hidden; }
 .ui-editor-side-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.ui-editor-side-main { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ui-editor-side-body.has-sheet { padding-bottom: var(--sp-8); }
+/* 폭 조절 경계 — 오른쪽 패널 왼쪽 가장자리 */
+.ui-editor-split { position: absolute; z-index: 6; top: 0; bottom: 0; left: 0; width: var(--sp-2); cursor: col-resize; touch-action: none; }
+.ui-editor-split::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: transparent; }
+.ui-editor-split:hover::after, .ui-editor-split:focus-visible::after { background: var(--c-accent); }
+/* 속성 시트 — 오른쪽 패널 아래에 떠서 접는다(접으면 머리 줄만) */
+.ui-sheet { position: absolute; z-index: 5; left: var(--sp-2); right: var(--sp-2); bottom: var(--sp-2); max-height: 55%; display: flex; flex-direction: column; background: var(--c-raised); border: 1px solid var(--c-line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-card); overflow: hidden; }
+.ui-sheet-head { flex: none; display: flex; align-items: center; gap: var(--sp-2); width: 100%; height: var(--button-height); padding: 0 var(--sp-3); background: var(--c-raised); border: 0; color: var(--c-accent); font-size: var(--fs-label); font-weight: 700; cursor: pointer; text-align: left; }
+.ui-sheet-head:hover { background: color-mix(in srgb, var(--c-accent) 8%, var(--c-raised)); }
+.ui-sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--c-line); }
+/* 패널 위 고정 줄·본문 여백 */
+.ui-panel-bar { position: sticky; top: 0; z-index: 2; display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); background: var(--c-surface); border-bottom: 1px solid var(--c-line); }
+.ui-panel-pad { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3); }
+/* 레퍼런스 메이슨리 — 열 너비 ~2 단위(128), 최대 4열: 패널이 좁으면 2열, 넓히면 3~4열 */
+.ui-refgrid { columns: calc(var(--sp-8) * 2) 4; column-gap: var(--sp-2); }
+.ui-ref { display: block; width: 100%; margin: 0 0 var(--sp-2); padding: 0; break-inside: avoid; border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-sunken); overflow: hidden; cursor: grab; }
+.ui-ref:hover { border-color: var(--c-accent); }
+.ui-ref-img { width: 100%; height: auto; aspect-ratio: auto 4 / 5; display: block; }
+/* 크게 보기 */
+.ui-lightbox { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: var(--sp-5); background: color-mix(in srgb, var(--c-bg) 88%, transparent); }
+.ui-lightbox-panel { display: flex; flex-direction: column; gap: var(--sp-3); max-width: 100%; max-height: 100%; min-height: 0; padding: var(--sp-3); background: var(--c-surface); border: 1px solid var(--c-line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-card); }
+.ui-lightbox-img { min-height: 0; max-width: 100%; max-height: calc(100dvh - var(--sp-8) * 2.5); object-fit: contain; border-radius: var(--r-sm); }
+.ui-lightbox-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); min-width: 0; }
+.ui-lightbox-text { display: flex; flex-direction: column; min-width: 0; }
+.ui-lightbox-actions { flex: none; display: flex; gap: var(--sp-2); align-items: center; }
 .ui-editor-toggle { flex: none; display: flex; align-items: center; gap: var(--sp-2); width: 100%; padding: var(--sp-2) var(--sp-3); background: var(--c-raised); border: 0; border-bottom: 1px solid var(--c-line); color: var(--c-text); font-size: var(--fs-label); font-weight: 600; cursor: pointer; text-align: left; }
 .ui-editor-side.is-right .ui-editor-toggle { flex-direction: row-reverse; text-align: right; }
 .ui-editor-toggle:hover { color: var(--c-accent); }
@@ -559,6 +584,9 @@ img { display: block; max-width: 100%; }
 @media (max-width: 1184px) {
   .ui-editor, .ui-editor.is-left-closed, .ui-editor.is-right-closed, .ui-editor.is-left-closed.is-right-closed { grid-template-columns: minmax(0, 1fr); }
   .ui-editor-side { position: static; max-height: none; }
+  .ui-editor-split { display: none; }
+  .ui-sheet { position: static; max-height: none; margin: var(--sp-2); }
+  .ui-editor-side-body.has-sheet { padding-bottom: 0; }
   .ui-editor-side.is-closed { height: auto; }
   .ui-editor-side.is-closed .ui-editor-toggle { flex-direction: row; height: auto; padding: var(--sp-2) var(--sp-3); }
   .ui-editor-side.is-closed .ui-editor-toggle-label { writing-mode: horizontal-tb; }

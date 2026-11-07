@@ -1,6 +1,7 @@
 "use client";
 // [cards] 카드뉴스 편집기 — 들어오자마자 새 덱 캔버스(저장 전 초안, revision 0). 「저장」을 처음 누를 때 덱을 만들고(POST) 이어서 저장(PUT)한다.
-// 왼쪽 패널(접기) = 스티커 라이브러리 · 가운데 = 캔버스 + 아래 가로 장 목록(끌어서 순서) · 오른쪽 패널(접기) = 위 자산, 아래 선택 요소 속성(접히는 섹션).
+// 왼쪽 패널(접기) = 스티커 라이브러리 · 가운데 = 캔버스 + 아래 가로 장 목록(끌어서 순서) · 오른쪽 패널(접기, 폭 끌어 조절·기억) = 레퍼런스 메이슨리 그리드가 패널 전체(탭: 레퍼런스·생성·레이어).
+// 요소를 고르면 그 속성이 오른쪽 패널 위에 뜨는 접이식 시트로 나온다(레퍼런스를 가리지 않게 접을 수 있다).
 // 같은 편집을 JSON 명령으로도 할 수 있다 — POST /api/cards/:id/ops (docs/13-cards-ops-schema.md).
 // 실행취소/다시실행은 덱 스냅숏 스택(같은 칸 연속 입력·한 번의 끌기는 한 단계로 묶는다). 옮길 때 카드 가장자리·가운데·다른 레이어에 붙는다(Alt 로 끔).
 import { useCallback, useEffect, useRef, useState, type DragEvent, type PointerEvent } from "react";
@@ -53,8 +54,6 @@ import {
   type WatermarkPosition,
 } from "@yunseo/domain";
 import {
-  AssetGrid,
-  AssetTile,
   Button,
   CanvasFit,
   CanvasGuides,
@@ -68,9 +67,14 @@ import {
   IconButton,
   Input,
   LayerRow,
+  Lightbox,
   Notice,
+  PanelBar,
+  PanelPad,
   PanelSection,
   Range,
+  RefGrid,
+  RefTile,
   Segmented,
   SegmentedItem,
   Select,
@@ -78,16 +82,26 @@ import {
   StickerGrid,
   StickerTile,
   Text,
+  TextLink,
   Textarea,
+  clampRightRatio,
 } from "@yunseo/ui";
 import { drawCard, exportName, type Ctx2D, type LoadedImage } from "@/lib/cards-export";
+import { filterRefs, refSets } from "@/lib/ref-filter";
 import { CardView, cssFamily } from "./CardView";
 
 export interface EditorAsset {
   id: string;
   group: "generated" | "reference";
+  /** 캔버스 레이어에 들어가는 같은 출처 주소(/api/…) */
   src: string;
   label: string;
+  /** 그리드·크게 보기에서 보여줄 주소 — 없으면 src */
+  view?: string;
+  /** 레퍼런스 묶음·태그·원본 게시물 주소 */
+  set?: string;
+  tags?: string[];
+  href?: string;
 }
 export interface DeckSummary {
   id: string;
@@ -106,6 +120,8 @@ interface Loaded {
 const DND_ASSET = "text/x-cards-asset";
 const DND_STICKER = "text/x-cards-sticker";
 const DND_CARD = "text/x-cards-card";
+const RIGHT_KEY = "ys.cards.right"; // 오른쪽 패널 폭 비율 기억(이 브라우저만)
+type RightTab = "ref" | "gen" | "layers";
 const GRADIENT_LABEL: Record<OverlayGradient, string> = { none: "단색", "to-top": "↑", "to-bottom": "↓", "to-left": "←", "to-right": "→", radial: "◎" };
 const BLEND_LABEL: Record<BlendMode, string> = { normal: "보통", multiply: "곱하기", screen: "스크린", overlay: "오버레이", "soft-light": "소프트 라이트", darken: "어둡게", lighten: "밝게", color: "색상" };
 /** 라이브러리 미리보기 그림 — 한 번만 만든다 */
@@ -193,11 +209,17 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ tone: "alert" | "accent"; text: string } | null>(null);
-  const [assetTab, setAssetTab] = useState<EditorAsset["group"]>("generated");
+  const [tab, setTab] = useState<RightTab>("ref");
+  const [query, setQuery] = useState("");
+  const [refSet, setRefSet] = useState("");
+  const [preview, setPreview] = useState<EditorAsset | null>(null);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(true);
+  // 오른쪽 패널 폭(편집기 폭의 비율) — 기본은 CSS 의 40%. 저장된 값이 있으면 마운트 뒤에 적용한다(서버 렌더와 어긋나지 않게)
+  const [ratio, setRatio] = useState<number | undefined>(undefined);
   // 접히는 섹션 — 이름별 펼침. 요소 종류별 주 섹션은 기본으로 펼친다
-  const [sec, setSec] = useState<Record<string, boolean>>({ assets: true, layers: false, props: true, "p-text": true, "p-box": false, "p-overlay": true, "p-image": true, "p-adjust": false, "p-sticker": true, "p-place": false, wm: false, "g-tag": true, "g-number": true });
+  const [sec, setSec] = useState<Record<string, boolean>>({ layers: true, props: true, "p-text": true, "p-box": false, "p-overlay": true, "p-image": true, "p-adjust": false, "p-sticker": true, "p-place": false, wm: false, "g-tag": true, "g-number": true });
   const isOpen = (k: string) => sec[k] ?? false;
   const toggle = (k: string) => setSec((s) => ({ ...s, [k]: !(s[k] ?? false) }));
   const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] });
@@ -260,10 +282,29 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
   };
 
   useEffect(() => clearTimers, []);
-  // 요소를 고르면 오른쪽(속성) 패널을 바로 펼친다
+  // 요소를 고르면 오른쪽 패널과 그 위 속성 시트를 바로 펼친다
   useEffect(() => {
-    if (selected) setRightOpen(true);
+    if (selected) {
+      setRightOpen(true);
+      setSheetOpen(true);
+    }
   }, [selected]);
+  useEffect(() => {
+    try {
+      const v = Number(localStorage.getItem(RIGHT_KEY));
+      if (v > 0) setRatio(clampRightRatio(v));
+    } catch {
+      /* 저장소를 못 쓰면 기본 폭 */
+    }
+  }, []);
+  const resizeRight = (r: number) => {
+    setRatio(r);
+    try {
+      localStorage.setItem(RIGHT_KEY, r.toFixed(3));
+    } catch {
+      /* 기억만 못 할 뿐 */
+    }
+  };
 
   // 저장 안 한 채 떠나면 묻는다
   useEffect(() => {
@@ -273,8 +314,9 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  // 단축키 — 입력칸 밖에서: Delete/Backspace 삭제, ⌘/Ctrl+Z 실행취소, ⇧⌘Z·Ctrl+Y 다시실행, ⌘/Ctrl+D 복제
+  // 단축키 — 입력칸 밖에서: Delete/Backspace 삭제, ⌘/Ctrl+Z 실행취소, ⇧⌘Z·Ctrl+Y 다시실행, ⌘/Ctrl+D 복제 (크게 보기 중에는 끈다)
   useEffect(() => {
+    if (preview) return;
     const h = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.closest("input, textarea, select, [contenteditable]") || t.isContentEditable)) return;
@@ -296,7 +338,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [selected, editCard, undo, redo]);
+  }, [selected, editCard, undo, redo, preview]);
 
   // ── 끌기(이동·크기) — 잠긴 레이어는 고르기만 ──
   const startDrag = (l: CardLayer, mode: DragMode, e: PointerEvent<HTMLElement>) => {
@@ -432,7 +474,10 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
   const { width: cw, height: ch } = CARD_PRESETS[deck.preset];
   const at = Math.min(index, deck.cards.length - 1);
   const layersTop = [...card.layers].reverse();
-  const shown = assets.filter((a) => a.group === assetTab);
+  const refs = assets.filter((a) => a.group === "reference");
+  const gens = assets.filter((a) => a.group === "generated");
+  const sets = refSets(refs);
+  const shownRefs = filterRefs(refs, query, refSet);
   const setL = (patch: Partial<CardLayer>, key?: string) => layer && editCard((c) => updateLayer(c, layer.id, patch), key ?? `layer:${layer.id}:${Object.keys(patch).join(",")}`);
   const wm = deck.watermark;
   const setWm = (patch: Partial<Watermark>) => edit((d) => ({ ...d, watermark: d.watermark ? { ...d.watermark, ...patch } : null }), `wm:${Object.keys(patch).join(",")}`);
@@ -497,14 +542,15 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     </PanelSection>
   );
 
+  const cardSection = (
+    <PanelSection title={`${at + 1}번째 장`} open={isOpen("props")} onToggle={() => toggle("props")}>
+      <ColorField label="바탕색" value={card.background} onChange={(v) => editCard((c) => ({ ...c, background: v }), "bg")} />
+      <Text tone="mute">캔버스에서 요소를 누르면 속성 시트가 열립니다.</Text>
+    </PanelSection>
+  );
+
   const props = (
     <>
-      {!layer && (
-        <PanelSection title={`${at + 1}번째 장`} open={isOpen("props")} onToggle={() => toggle("props")}>
-          <ColorField label="바탕색" value={card.background} onChange={(v) => editCard((c) => ({ ...c, background: v }), "bg")} />
-          <Text tone="mute">캔버스에서 요소를 누르면 여기에 그 요소의 속성이 바로 열립니다.</Text>
-        </PanelSection>
-      )}
       {layer?.kind === "text" && (
         <>
           <PanelSection title="글자" open={isOpen("p-text")} onToggle={() => toggle("p-text")}>
@@ -655,127 +701,158 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     </>
   );
 
+  const tile = (a: EditorAsset, action: string, onClick: () => void) => (
+    <RefTile key={a.id} src={a.view ?? a.src} label={a.label} action={action} onDragStart={(e) => (e.dataTransfer.setData(DND_ASSET, a.id), (e.dataTransfer.effectAllowed = "copy"))} onClick={onClick} />
+  );
+
   const right = (
     <>
-      <PanelSection title="자산" meta={shown.length} open={isOpen("assets")} onToggle={() => toggle("assets")}>
-        <Segmented label="자산 종류">
-          <SegmentedItem current={assetTab === "generated"} onClick={() => setAssetTab("generated")}>
-            생성 이미지
+      <PanelBar>
+        <Segmented label="오른쪽 패널">
+          <SegmentedItem current={tab === "ref"} onClick={() => setTab("ref")}>
+            레퍼런스 {refs.length}
           </SegmentedItem>
-          <SegmentedItem current={assetTab === "reference"} onClick={() => setAssetTab("reference")}>
-            레퍼런스
+          <SegmentedItem current={tab === "gen"} onClick={() => setTab("gen")}>
+            생성 {gens.length}
           </SegmentedItem>
-        </Segmented>
-        {shown.length === 0 ? (
-          <EmptyState title="자산이 없습니다" />
-        ) : (
-          <AssetGrid compact>
-            {shown.map((a) => (
-              <AssetTile key={a.id} src={a.src} label={a.label} onDragStart={(e) => (e.dataTransfer.setData(DND_ASSET, a.id), (e.dataTransfer.effectAllowed = "copy"))} onClick={() => addAsset(a)} />
-            ))}
-          </AssetGrid>
-        )}
-      </PanelSection>
-      <PanelSection title="레이어" meta={layersTop.length} open={isOpen("layers")} onToggle={() => toggle("layers")}>
-        {layersTop.length === 0 ? (
-          <EmptyState title="레이어가 없습니다" />
-        ) : (
-          <div role="list" aria-label="레이어(위가 앞)">
-            {layersTop.map((l) => (
-              <LayerRow
-                key={l.id}
-                name={l.name}
-                kind={KIND_LABEL[l.kind]}
-                selected={l.id === selected}
-                hidden={l.hidden}
-                onSelect={() => setSelected(l.id)}
-                actions={
-                  <>
-                    <IconButton label="한 칸 앞으로" disabled={l.id === card.layers.at(-1)?.id} onClick={() => editCard((c) => moveLayer(c, l.id, 1))}>
-                      ↑
-                    </IconButton>
-                    <IconButton label="한 칸 뒤로" disabled={l.id === card.layers[0]?.id} onClick={() => editCard((c) => moveLayer(c, l.id, -1))}>
-                      ↓
-                    </IconButton>
-                    <IconButton label={l.locked ? "잠금 풀기" : "잠그기"} onClick={() => editCard((c) => toggleLayerLocked(c, l.id))}>
-                      {l.locked ? "🔒" : "🔓"}
-                    </IconButton>
-                    <IconButton label={l.hidden ? "보이기" : "숨기기"} onClick={() => editCard((c) => toggleLayerHidden(c, l.id))}>
-                      {l.hidden ? "◌" : "●"}
-                    </IconButton>
-                    <IconButton label="삭제" onClick={() => (editCard((c) => removeLayer(c, l.id)), l.id === selected && setSelected(null))}>
-                      ×
-                    </IconButton>
-                  </>
-                }
-              />
-            ))}
-          </div>
-        )}
-      </PanelSection>
-      {layer && <Text tone="accent">속성 — {layer.name}</Text>}
-      {props}
-      <PanelSection title="워터마크(덱 전체)" open={isOpen("wm")} onToggle={() => toggle("wm")}>
-        <Segmented label="워터마크">
-          <SegmentedItem current={!wm} onClick={() => edit((d) => ({ ...d, watermark: null }))}>
-            끔
-          </SegmentedItem>
-          <SegmentedItem current={wm?.kind === "text"} onClick={() => edit((d) => ({ ...d, watermark: { ...(d.watermark ?? defaultWatermark()), kind: "text" } }))}>
-            텍스트
-          </SegmentedItem>
-          <SegmentedItem current={wm?.kind === "image"} onClick={() => edit((d) => ({ ...d, watermark: { ...(d.watermark ?? defaultWatermark()), kind: "image", size: d.watermark?.kind === "image" ? d.watermark.size : 200 } }))}>
-            이미지
+          <SegmentedItem current={tab === "layers"} onClick={() => setTab("layers")}>
+            레이어
           </SegmentedItem>
         </Segmented>
-        {wm && (
+        {tab === "ref" && (
           <>
-            {wm.kind === "text" ? (
-              <>
-                <Field label="글자">
-                  <Input value={wm.text} maxLength={80} onChange={(e) => setWm({ text: e.target.value })} />
-                </Field>
-                <ColorField label="색" value={wm.color} onChange={(v) => setWm({ color: v })} />
-              </>
-            ) : (
-              <Field label="이미지">
-                <Select value={wm.src} onChange={(e) => setWm({ src: e.target.value })}>
-                  <option value="">자산에서 고르기</option>
-                  {assets.map((a) => (
-                    <option key={a.id} value={a.src}>
-                      {a.label}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            )}
-            <Segmented label="반복">
-              <SegmentedItem current={!wm.tile} onClick={() => setWm({ tile: false })}>
-                한 개
-              </SegmentedItem>
-              <SegmentedItem current={wm.tile} onClick={() => setWm({ tile: true })}>
-                반복 타일
-              </SegmentedItem>
-            </Segmented>
-            {!wm.tile && (
-              <Segmented label="위치">
-                {WATERMARK_POSITIONS.map((p) => (
-                  <SegmentedItem key={p} current={wm.position === p} onClick={() => setWm({ position: p })}>
-                    {POS_LABEL[p]}
-                  </SegmentedItem>
+            <Input aria-label="레퍼런스 검색" type="search" placeholder="검색 — 제목·태그" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <Stack direction="row" gap={2} align="center">
+              <Select aria-label="묶음" value={refSet} onChange={(e) => setRefSet(e.target.value)}>
+                <option value="">모든 묶음 {refs.length}</option>
+                {sets.map((g) => (
+                  <option key={g.name} value={g.name}>
+                    {g.name} {g.count}
+                  </option>
                 ))}
-              </Segmented>
-            )}
-            <Range label="불투명도" value={wm.opacity} min={0} max={1} step={0.01} display={pct(wm.opacity)} onChange={(v) => setWm({ opacity: v })} />
-            <Range label={wm.kind === "text" ? "글자 크기" : "폭"} value={wm.size} min={8} max={1080} step={1} display={`${wm.size}px`} onChange={(v) => setWm({ size: v })} />
-            {wm.tile && (
-              <>
-                <Range label="간격" value={wm.gap} min={40} max={2000} step={10} display={`${wm.gap}px`} onChange={(v) => setWm({ gap: v })} />
-                <Range label="기울기" value={wm.angle} min={-90} max={90} step={1} display={`${wm.angle}°`} onChange={(v) => setWm({ angle: v })} />
-              </>
-            )}
+              </Select>
+              <Text tone="mute">
+                {shownRefs.length}/{refs.length}
+              </Text>
+            </Stack>
           </>
         )}
-      </PanelSection>
+      </PanelBar>
+      {tab === "ref" && (
+        <PanelPad>
+          {shownRefs.length === 0 ? (
+            <EmptyState title="조건에 맞는 레퍼런스가 없습니다" action={<Button variant="secondary" onClick={() => (setQuery(""), setRefSet(""))}>필터 지우기</Button>} />
+          ) : (
+            <RefGrid>{shownRefs.map((a) => tile(a, "크게 보기", () => setPreview(a)))}</RefGrid>
+          )}
+        </PanelPad>
+      )}
+      {tab === "gen" && (
+        <PanelPad>{gens.length === 0 ? <EmptyState title="생성 이미지가 없습니다" /> : <RefGrid>{gens.map((a) => tile(a, "넣기", () => void addAsset(a)))}</RefGrid>}</PanelPad>
+      )}
+      {tab === "layers" && (
+        <>
+          <PanelSection title="레이어" meta={layersTop.length} open={isOpen("layers")} onToggle={() => toggle("layers")}>
+            {layersTop.length === 0 ? (
+              <EmptyState title="레이어가 없습니다" />
+            ) : (
+              <div role="list" aria-label="레이어(위가 앞)">
+                {layersTop.map((l) => (
+                  <LayerRow
+                    key={l.id}
+                    name={l.name}
+                    kind={KIND_LABEL[l.kind]}
+                    selected={l.id === selected}
+                    hidden={l.hidden}
+                    onSelect={() => setSelected(l.id)}
+                    actions={
+                      <>
+                        <IconButton label="한 칸 앞으로" disabled={l.id === card.layers.at(-1)?.id} onClick={() => editCard((c) => moveLayer(c, l.id, 1))}>
+                          ↑
+                        </IconButton>
+                        <IconButton label="한 칸 뒤로" disabled={l.id === card.layers[0]?.id} onClick={() => editCard((c) => moveLayer(c, l.id, -1))}>
+                          ↓
+                        </IconButton>
+                        <IconButton label={l.locked ? "잠금 풀기" : "잠그기"} onClick={() => editCard((c) => toggleLayerLocked(c, l.id))}>
+                          {l.locked ? "🔒" : "🔓"}
+                        </IconButton>
+                        <IconButton label={l.hidden ? "보이기" : "숨기기"} onClick={() => editCard((c) => toggleLayerHidden(c, l.id))}>
+                          {l.hidden ? "◌" : "●"}
+                        </IconButton>
+                        <IconButton label="삭제" onClick={() => (editCard((c) => removeLayer(c, l.id)), l.id === selected && setSelected(null))}>
+                          ×
+                        </IconButton>
+                      </>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </PanelSection>
+          {cardSection}
+          <PanelSection title="워터마크(덱 전체)" open={isOpen("wm")} onToggle={() => toggle("wm")}>
+            <Segmented label="워터마크">
+              <SegmentedItem current={!wm} onClick={() => edit((d) => ({ ...d, watermark: null }))}>
+                끔
+              </SegmentedItem>
+              <SegmentedItem current={wm?.kind === "text"} onClick={() => edit((d) => ({ ...d, watermark: { ...(d.watermark ?? defaultWatermark()), kind: "text" } }))}>
+                텍스트
+              </SegmentedItem>
+              <SegmentedItem current={wm?.kind === "image"} onClick={() => edit((d) => ({ ...d, watermark: { ...(d.watermark ?? defaultWatermark()), kind: "image", size: d.watermark?.kind === "image" ? d.watermark.size : 200 } }))}>
+                이미지
+              </SegmentedItem>
+            </Segmented>
+            {wm && (
+              <>
+                {wm.kind === "text" ? (
+                  <>
+                    <Field label="글자">
+                      <Input value={wm.text} maxLength={80} onChange={(e) => setWm({ text: e.target.value })} />
+                    </Field>
+                    <ColorField label="색" value={wm.color} onChange={(v) => setWm({ color: v })} />
+                  </>
+                ) : (
+                  <Field label="이미지">
+                    <Select value={wm.src} onChange={(e) => setWm({ src: e.target.value })}>
+                      <option value="">자산에서 고르기</option>
+                      {gens.map((a) => (
+                        <option key={a.id} value={a.src}>
+                          {a.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                )}
+                <Segmented label="반복">
+                  <SegmentedItem current={!wm.tile} onClick={() => setWm({ tile: false })}>
+                    한 개
+                  </SegmentedItem>
+                  <SegmentedItem current={wm.tile} onClick={() => setWm({ tile: true })}>
+                    반복 타일
+                  </SegmentedItem>
+                </Segmented>
+                {!wm.tile && (
+                  <Segmented label="위치">
+                    {WATERMARK_POSITIONS.map((p) => (
+                      <SegmentedItem key={p} current={wm.position === p} onClick={() => setWm({ position: p })}>
+                        {POS_LABEL[p]}
+                      </SegmentedItem>
+                    ))}
+                  </Segmented>
+                )}
+                <Range label="불투명도" value={wm.opacity} min={0} max={1} step={0.01} display={pct(wm.opacity)} onChange={(v) => setWm({ opacity: v })} />
+                <Range label={wm.kind === "text" ? "글자 크기" : "폭"} value={wm.size} min={8} max={1080} step={1} display={`${wm.size}px`} onChange={(v) => setWm({ size: v })} />
+                {wm.tile && (
+                  <>
+                    <Range label="간격" value={wm.gap} min={40} max={2000} step={10} display={`${wm.gap}px`} onChange={(v) => setWm({ gap: v })} />
+                    <Range label="기울기" value={wm.angle} min={-90} max={90} step={1} display={`${wm.angle}°`} onChange={(v) => setWm({ angle: v })} />
+                  </>
+                )}
+              </>
+            )}
+          </PanelSection>
+        </>
+      )}
     </>
   );
 
@@ -827,13 +904,19 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
       <EditorLayout
         leftLabel="스티커"
-        rightLabel="자산·속성"
+        rightLabel="레퍼런스"
         leftOpen={leftOpen}
         rightOpen={rightOpen}
         onToggleLeft={() => setLeftOpen((v) => !v)}
         onToggleRight={() => setRightOpen((v) => !v)}
         left={left}
         right={right}
+        rightRatio={ratio}
+        onRightRatio={resizeRight}
+        sheet={layer ? props : undefined}
+        sheetTitle={layer ? `속성 — ${layer.name}` : ""}
+        sheetOpen={sheetOpen}
+        onToggleSheet={() => setSheetOpen((v) => !v)}
         stage={
           <>
             <CanvasFit>
@@ -905,6 +988,29 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
           </DeckStrip>
         }
       />
+      {preview && (
+        <Lightbox
+          src={preview.view ?? preview.src}
+          label={preview.label}
+          meta={preview.set}
+          onClose={() => setPreview(null)}
+          actions={
+            <>
+              {preview.href && (
+                <TextLink href={preview.href} target="_blank" rel="noreferrer noopener">
+                  원본
+                </TextLink>
+              )}
+              <Button variant="primary" onClick={() => (void addAsset(preview), setPreview(null))}>
+                캔버스에 넣기
+              </Button>
+              <Button variant="secondary" autoFocus onClick={() => setPreview(null)}>
+                닫기
+              </Button>
+            </>
+          }
+        />
+      )}
     </Stack>
   );
 }

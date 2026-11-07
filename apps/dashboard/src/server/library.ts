@@ -119,6 +119,12 @@ function readRefsFile(file: string): RefItem[] {
   return out;
 }
 
+/** 수집 목록 그림의 원본 주소 — 목록에 있고 i.pinimg.com 인 것만(그 밖은 null). /api/ref-image/<id> 가 이 주소를 받아 같은 출처로 내려준다 */
+export function referenceImageUrl(id: string): string | null {
+  const r = listReferences().find((x) => x.id === id);
+  return r && /^https:\/\/i\.pinimg\.com\//.test(r.thumb) ? r.thumb : null;
+}
+
 /** 저장소 안 레퍼런스 그림 — docs/design 아래 jpg·png 만 */
 export function referenceAsset(parts: string[]): string | null {
   const dir = designDir();

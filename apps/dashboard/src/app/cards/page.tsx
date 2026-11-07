@@ -14,8 +14,12 @@ async function assets(): Promise<EditorAsset[]> {
     const v = g.versions.find((x) => x.hasCover);
     if (v) out.push({ id: `reel:${g.pieceId}`, group: "generated", src: `/api/reels/${g.pieceId}/${v.renderId}/cover`, label: `${g.title} 표지` });
   }
-  // 저장소 안 캡처만(외부 CDN 그림은 내보내기 캔버스를 오염시켜 PNG 를 못 만든다)
-  for (const r of listReferences()) if (r.thumb.startsWith("/api/")) out.push({ id: `ref:${r.id}`, group: "reference", src: r.thumb, label: r.title });
+  // 수집 레퍼런스 전부 — 저장소 캡처는 /api/refs, 외부 CDN 그림은 같은 출처 프록시(/api/ref-image)로 넣는다(그래야 PNG 내보내기가 막히지 않는다).
+  // 그리드 미리보기는 원본 주소(view)로 바로 받는다.
+  for (const r of listReferences()) {
+    const local = r.thumb.startsWith("/api/");
+    out.push({ id: `ref:${r.id}`, group: "reference", src: local ? r.thumb : `/api/ref-image/${encodeURIComponent(r.id)}`, view: r.thumb, label: r.title || r.takeaway || r.id, set: r.set, tags: r.tags, href: r.href });
+  }
   return out;
 }
 
