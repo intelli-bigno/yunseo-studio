@@ -1,5 +1,5 @@
 // 카드뉴스 제작 — 가벼운 레이어 편집기. 서버는 덱 목록·자산 목록만 모아 넘기고, 편집·저장은 클라이언트 섬(CardsEditor)이 API 로 한다.
-import { Page, PageHeader } from "@yunseo/ui";
+import { HiddenTitle, Page } from "@yunseo/ui";
 import { CardsEditor, type EditorAsset } from "@/components/CardsEditor";
 import { listReels, listReferences } from "@/server/library";
 import { cardDecks, studio } from "@/server/studio";
@@ -29,7 +29,7 @@ export default async function CardsPage({ searchParams }: { searchParams: Promis
   const [decks, list, rec] = await Promise.all([cardDecks().list(), assets(), id ? cardDecks().open(id) : Promise.resolve(null)]);
   return (
     <Page fit>
-      <PageHeader title="카드뉴스 제작" />
+      <HiddenTitle>카드뉴스 제작</HiddenTitle>
       <CardsEditor initialDecks={decks} initial={rec ? { deck: rec.deck, revision: rec.revision } : null} assets={list} />
     </Page>
   );
