@@ -2,3 +2,5 @@
 export * from "./deck";
 export * from "./wrap";
 export * from "./sticker-svg";
+export * from "./sticker-library";
+export * from "./ops";

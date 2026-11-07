@@ -1,6 +1,6 @@
 // [cards] 카드 한 장 그리기 — 편집 캔버스·덱 줄 미리보기·콘텐츠 목록 썸네일이 같이 쓴다(훅 없음 — 서버·클라이언트 어디서나).
 import type { DragEvent, PointerEvent, ReactNode } from "react";
-import { CARD_PRESETS, stickerDataUrl, watermarkAnchors, type CardFont, type CardLayer, type CardPresetId, type DeckCard, type DragMode, type Watermark } from "@yunseo/domain";
+import { CARD_PRESETS, imageFilter, stickerDataUrl, watermarkAnchors, type CardFont, type CardLayer, type CardPresetId, type DeckCard, type DragMode, type Watermark } from "@yunseo/domain";
 import { CanvasHandles, CanvasImage, CanvasLayer, CanvasOverlay, CanvasStage, CanvasText, CanvasWatermark } from "@yunseo/ui";
 
 /** 화면 글자 서체 — 본문·고정폭은 앱 서체 변수, 명조는 시스템 */
@@ -35,10 +35,10 @@ export function CardView({ card, preset, watermark = null, mini = false, selecte
     <CanvasStage width={cw} height={ch} background={card.background} label={`카드 캔버스 ${label}`} mini={mini} hint={hint} onDragOver={onDrop ? (e) => e.preventDefault() : undefined} onDrop={onDrop}>
       {card.layers.map((l) =>
         l.hidden ? null : (
-          <CanvasLayer key={l.id} box={l} cw={cw} ch={ch} label={l.name} rotation={l.rotation} locked={l.locked} opacity={l.kind === "sticker" ? l.opacity : 1} selected={!mini && selected === l.id} onPointerDown={onLayerDown ? (e) => onLayerDown(l, e) : undefined}>
-            {l.kind === "image" && <CanvasImage src={l.src} fit={l.fit} />}
+          <CanvasLayer key={l.id} box={l} cw={cw} ch={ch} label={l.name} rotation={l.rotation} locked={l.locked} opacity={l.kind === "sticker" ? l.opacity : 1} blend={l.kind === "overlay" ? l.blend : undefined} selected={!mini && selected === l.id} onPointerDown={onLayerDown ? (e) => onLayerDown(l, e) : undefined}>
+            {l.kind === "image" && <CanvasImage src={l.src} fit={l.fit} posX={l.posX} posY={l.posY} zoom={l.zoom} filter={imageFilter(l, (px) => `${(px / cw) * 100}cqw`)} />}
             {l.kind === "sticker" && <CanvasImage src={stickerDataUrl(l)} fit="contain" />}
-            {l.kind === "overlay" && <CanvasOverlay opacity={l.opacity} color={l.color} />}
+            {l.kind === "overlay" && <CanvasOverlay opacity={l.opacity} color={l.color} gradient={l.gradient} from={l.gradFrom} to={l.gradTo} />}
             {l.kind === "text" && (
               <CanvasText text={l.text} family={cssFamily(l.font)} size={l.size} cw={cw} weight={l.weight} color={l.color} align={l.align} lineHeight={l.lineHeight} letterSpacing={l.letterSpacing} vAlign={l.vAlign} margin={l.margin} padding={l.padding} boxColor={l.boxColor} boxOpacity={l.boxOpacity} />
             )}
