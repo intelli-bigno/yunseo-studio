@@ -48,7 +48,7 @@ describe("ui 스타일은 토큰 값만 쓴다", () => {
 
   it("쓰는 변수는 모두 토큰에 있다", () => {
     const defined = new Set(Object.keys(cssVariables()));
-    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs", "--ar"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다), --ar: 캔버스 가로/세로 비(CanvasStage 가 넣는다)
+    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs", "--ar", "--ed-left", "--ed-right", "--ed-right-w"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다), --ar: 캔버스 가로/세로 비(CanvasStage 가 넣는다), --ed-*: 편집기 패널 폭(EditorLayout 이 넣는다)
     const used = new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]!));
     expect([...used].filter((v) => !defined.has(v) && !local.has(v))).toEqual([]);
   });
@@ -165,5 +165,35 @@ describe("화면 글은 짧다", () => {
     const src = readFileSync(join(root, rel), "utf8").replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
     const texts = [...src.matchAll(/>([^<>{}]*[가-힣][^<>{}]*)</g), ...src.matchAll(/"([^"\n]*[가-힣][^"\n]*)"/g)].map((m) => m[1]!.trim());
     expect(texts.filter((t) => !/[=?`()]/.test(t) && [...t].length > 40)).toEqual([]); // 코드 조각(삼항·화살표)은 글이 아니다
+  });
+});
+
+describe("카드 편집기 오른쪽 패널은 레퍼런스가 주인이다", () => {
+  it("기본 폭은 편집기의 40% 이고 비율 변수(--ed-right)로 바뀐다 — 가운데 칸 최소 폭을 지킨다", () => {
+    const r = rule(".ui-editor");
+    expect(r).toMatch(/--ed-right-w:\s*clamp\([^;]*var\(--ed-right, 40%\)/);
+    expect(r).toMatch(/grid-template-columns:\s*var\(--ed-left\) minmax\(0, 1fr\) var\(--ed-right-w\)/);
+    expect(r).toMatch(/100% - var\(--ed-left\)/);
+  });
+
+  it("레퍼런스 그리드는 열 2~4개 메이슨리이고 그림은 자르지 않는다(원본 비율)", () => {
+    expect(prop(".ui-refgrid", "columns")).toMatch(/^calc\(var\(--sp-8\) \* 2\) 4$/);
+    expect(prop(".ui-ref", "break-inside")).toBe("avoid");
+    expect(prop(".ui-ref-img", "height")).toBe("auto");
+    expect(prop(".ui-ref-img", "aspect-ratio")).toBe("auto 4 / 5"); // 로딩 전 자리만 4:5, 받으면 원본 비율 → 지연 로딩이 화면 밖 그림을 받지 않는다
+    expect(prop(".ui-ref-img", "object-fit")).toBeUndefined();
+  });
+
+  it("속성 시트는 패널 위에 뜨고(absolute) 접을 수 있다 — 좁은 화면에서는 흐름에 놓인다", () => {
+    expect(prop(".ui-sheet", "position")).toBe("absolute");
+    expect(prop(".ui-sheet", "max-height")).toBe("55%");
+    expect(prop(".ui-editor-side-main", "position")).toBe("relative");
+    expect(css).toMatch(/@media \(max-width: 1184px\) \{[\s\S]*?\.ui-sheet \{[^}]*position:\s*static/);
+  });
+
+  it("폭 조절 경계는 패널 왼쪽 가장자리에 있고 좁은 화면에서는 숨긴다", () => {
+    expect(prop(".ui-editor-split", "cursor")).toBe("col-resize");
+    expect(prop(".ui-editor-split", "left")).toBe("0");
+    expect(css).toMatch(/@media \(max-width: 1184px\) \{[\s\S]*?\.ui-editor-split \{[^}]*display:\s*none/);
   });
 });

@@ -1,16 +1,26 @@
 // [cards] 카드 편집기 부품 — 덱 줄·캔버스·레이어·핸들·자산 칸·레이어 패널.
 // 위치·크기는 카드 원본 픽셀을 받아 %(그리고 글자는 컨테이너 폭 단위 cqw)로 그린다 — 화면 폭이 달라도 같은 비율.
 // 화면(dashboard)은 style 을 못 쓰므로 계산된 기하 값은 여기서만 style 로 넣는다. 꾸밈(색·간격·선)은 styles.css 토큰만.
-import type { CSSProperties, DragEvent, PointerEvent, ReactNode } from "react";
+import type { CSSProperties, DragEvent, KeyboardEvent, PointerEvent, ReactNode } from "react";
 import { cx } from "./poly";
 
 const pct = (v: number, of: number) => `${(v / of) * 100}%`;
 
+/** 오른쪽 패널 폭 비율(편집기 폭 기준)의 범위 — 기본은 CSS 의 40%, 끌어서 바꾼 값은 이 범위로 자른다 */
+export const RIGHT_RATIO_MIN = 0.2;
+export const RIGHT_RATIO_MAX = 0.7;
+export const RIGHT_RATIO_STEP = 0.02;
+export const clampRightRatio = (r: number): number => (Number.isFinite(r) ? Math.min(RIGHT_RATIO_MAX, Math.max(RIGHT_RATIO_MIN, r)) : RIGHT_RATIO_MIN);
+/** 포인터 x → 오른쪽 패널 폭 비율 (box = 편집기 전체 상자) */
+export const rightRatioFromPointer = (clientX: number, box: { right: number; width: number }): number => (box.width > 0 ? clampRightRatio((box.right - clientX) / box.width) : RIGHT_RATIO_MIN);
+
 /**
- * 편집기 세 칸 — 왼쪽 패널(스티커) · 가운데(캔버스 + 아래 가로 장 목록) · 오른쪽 패널(자산 + 속성).
+ * 편집기 세 칸 — 왼쪽 패널(스티커) · 가운데(캔버스 + 아래 가로 장 목록) · 오른쪽 패널(레퍼런스 그리드).
  * 양쪽 패널은 접을 수 있고(접으면 얇은 띠만 남는다), 화면 높이에 붙어 따로 스크롤된다. 좁으면 위아래로 쌓인다.
+ * 오른쪽 패널은 기본 폭이 편집기의 40% 이고 경계선을 끌어(←→ 키도 됨) 바꾼다(rightRatio·onRightRatio — 저장은 화면이 한다).
+ * sheet 는 오른쪽 패널 위에 뜨는 접이식 시트(요소를 골랐을 때의 속성) — 없으면 그리지 않는다.
  */
-export function EditorLayout({ left, stage, strip, right, leftOpen, rightOpen, onToggleLeft, onToggleRight, leftLabel, rightLabel }: {
+export function EditorLayout({ left, stage, strip, right, leftOpen, rightOpen, onToggleLeft, onToggleRight, leftLabel, rightLabel, rightRatio, onRightRatio, sheet, sheetTitle = "", sheetOpen = true, onToggleSheet }: {
   left: ReactNode;
   stage: ReactNode;
   strip: ReactNode;
@@ -21,9 +31,23 @@ export function EditorLayout({ left, stage, strip, right, leftOpen, rightOpen, o
   onToggleRight: () => void;
   leftLabel: string;
   rightLabel: string;
+  /** 오른쪽 패널 폭 비율(0.2~0.7). 없으면 CSS 기본(40%) */
+  rightRatio?: number | undefined;
+  onRightRatio?: ((ratio: number) => void) | undefined;
+  sheet?: ReactNode;
+  sheetTitle?: string;
+  sheetOpen?: boolean;
+  onToggleSheet?: (() => void) | undefined;
 }) {
+  const ratio = rightRatio === undefined ? undefined : clampRightRatio(rightRatio);
+  const nudge = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!onRightRatio || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+    e.preventDefault();
+    const now = ratio ?? 0.4;
+    onRightRatio(clampRightRatio(now + (e.key === "ArrowLeft" ? RIGHT_RATIO_STEP : -RIGHT_RATIO_STEP)));
+  };
   return (
-    <div className={cx("ui-editor", !leftOpen && "is-left-closed", !rightOpen && "is-right-closed")}>
+    <div className={cx("ui-editor", !leftOpen && "is-left-closed", !rightOpen && "is-right-closed")} style={ratio === undefined ? undefined : ({ "--ed-right": `${(ratio * 100).toFixed(1)}%` } as CSSProperties)}>
       <aside className={cx("ui-editor-side is-left", !leftOpen && "is-closed")} aria-label={leftLabel}>
         <button type="button" className="ui-editor-toggle" aria-expanded={leftOpen} onClick={onToggleLeft} title={leftOpen ? `${leftLabel} 접기` : `${leftLabel} 펼치기`}>
           <span aria-hidden>{leftOpen ? "‹" : "›"}</span>
@@ -40,7 +64,44 @@ export function EditorLayout({ left, stage, strip, right, leftOpen, rightOpen, o
           <span aria-hidden>{rightOpen ? "›" : "‹"}</span>
           <span className="ui-editor-toggle-label">{rightLabel}</span>
         </button>
-        {rightOpen && <div className="ui-editor-side-body">{right}</div>}
+        {rightOpen && (
+          <div className="ui-editor-side-main">
+            <div className={cx("ui-editor-side-body", Boolean(sheet) && "has-sheet")}>{right}</div>
+            {onRightRatio && (
+              <div
+                className="ui-editor-split"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label={`${rightLabel} 폭`}
+                aria-valuemin={Math.round(RIGHT_RATIO_MIN * 100)}
+                aria-valuemax={Math.round(RIGHT_RATIO_MAX * 100)}
+                aria-valuenow={Math.round((ratio ?? 0.4) * 100)}
+                tabIndex={0}
+                onPointerDown={(e) => {
+                  if (e.button !== 0) return;
+                  e.preventDefault();
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                }}
+                onPointerMove={(e) => {
+                  if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+                  const box = e.currentTarget.closest(".ui-editor");
+                  if (box) onRightRatio(rightRatioFromPointer(e.clientX, box.getBoundingClientRect()));
+                }}
+                onKeyDown={nudge}
+              />
+            )}
+            {sheet && (
+              <section className={cx("ui-sheet", !sheetOpen && "is-collapsed")} aria-label={sheetTitle}>
+                <button type="button" className="ui-sheet-head" aria-expanded={sheetOpen} onClick={onToggleSheet}>
+                  <span className="ui-psec-chev" aria-hidden>{sheetOpen ? "▾" : "▴"}</span>
+                  <span className="ui-psec-title ui-truncate">{sheetTitle}</span>
+                  <span className="ui-t-label ui-tone-mute">{sheetOpen ? "접기" : "펼치기"}</span>
+                </button>
+                {sheetOpen && <div className="ui-sheet-body">{sheet}</div>}
+              </section>
+            )}
+          </div>
+        )}
       </aside>
     </div>
   );
@@ -284,6 +345,62 @@ export function AssetTile({ src, label, onDragStart, onClick }: { src: string; l
     <button type="button" className="ui-asset" title={label} aria-label={`${label} 넣기`} draggable onDragStart={onDragStart} onClick={onClick}>
       <img className="ui-asset-img" src={src} alt="" loading="lazy" draggable={false} />
     </button>
+  );
+}
+
+/** 패널 위 고정 줄 — 탭·검색 같은 조작이 스크롤돼도 남는다 */
+export function PanelBar({ children }: { children: ReactNode }) {
+  return <div className="ui-panel-bar">{children}</div>;
+}
+
+/** 패널 본문 — 안쪽 여백 */
+export function PanelPad({ children }: { children: ReactNode }) {
+  return <div className="ui-panel-pad">{children}</div>;
+}
+
+/** 레퍼런스 그리드 — 그림 비율대로 쌓는 메이슨리(열 2~4개, 패널 폭이 정한다) */
+export function RefGrid({ children }: { children: ReactNode }) {
+  return <div className="ui-refgrid">{children}</div>;
+}
+
+/**
+ * 레퍼런스 한 칸 — 자르지 않는다(원본 비율). 그림 크기를 모르는 동안은 4:5 자리만 잡아 화면 밖 그림은 받지 않는다(지연 로딩).
+ * 누르면 onClick(크게 보기), 끌면 캔버스로.
+ */
+export function RefTile({ src, label, action, onDragStart, onClick }: { src: string; label: string; action: string; onDragStart: (e: DragEvent<HTMLButtonElement>) => void; onClick: () => void }) {
+  return (
+    <button type="button" className="ui-ref" title={label} aria-label={`${label} ${action}`} draggable onDragStart={onDragStart} onClick={onClick}>
+      <img className="ui-ref-img" src={src} alt="" loading="lazy" decoding="async" draggable={false} />
+    </button>
+  );
+}
+
+/** 크게 보기 — 화면 가운데에 그림 하나. 바깥을 누르거나 Esc 로 닫는다(닫기 버튼에 포커스가 가 있다) */
+export function Lightbox({ src, label, meta, actions, onClose }: { src: string; label: string; meta?: ReactNode; actions: ReactNode; onClose: () => void }) {
+  return (
+    <div
+      className="ui-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        e.stopPropagation();
+        onClose();
+      }}
+    >
+      <div className="ui-lightbox-panel">
+        <img className="ui-lightbox-img" src={src} alt={label} draggable={false} />
+        <div className="ui-lightbox-foot">
+          <div className="ui-lightbox-text">
+            <span className="ui-truncate">{label}</span>
+            {meta && <span className="ui-t-label ui-tone-mute ui-truncate">{meta}</span>}
+          </div>
+          <div className="ui-lightbox-actions">{actions}</div>
+        </div>
+      </div>
+    </div>
   );
 }
 
