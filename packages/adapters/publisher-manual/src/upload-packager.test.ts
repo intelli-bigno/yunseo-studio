@@ -133,4 +133,15 @@ describe("업로드 묶음 zip", () => {
     expect(await files.read(join(tmp(), "other.zip"))).toBeNull();
     expect(await files.read(join(root, "P-1", "missing.zip"))).toBeNull();
   });
+
+  it("has 는 read 와 같은 규칙으로 판정한다 — 작업 폴더 안의 실제 파일만 참", async () => {
+    const root = tmp();
+    const bundle = await createZipUploadPackager().bundle(cardsIn(tmp()), null, join(root, "P-1"));
+    const files = createBundleFiles(root);
+    expect(await files.has(bundle.zip.path)).toBe(true);
+    expect(await files.has(join(root, "P-1", "missing.zip"))).toBe(false); // 없는 파일
+    expect(await files.has(join(root, "P-1"))).toBe(false); // 폴더
+    expect(await files.has(join(tmp(), "other.zip"))).toBe(false); // 작업 폴더 밖
+    expect(await files.has("C:\\Users\\yjh99\\AppData\\Local\\Temp\\yunseo-studio-work\\P-1\\h\\cards\\01-cover.png")).toBe(false); // 옛 Windows 경로
+  });
 });

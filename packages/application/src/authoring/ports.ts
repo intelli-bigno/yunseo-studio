@@ -94,4 +94,6 @@ export interface IdGenerator {
 /** 산출물 파일(묶음 zip·렌더 카드)을 읽는다(publisher-manual 이 구현, 작업 폴더 안만) */
 export interface BundleFiles {
   read(path: string): Promise<Uint8Array | null>;
+  /** read 가 읽을 수 있는 파일인가 — 내용을 읽지 않고 같은 규칙(작업 폴더 안·허용 확장자)으로 판정한다(목록 썸네일이 쓴다) */
+  has(path: string): Promise<boolean>;
 }

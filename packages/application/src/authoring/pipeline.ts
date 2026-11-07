@@ -2,7 +2,7 @@
 // 포트가 주입되지 않은 단계는 가짜로 채우지 않고 비활성 + 이유를 돌려준다(L1 렌더·L3 릴스는 통합 Worker 가 배선).
 // 산출물은 「어떤 내용 해시로 만들었나」와 함께 기록한다 — 내용이 바뀌면 낡은 산출물로 묶음을 만들지 않는다.
 import { contentHash, toContentBody, validApproval, type Piece } from "@yunseo/domain";
-import type { CardRenderer, CardRenderResult, ContentDocument, ReelComposer, ReelResult, UploadBundle, UploadPackager } from "../pipeline/contracts";
+import type { CardRenderer, CardRenderResult, ContentDocument, ReelComposer, ReelResult, RenderedFile, UploadBundle, UploadPackager } from "../pipeline/contracts";
 import { previewOf, type PiecePreview } from "./preview";
 import { PieceNotFoundError, type AuthoringClock, type AuthoringStore, type BundleFiles, type PipelineRecord } from "./ports";
 
@@ -61,6 +61,9 @@ export class PipelineStepError extends Error {
 }
 
 const join = (...parts: string[]) => parts.map((p, i) => (i === 0 ? p.replace(/[\\/]+$/, "") : p.replace(/^[\\/]+|[\\/]+$/g, ""))).join("/");
+/** 구분자를 / 로 통일 — Windows 에서 적힌 기록(`C:\…`)도 같은 방식으로 다룬다 */
+const slashed = (s: string) => s.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+const lastSegment = (s: string) => slashed(s).split("/").pop() ?? "";
 
 export function createPipelineUseCases({ store, clock, renderer = null, reels = null, reelsReady = null, packager = null, files = null, workDir, language }: PipelineDeps) {
   let reelCheck: Promise<string | null> | null = null;
@@ -79,8 +82,23 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
     return r.ok ? { doc: { id: p.id, kind: r.kind, schema: r.schema, body: r.body }, errors: [] } : { doc: null, errors: r.errors };
   };
 
-  /** 지금 내용 해시로 만든 산출물만 쓴다 */
-  const current = (rec: PipelineRecord | null, hash: string) => (rec && rec.contentHash === hash ? rec : null);
+  /**
+   * 기록에 적힌 산출물 경로를 지금 작업 폴더 기준으로 바로잡는다. 기록은 절대경로로 저장되므로 작업 폴더가 옮겨지면(네이티브 Windows 임시 폴더 →
+   * Docker /data/work) 파일은 있어도 기록의 경로는 폴더 밖이라 읽기 어댑터가 거부한다. 산출물은 늘 `<작업 폴더>/<편>/<해시 12자>/<단계>/<이름>` 에
+   * 쓰이므로(outDir) 이름만 남기고 같은 자리로 되돌린다. 이미 작업 폴더 안인 경로는 건드리지 않는다.
+   */
+  const workRoot = slashed(workDir).replace(/\/$/, "");
+  const moved = (rec: PipelineRecord, step: "cards" | "reel" | "bundle", f: RenderedFile): RenderedFile =>
+    slashed(f.path).startsWith(`${workRoot}/`) ? f : { ...f, path: join(workDir, rec.pieceId, rec.contentHash.slice(0, 12), step, lastSegment(f.path)) };
+  const rebase = (rec: PipelineRecord): PipelineRecord => ({
+    ...rec,
+    render: rec.render && { ...rec.render, cards: rec.render.cards.map((c) => moved(rec, "cards", c)) },
+    reel: rec.reel && { ...rec.reel, video: moved(rec, "reel", rec.reel.video), subtitles: rec.reel.subtitles && moved(rec, "reel", rec.reel.subtitles) },
+    bundle: rec.bundle && { ...rec.bundle, zip: moved(rec, "bundle", rec.bundle.zip) },
+  });
+
+  /** 지금 내용 해시로 만든 산출물만 쓴다(경로는 지금 작업 폴더 기준) — 상태·미리보기·내려받기·묶음이 모두 이 한 곳을 거친다 */
+  const current = (rec: PipelineRecord | null, hash: string) => (rec && rec.contentHash === hash ? rebase(rec) : null);
 
   function plan(p: Piece, rec: PipelineRecord | null, reelBlocked: string | null): PipelineView {
     const hash = contentHash(p);
@@ -150,7 +168,7 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
       const p = await load(id);
       const prev = await store.getPipeline(id);
       ensure(plan(p, prev, await reelGate()), "reel");
-      const reel = await reels!.compose(prev!.render!, outDir(p, "reel"));
+      const reel = await reels!.compose(current(prev, contentHash(p))!.render!, outDir(p, "reel"));
       await store.savePipeline(record(p, prev, { reel, bundle: null }));
       return plan(p, await store.getPipeline(id), await reelGate());
     },
@@ -160,7 +178,8 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
       const p = await load(id);
       const prev = await store.getPipeline(id);
       ensure(plan(p, prev, null), "bundle");
-      const bundle = await packager!.bundle(prev!.render!, prev!.reel ?? null, outDir(p, "bundle"));
+      const cur = current(prev, contentHash(p))!;
+      const bundle = await packager!.bundle(cur.render!, cur.reel ?? null, outDir(p, "bundle"));
       await store.savePipeline(record(p, prev, { bundle }));
       return plan(p, await store.getPipeline(id), await reelGate());
     },
@@ -173,10 +192,21 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
       return card ? files.read(card.path) : null;
     },
 
-    /** [W4] 목록 썸네일 — 편마다 지금 내용으로 렌더한 카드 수·릴스 유무. 산출물이 없거나 낡았으면 비어 있다 */
+    /**
+     * [W4] 목록 썸네일 — 편마다 지금 내용으로 렌더한 카드 수·릴스 유무. 산출물이 없거나 낡았으면 비어 있다.
+     * 카드는 readRenderedCard 와 같은 판정(같은 기록·같은 경로·같은 읽기 포트)으로 읽을 수 있을 때만 센다 —
+     * 기록만 믿고 N장이라 해 놓고 이미지는 전부 404 가 되는 일이 없게. 하나라도 못 읽으면 카드는 0(번호가 밀려 엇갈리지 않게 전부 아니면 전무).
+     */
     async previews(pieces: readonly Piece[]): Promise<Record<string, PiecePreview>> {
       const out: Record<string, PiecePreview> = {};
-      for (const p of pieces) out[p.id] = previewOf(await store.getPipeline(p.id), contentHash(p));
+      for (const p of pieces) {
+        const hash = contentHash(p);
+        const rec = current(await store.getPipeline(p.id), hash);
+        const pv = previewOf(rec, hash);
+        const cards = rec?.render?.cards ?? [];
+        const readable = pv.cards === 0 || (!!files && (await Promise.all(cards.map((c) => files.has(c.path)))).every(Boolean));
+        out[p.id] = readable ? pv : { cards: 0, alts: [], reel: pv.reel };
+      }
       return out;
     },
 
