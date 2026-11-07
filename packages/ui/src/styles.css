@@ -263,6 +263,35 @@ img { display: block; max-width: 100%; }
 .ui-skel-block { width: 100%; height: calc(var(--sp-8) * 3); }
 @keyframes ui-skel { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
+/* ── 갤러리 카드 · 캐러셀 (콘텐츠 목록) — 칸 폭은 --l-tile, 좁은 폰은 2열. 넘겨 보기는 스크롤 스냅(스와이프는 브라우저), 화살표·점은 덧댄다 ── */
+.ui-mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--l-tile), 1fr)); gap: var(--sp-6) var(--grid-gutter); }
+.ui-mcard { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; content-visibility: auto; contain-intrinsic-size: auto calc(var(--l-tile) * 1.6); }
+.ui-mcard-frame { position: relative; overflow: hidden; border-radius: var(--r-md); border: 1px solid var(--c-line); background: var(--c-sunken); }
+.ui-mcard-frame.is-portrait { aspect-ratio: 4 / 5; }
+.ui-mcard-frame.is-square { aspect-ratio: 1; }
+.ui-mcard-frame.is-story { aspect-ratio: 9 / 16; }
+.ui-mcard-body { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+.ui-mcard-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ui-mcard-title:hover { color: var(--c-accent); }
+.ui-mslide { display: block; width: 100%; height: 100%; color: inherit; }
+.ui-mslide.is-blank { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2); color: var(--c-text-mute); }
+.ui-mslide-img { width: 100%; height: 100%; object-fit: cover; user-select: none; }
+.ui-car { position: absolute; inset: 0; }
+.ui-car-track { display: flex; width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+.ui-car-track::-webkit-scrollbar { display: none; }
+.ui-car-track > .ui-mslide { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+.ui-car-arrow { position: absolute; top: 50%; display: grid; place-items: center; width: var(--button-height); height: var(--button-height); padding: 0; border: 1px solid var(--c-line-strong); border-radius: var(--r-sm); background: color-mix(in srgb, var(--c-bg) 72%, transparent); color: var(--c-text); cursor: pointer; transform: translateY(-50%); opacity: 0; transition: opacity var(--m-fast) var(--m-ease), background var(--m-fast) var(--m-ease); }
+.ui-car-arrow.is-prev { left: var(--sp-2); }
+.ui-car-arrow.is-next { right: var(--sp-2); }
+.ui-car-arrow:hover { background: color-mix(in srgb, var(--c-bg) 90%, transparent); }
+.ui-car:hover .ui-car-arrow, .ui-car:focus-within .ui-car-arrow { opacity: 1; }
+.ui-car-chevron { width: var(--sp-5); height: var(--sp-5); }
+.ui-car-dots { position: absolute; left: 0; right: 0; bottom: var(--sp-2); display: flex; justify-content: center; gap: var(--sp-1); pointer-events: none; }
+.ui-car-dot { pointer-events: auto; width: var(--sp-2); height: var(--sp-2); padding: 0; border: 0; border-radius: var(--r-pill); background: var(--c-text); box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-bg) 60%, transparent); cursor: pointer; opacity: 0.45; transition: opacity var(--m-fast) var(--m-ease), transform var(--m-fast) var(--m-spring); }
+.ui-car-dot[aria-current="true"] { background: var(--c-accent); opacity: 1; transform: scale(1.25); }
+.ui-car-count { position: absolute; right: var(--sp-2); bottom: var(--sp-2); padding: 0 var(--sp-2); border-radius: var(--r-sm); background: color-mix(in srgb, var(--c-bg) 72%, transparent); color: var(--c-text); pointer-events: none; }
+@media (hover: none) { .ui-car-arrow { opacity: 1; } }
+
 /* ── 반응형 (경계 = design-tokens breakpoint) ── */
 @media (max-width: 1184px) {
   .ui-split { grid-template-columns: minmax(0, 1fr); }
@@ -291,6 +320,7 @@ img { display: block; max-width: 100%; }
   .ui-top { padding: 0 var(--sp-4); }
   .ui-page { padding: var(--sp-5) var(--sp-4) var(--sp-7); }
   .ui-paper { padding: var(--sp-4); }
+  .ui-mgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ui-thead { display: none; }
   .ui-tr { grid-template-columns: minmax(0, 1fr); align-items: start; gap: var(--sp-1); }
 }
