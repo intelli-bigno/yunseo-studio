@@ -24,11 +24,18 @@ const stripH = stripInnerH + space[2] * 2 + 2;
 // 동작 단추 열 — 아이콘 24 정사각 + 위쪽 틈, 왼쪽 여백 8 + 구분선 1
 const actionsW = space[5] + space[2] + 1;
 const actionsH = space[5] * 3 + (space[1] / 2) * 2;
-// 오른쪽 패널 — 접기 줄(여백 8×2 + 글자 줄 16 + 선 1) 아래가 본문. 고정 바 = 여백 12×2 + 탭 줄(28+4×2+2) + 틈 8 + 검색 줄 40 + 선 1
+// 오른쪽 패널 — 접기 줄(여백 8×2 + 글자 줄 16 + 선 1) 아래가 본문(고정 바 + 레퍼런스 그리드 + 속성 시트)
 const panelH = (vh: number) => editorH(vh) - (space[2] * 2 + 16 + 1) - 2;
-const barReal = space[3] * 2 + (28 + space[1] * 2 + 2) + space[2] + component.input.height + 1;
-const barVar = space[8] * 1.75;
-const sheetCap = (h: number) => Math.max(component.button.height * 3, Math.min(h * 0.45, h * 0.5 - barVar));
+// 패널 안 flex 열(styles.css 와 같은 규칙): 바 = flex none, 그리드 = flex 1 0 50%, 시트 = flex 0 1 auto(최소 머리 줄 · 최대 45%).
+// 바 높이·시트 내용 높이를 어떤 값으로 줘도 그리드가 패널의 절반 아래로 줄지 않는지 본다(상수 가정 없음)
+const flexColumn = (h: number, bar: number, sheetContent: number) => {
+  const sheetBase = Math.min(Math.max(sheetContent, component.button.height), h * 0.45);
+  const sheetMin = component.button.height;
+  const gridBase = h * 0.5;
+  const free = h - bar - gridBase - sheetBase;
+  if (free >= 0) return { grid: gridBase + free, sheet: sheetBase }; // 남으면 그리드가 키운다(flex-grow 1)
+  return { grid: gridBase, sheet: Math.max(sheetMin, sheetBase + free) }; // 모자라면 시트만 줄어든다(그리드·바는 shrink 0)
+};
 
 describe("카드 편집기 화면 예산 (화면 높이 고정 모드)", () => {
   it("CSS 가정: 페이지 여백 12/16, 편집기 칸 사이 12, 왼쪽 패널 폭 3×64, 오른쪽 기본 40%", () => {
@@ -73,15 +80,47 @@ describe("카드 편집기 화면 예산 (화면 높이 고정 모드)", () => {
     expect(visible).toBeGreaterThanOrEqual(min);
   });
 
-  it.each([[1440, 900], [1280, 800]] as const)("%i×%i: 속성 시트를 열어도 레퍼런스 그리드(고정 바 아래)가 패널 높이의 50%% 이상 보인다", (vw, vh) => {
+  it("CSS 가정: 바는 스크롤 밖 flex 항목 · 그리드 본문은 flex 1 0 50% · 시트만 줄어든다(상수 없음)", () => {
+    expect(css).not.toContain("--ed-bar");
+    expect(css).toMatch(/\.ui-editor-side-main > \.ui-panel-bar \{[^}]*flex:\s*none/);
+    expect(css).toMatch(/\.ui-editor-side-body\.is-grid \{[^}]*flex:\s*1 0 50%/);
+    expect(css).toMatch(/\.ui-sheet \{[^}]*flex:\s*0 1 auto;[^}]*min-height:\s*var\(--button-height\);[^}]*max-height:\s*45%/);
+  });
+
+  it.each([[1440, 900], [1280, 800]] as const)("%i×%i: 바가 몇 줄이든 시트를 열어도 레퍼런스 그리드가 패널 높이의 50%% 이상이다", (vw, vh) => {
     expect(vw).toBeGreaterThan(1184); // 화면 높이 고정 모드 폭
-    expect(barReal).toBeLessThanOrEqual(barVar); // CSS 의 바 높이 상수가 실제 바보다 작지 않다
     const h = panelH(vh);
-    const sheet = sheetCap(h);
-    expect(sheet).toBeLessThanOrEqual(h * 0.45); // 시트는 패널 높이의 최대 45%
-    const grid = h - barReal - sheet;
-    expect(grid).toBeGreaterThanOrEqual(h * 0.5);
-    expect(sheet - component.button.height).toBeGreaterThan(0); // 머리 줄 아래 본문(내부 스크롤)이 남는다
+    for (const bar of [63, 113, 160, 220]) {
+      for (const content of [0, 200, 640, 2000]) {
+        const { grid, sheet } = flexColumn(h, bar, content);
+        expect(grid).toBeGreaterThanOrEqual(h * 0.5);
+        expect(sheet).toBeLessThanOrEqual(h * 0.45);
+        expect(sheet).toBeGreaterThanOrEqual(component.button.height);
+      }
+    }
+  });
+
+  it.each([[1440, "4:5"], [1440, "1:1"], [1280, "4:5"], [1280, "1:1"]] as const)("%i 폭에서 %s 장 7개가 모두 보인다(썸네일이 폭에 맞춰 줄어든다)", (vw, id) => {
+    const n = 7;
+    const { width, height } = CARD_PRESETS[id];
+    const room = centerW(vw) - (space[3] * 2 + 2) - actionsW - space[2];
+    const fit = (room - n * space[2]) / n; // CSS --ed-fit: (100cqw − n×틈) / n
+    const thumbW = Math.min(thumbH * (width / height), Math.max(space[6], fit));
+    const total = n * Math.max(thumbW, space[6]) + (n - 1) * space[2];
+    expect(total).toBeLessThanOrEqual(room);
+  });
+
+  it("CSS 가정: 장 목록은 컨테이너(inline-size)이고 썸네일 폭은 min(기본, max(32, --ed-fit)) · 장 수는 --deck-n", () => {
+    expect(fit).toMatch(/\.ui-page\.is-fit \.ui-deck-strip \{[^}]*--ed-fit:\s*calc\(\(100cqw - var\(--deck-n, 1\) \* var\(--sp-2\)\) \/ var\(--deck-n, 1\)\)/);
+    expect(fit).toMatch(/\.ui-page\.is-fit \.ui-deck-strip \{[^}]*container-type:\s*inline-size/);
+    expect(fit).toMatch(/\.ui-page\.is-fit \.ui-deck-thumb \{[^}]*width:\s*min\(calc\(var\(--ed-thumb\) \* var\(--ar, 0\.8\)\), max\(var\(--sp-6\), var\(--ed-fit\)\)\)/);
+  });
+
+  it("CSS 가정: 검색 줄은 줄바꿈하고 검색창은 최소 폭 160 을 지키며, 묶음·개수는 한 묶음으로 내려간다", () => {
+    expect(css).toMatch(/\.ui-panel-bar \.ui-row \{[^}]*flex-wrap:\s*wrap/);
+    expect(css).toMatch(/\.ui-panel-bar \.ui-row > \.ui-input \{[^}]*min-width:\s*calc\(var\(--sp-8\) \* 2\.5\)/);
+    expect(css).toMatch(/\.ui-panel-bar \.ui-row > \.ui-row \{[^}]*flex-wrap:\s*nowrap/);
+    expect(space[8] * 2.5).toBeGreaterThanOrEqual(160);
   });
 
   it("도구줄은 화면 제목(PageHeader)을 따로 두지 않는다 — 화면 제목은 보조기기용으로만", () => {

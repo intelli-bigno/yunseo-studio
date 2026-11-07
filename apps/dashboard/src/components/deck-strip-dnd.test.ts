@@ -43,6 +43,7 @@ describe("장 목록 — 장 3개", () => {
     const thumbs = deck.cards.map((c, i) => createElement(DeckThumb, { key: c.id, index: i, current: i === 1, label: `${i + 1}번째 장`, onClick: () => undefined, dragKey: KEY, onDropAt: () => undefined, children: null }));
     const html = renderToStaticMarkup(createElement(DeckStrip, { label: "장 목록(끌어서 순서 바꾸기)", actions: createElement("span", null, "장 추가"), children: thumbs }));
     expect(html.match(/role="listitem"/g)).toHaveLength(3);
+    expect(html).toContain("--deck-n:3"); // 장 수 — CSS 가 썸네일 폭을 줄이는 기준(--ed-fit)
     expect(html.match(/draggable="true"/g)).toHaveLength(3);
     for (const n of ["1번째 장", "2번째 장", "3번째 장"]) expect(html).toContain(`aria-label="${n}"`);
     expect(html.match(/aria-current="true"/g)).toHaveLength(1); // 현재 장 하나
