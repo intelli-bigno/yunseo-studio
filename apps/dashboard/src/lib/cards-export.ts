@@ -1,6 +1,6 @@
 // [cards] 카드 한 장 → 캔버스 그리기(PNG 내보내기). 원본 픽셀 크기로 그리고, 줄바꿈은 도메인 wrapText 로 화면과 맞춘다.
 // 캔버스·그림 읽기는 주입받는다 — 테스트는 기록용 가짜 컨텍스트로 순서를 검사한다.
-import { CARD_PRESETS, stickerDataUrl, watermarkAnchors, wrapText, type CardFont, type CardPresetId, type DeckCard, type ImageLayer, type TextLayer, type Watermark } from "@yunseo/domain";
+import { CARD_PRESETS, imageFilter, stickerDataUrl, watermarkAnchors, wrapText, type CardFont, type CardPresetId, type DeckCard, type ImageLayer, type OverlayLayer, type TextLayer, type Watermark } from "@yunseo/domain";
 
 /** 쓰는 캔버스 2D API 만 */
 export interface Ctx2D {
@@ -22,6 +22,15 @@ export interface Ctx2D {
   rotate(rad: number): void;
   /** 최신 브라우저만 — 없으면 자간 없이 그린다 */
   letterSpacing?: string;
+  /** 이미지 보정·흐림(없으면 보정 없이 그린다) */
+  filter?: string;
+  /** 덮개 블렌드 */
+  globalCompositeOperation?: string;
+  createLinearGradient?(x0: number, y0: number, x1: number, y1: number): GradientLike;
+  createRadialGradient?(x0: number, y0: number, r0: number, x1: number, y1: number, r1: number): GradientLike;
+}
+export interface GradientLike {
+  addColorStop(offset: number, color: string): void;
 }
 
 export interface LoadedImage {
@@ -30,18 +39,51 @@ export interface LoadedImage {
   height: number;
 }
 
-/** 이미지를 상자에 맞출 원본 잘라내기(cover)·자리(contain) */
-export function fitImage(iw: number, ih: number, layer: Pick<ImageLayer, "x" | "y" | "w" | "h" | "fit">) {
+/**
+ * 이미지를 상자에 맞출 원본 잘라내기(cover)·자리(contain). 화면 CSS(object-fit·object-position·scale(zoom) 원점 = 같은 자리)와 같은 결과.
+ * cover: 보이는 자리 posX·posY 쪽을 남기고, zoom 만큼 더 잘라낸다. contain: 상자 안 자리 posX·posY, zoom 은 그 자리 기준 확대(상자 밖은 잘린다).
+ */
+export function fitImage(iw: number, ih: number, layer: Pick<ImageLayer, "x" | "y" | "w" | "h" | "fit"> & Partial<Pick<ImageLayer, "posX" | "posY" | "zoom">>) {
+  const px = layer.posX ?? 0.5;
+  const py = layer.posY ?? 0.5;
+  const zoom = Math.max(1, layer.zoom ?? 1);
   const boxR = layer.w / layer.h;
   const imgR = iw / ih;
   if (layer.fit === "cover") {
-    const sw = imgR > boxR ? ih * boxR : iw;
-    const sh = imgR > boxR ? ih : iw / boxR;
-    return { sx: (iw - sw) / 2, sy: (ih - sh) / 2, sw, sh, dx: layer.x, dy: layer.y, dw: layer.w, dh: layer.h };
+    const sw = (imgR > boxR ? ih * boxR : iw) / zoom;
+    const sh = (imgR > boxR ? ih : iw / boxR) / zoom;
+    return { sx: (iw - sw) * px, sy: (ih - sh) * py, sw, sh, dx: layer.x, dy: layer.y, dw: layer.w, dh: layer.h };
   }
-  const dw = imgR > boxR ? layer.w : layer.h * imgR;
-  const dh = imgR > boxR ? layer.w / imgR : layer.h;
-  return { sx: 0, sy: 0, sw: iw, sh: ih, dx: layer.x + (layer.w - dw) / 2, dy: layer.y + (layer.h - dh) / 2, dw, dh };
+  const bw = imgR > boxR ? layer.w : layer.h * imgR;
+  const bh = imgR > boxR ? layer.w / imgR : layer.h;
+  const ox = layer.x + layer.w * px;
+  const oy = layer.y + layer.h * py;
+  const bx = layer.x + (layer.w - bw) * px;
+  const by = layer.y + (layer.h - bh) * py;
+  return { sx: 0, sy: 0, sw: iw, sh: ih, dx: ox + (bx - ox) * zoom, dy: oy + (by - oy) * zoom, dw: bw * zoom, dh: bh * zoom };
+}
+
+/** 덮개 채움 — 단색이면 색 그대로, 그라데이션이면 캔버스 그라데이션(지원 안 하면 단색) */
+function overlayFill(ctx: Ctx2D, l: OverlayLayer): string | GradientLike {
+  if (l.gradient === "none") return l.color;
+  const solid = rgba(l.color, 1);
+  const clear = rgba(l.color, 0);
+  if (l.gradient === "radial") {
+    if (!ctx.createRadialGradient) return l.color;
+    const cx = l.x + l.w / 2;
+    const cy = l.y + l.h / 2;
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(l.w, l.h) / 2);
+    g.addColorStop(l.gradFrom, clear);
+    g.addColorStop(l.gradTo, solid);
+    return g;
+  }
+  if (!ctx.createLinearGradient) return l.color;
+  const [x0, y0, x1, y1] =
+    l.gradient === "to-top" ? [0, l.h, 0, 0] : l.gradient === "to-bottom" ? [0, 0, 0, l.h] : l.gradient === "to-left" ? [l.w, 0, 0, 0] : [0, 0, l.w, 0];
+  const g = ctx.createLinearGradient(l.x + x0, l.y + y0, l.x + x1, l.y + y1);
+  g.addColorStop(l.gradFrom, solid);
+  g.addColorStop(l.gradTo, clear);
+  return g;
 }
 
 type Deps = { load: (src: string) => Promise<LoadedImage | null>; family: (f: CardFont) => string };
@@ -81,12 +123,15 @@ export async function drawCard(ctx: Ctx2D, card: DeckCard, preset: CardPresetId,
     ctx.clip();
     if (layer.kind === "overlay") {
       ctx.globalAlpha = layer.opacity;
-      ctx.fillStyle = layer.color;
+      if (layer.blend !== "normal" && "globalCompositeOperation" in ctx) ctx.globalCompositeOperation = layer.blend;
+      ctx.fillStyle = overlayFill(ctx, layer) as string;
       ctx.fillRect(layer.x, layer.y, layer.w, layer.h);
     } else if (layer.kind === "image") {
       const img = await deps.load(layer.src);
       if (img && img.width > 0 && img.height > 0) {
         const f = fitImage(img.width, img.height, layer);
+        const filter = imageFilter(layer);
+        if (filter && "filter" in ctx) ctx.filter = filter;
         ctx.drawImage(img.img, f.sx, f.sy, f.sw, f.sh, f.dx, f.dy, f.dw, f.dh);
       }
     } else if (layer.kind === "sticker") {

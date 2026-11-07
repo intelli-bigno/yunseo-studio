@@ -1,6 +1,7 @@
 // [cards] 스티커 → SVG 문자열. 편집 화면(<img src=data:…>)과 PNG 내보내기(캔버스 drawImage)가 같은 그림을 쓴다.
 // 상자 크기(w×h, 원본 픽셀)를 viewBox 로 쓰므로 늘려도 선이 뭉개지지 않는다. 외부 자원·foreignObject 를 쓰지 않아 캔버스가 오염되지 않는다.
 import type { StickerLayer } from "./deck";
+import { isStickerId, librarySvg } from "./sticker-library";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
@@ -52,4 +53,13 @@ export function stickerSvg(l: Pick<StickerLayer, "shape" | "fill" | "label" | "l
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`;
 }
 
-export const stickerDataUrl = (l: Parameters<typeof stickerSvg>[0]): string => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(stickerSvg(l))}`;
+type LegacyInput = Parameters<typeof stickerSvg>[0];
+type LayerInput = LegacyInput & Partial<Pick<StickerLayer, "sticker" | "stroke" | "strokeWidth" | "radius" | "shadow">>;
+
+/** 레이어 → SVG — 라이브러리 스티커(sticker id)면 새 그리기, 아니면 예전 도형 */
+export function stickerLayerSvg(l: LayerInput): string {
+  if (l.sticker && isStickerId(l.sticker)) return librarySvg(l.sticker, { fill: l.fill, label: l.label, labelColor: l.labelColor, stroke: l.stroke ?? "#111111", strokeWidth: l.strokeWidth ?? 0, radius: l.radius ?? 0, shadow: l.shadow ?? 0, w: l.w, h: l.h });
+  return stickerSvg(l);
+}
+
+export const stickerDataUrl = (l: LayerInput): string => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(stickerLayerSvg(l))}`;

@@ -194,15 +194,28 @@ export function reelsTimelineTools() {
 // [cards] 카드뉴스 편집기 덱 저장 ─────────────────────────────────────────
 // 같은 STUDIO_DB 파일의 레인 전용 테이블(cards_decks)을 쓴다 — 연결은 따로(WAL 이라 같은 파일을 함께 열어도 된다). 없으면 메모리.
 import { createSqliteCardDeckStore } from "@yunseo/adapters-storage";
-import { createCardDeckUseCases, type CardDeckUseCases } from "@yunseo/application";
+import { createCardDeckUseCases, createCardOpsUseCases, type CardDeckStore, type CardDeckUseCases, type CardOpsUseCases } from "@yunseo/application";
 
-const cardsSlot = globalThis as typeof globalThis & { __yunseoCardDecks?: CardDeckUseCases };
+const cardsSlot = globalThis as typeof globalThis & { __yunseoCardDecks?: CardDeckUseCases; __yunseoCardOps?: CardOpsUseCases; __yunseoCardStore?: CardDeckStore };
+
+function cardStore(): CardDeckStore {
+  const path = process.env.STUDIO_DB;
+  return (cardsSlot.__yunseoCardStore ??= createSqliteCardDeckStore(path ? { path } : {}));
+}
 
 export function cardDecks(): CardDeckUseCases {
-  const path = process.env.STUDIO_DB;
   return (cardsSlot.__yunseoCardDecks ??= createCardDeckUseCases({
-    store: createSqliteCardDeckStore(path ? { path } : {}),
+    store: cardStore(),
     now: () => new Date().toISOString(),
     newId: () => randomBytes(8).toString("hex"),
+  }));
+}
+
+/** 덱 편집 명령(docs/13) — 덱 저장소를 같이 쓴다 */
+export function cardOps(): CardOpsUseCases {
+  return (cardsSlot.__yunseoCardOps ??= createCardOpsUseCases({
+    store: cardStore(),
+    now: () => new Date().toISOString(),
+    newId: () => `l${randomBytes(6).toString("hex")}`,
   }));
 }

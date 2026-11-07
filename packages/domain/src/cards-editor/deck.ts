@@ -1,6 +1,7 @@
 // [cards] 카드뉴스 편집기 — 덱(여러 장)·카드·레이어 모델과 순수 연산.
 // 좌표·크기는 전부 카드 원본 픽셀(프리셋 폭·높이 기준)이다. 화면은 비율로 줄여 그리고, PNG 내보내기는 원본 크기로 그린다.
 // 레이어 배열은 아래 → 위 순서(0 이 맨 아래). 연산은 입력을 바꾸지 않고 새 값을 돌려준다.
+import { STICKER_DEFS, isStickerId, stickerDef } from "./sticker-library";
 
 /** 카드 규격 — 기존 카드 판형(1080×1350, 4:5)이 기본. 릴스 표지·정사각은 같은 폭 1080 */
 export const CARD_PRESETS = {
@@ -22,6 +23,10 @@ export const CARD_VALIGNS = ["top", "middle", "bottom"] as const;
 export type CardVAlign = (typeof CARD_VALIGNS)[number];
 export const STICKER_SHAPES = ["rect", "circle", "arrow", "bubble", "badge", "star", "emoji"] as const;
 export type StickerShape = (typeof STICKER_SHAPES)[number];
+export const OVERLAY_GRADIENTS = ["none", "to-top", "to-bottom", "to-left", "to-right", "radial"] as const;
+export type OverlayGradient = (typeof OVERLAY_GRADIENTS)[number];
+export const BLEND_MODES = ["normal", "multiply", "screen", "overlay", "soft-light", "darken", "lighten", "color"] as const;
+export type BlendMode = (typeof BLEND_MODES)[number];
 export const WATERMARK_POSITIONS = ["tl", "tc", "tr", "ml", "mc", "mr", "bl", "bc", "br"] as const;
 export type WatermarkPosition = (typeof WATERMARK_POSITIONS)[number];
 
@@ -43,6 +48,17 @@ export interface ImageLayer extends LayerBase {
   /** 같은 출처 주소(/api/…)만 — 내보내기 캔버스가 오염(taint)되지 않게 */
   src: string;
   fit: "cover" | "contain";
+  /** 보이는 자리(초점) 0~1 — cover 에서 잘릴 때 어느 쪽을 남길지 */
+  posX: number;
+  posY: number;
+  /** 확대 1~4(상자 안에서 키운다) */
+  zoom: number;
+  /** 밝기·대비·채도 0~2(1 = 원본) */
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  /** 흐림(원본 픽셀) 0~50 */
+  blur: number;
 }
 export interface TextLayer extends LayerBase {
   kind: "text";
@@ -67,17 +83,31 @@ export interface TextLayer extends LayerBase {
   boxColor: string;
   boxOpacity: number;
 }
-/** 검정 반투명 덮개 */
+/** 덮개 — 단색 또는 그라데이션(색 → 투명). 범위 from~to(0~1)는 그라데이션 방향 축의 구간 */
 export interface OverlayLayer extends LayerBase {
   kind: "overlay";
   color: string;
   opacity: number;
+  /** none = 단색, to-top = 아래가 진하고 위로 갈수록 투명 */
+  gradient: OverlayGradient;
+  gradFrom: number;
+  gradTo: number;
+  blend: BlendMode;
 }
 /** 스티커 — 도형·화살표·말풍선·배지·별·이모지. 글자(label)는 배지·말풍선 안 글, 이모지는 그 글자 자체 */
 export interface StickerLayer extends LayerBase {
   kind: "sticker";
+  /** 라이브러리 스티커 id(sticker-library) — 빈 문자열이면 예전 도형(shape)으로 그린다 */
+  sticker: string;
   shape: StickerShape;
+  /** 채움 색(#rrggbb) 또는 "none" */
   fill: string;
+  stroke: string;
+  strokeWidth: number;
+  /** 모서리 0~1 */
+  radius: number;
+  /** 그림자 0~1 */
+  shadow: number;
   label: string;
   labelColor: string;
   opacity: number;
@@ -136,34 +166,18 @@ export function textLayer(id: string, preset: CardPresetId, patch: Partial<TextL
 
 export function overlayLayer(id: string, preset: CardPresetId, opacity = 0.4): OverlayLayer {
   const { width, height } = CARD_PRESETS[preset];
-  return { id, kind: "overlay", name: "덮개", hidden: false, locked: false, rotation: 0, x: 0, y: 0, w: width, h: height, color: "#000000", opacity: clamp(opacity, 0, 1) };
+  return { id, kind: "overlay", name: "덮개", hidden: false, locked: false, rotation: 0, x: 0, y: 0, w: width, h: height, color: "#000000", opacity: clamp(opacity, 0, 1), gradient: "none", gradFrom: 0, gradTo: 1, blend: "normal" };
 }
 
-/** 스티커 라이브러리 — 이름·기본 모양 */
-export const STICKER_LIBRARY: readonly { id: string; label: string; shape: StickerShape; fill: string; text: string; labelColor: string; aspect: number }[] = [
-  { id: "rect", label: "사각형", shape: "rect", fill: "#f5c518", text: "", labelColor: "#111111", aspect: 1.6 },
-  { id: "circle", label: "원", shape: "circle", fill: "#e5484d", text: "", labelColor: "#ffffff", aspect: 1 },
-  { id: "arrow", label: "화살표", shape: "arrow", fill: "#ffffff", text: "", labelColor: "#111111", aspect: 2.5 },
-  { id: "bubble", label: "말풍선", shape: "bubble", fill: "#ffffff", text: "한마디!", labelColor: "#111111", aspect: 1.4 },
-  { id: "badge", label: "배지", shape: "badge", fill: "#e5484d", text: "NEW", labelColor: "#ffffff", aspect: 2.4 },
-  { id: "star", label: "별", shape: "star", fill: "#f5c518", text: "", labelColor: "#111111", aspect: 1 },
-  { id: "emoji-fire", label: "🔥", shape: "emoji", fill: "#000000", text: "🔥", labelColor: "#111111", aspect: 1 },
-  { id: "emoji-chart", label: "📈", shape: "emoji", fill: "#000000", text: "📈", labelColor: "#111111", aspect: 1 },
-  { id: "emoji-money", label: "💰", shape: "emoji", fill: "#000000", text: "💰", labelColor: "#111111", aspect: 1 },
-  { id: "emoji-point", label: "👉", shape: "emoji", fill: "#000000", text: "👉", labelColor: "#111111", aspect: 1 },
-  { id: "emoji-warn", label: "⚠️", shape: "emoji", fill: "#000000", text: "⚠️", labelColor: "#111111", aspect: 1 },
-  { id: "emoji-check", label: "✅", shape: "emoji", fill: "#000000", text: "✅", labelColor: "#111111", aspect: 1 },
-];
-
-/** 스티커 레이어 — (cx, cy) 가운데, 카드 폭 ¼ 크기 */
+/** 스티커 레이어 — 라이브러리(sticker-library) id 로 만든다. (cx, cy) 가운데, 카드 폭 ¼(가로로 긴 것은 더 넓게) */
 export function stickerLayer(id: string, preset: CardPresetId, libId: string, at: { cx?: number; cy?: number } = {}): StickerLayer {
   const { width, height } = CARD_PRESETS[preset];
-  const s = STICKER_LIBRARY.find((x) => x.id === libId) ?? STICKER_LIBRARY[0]!;
-  const w = round(width / 4);
+  const s = stickerDef(libId) ?? STICKER_DEFS[0]!;
+  const w = round(width * (s.aspect >= 3 ? 0.42 : s.aspect >= 1.6 ? 0.34 : 0.24));
   const h = round(w / s.aspect);
   const cx = at.cx ?? width / 2;
   const cy = at.cy ?? height / 2;
-  return { id, kind: "sticker", name: s.label, hidden: false, locked: false, rotation: 0, x: round(cx - w / 2), y: round(cy - h / 2), w, h, shape: s.shape, fill: s.fill, label: s.text, labelColor: s.labelColor, opacity: 1 };
+  return { id, kind: "sticker", name: s.name.slice(0, DECK_LIMITS.name), hidden: false, locked: false, rotation: 0, x: round(cx - w / 2), y: round(cy - h / 2), w, h, sticker: s.id, shape: "rect", ...s.look, opacity: 1 };
 }
 
 export const defaultWatermark = (): Watermark => ({ kind: "text", text: "@yunseo", src: "", position: "br", opacity: 0.5, size: 36, color: "#ffffff", tile: false, gap: 320, angle: -30 });
@@ -199,7 +213,19 @@ export function imageLayer(id: string, preset: CardPresetId, src: string, opts: 
   }
   const cx = opts.cx ?? width / 2;
   const cy = opts.cy ?? height / 2;
-  return { id, kind: "image", name: (opts.name ?? "이미지").slice(0, DECK_LIMITS.name), hidden: false, locked: false, rotation: 0, x: round(cx - w / 2), y: round(cy - h / 2), w: round(w), h: round(h), src, fit: "cover" };
+  return { id, kind: "image", name: (opts.name ?? "이미지").slice(0, DECK_LIMITS.name), hidden: false, locked: false, rotation: 0, x: round(cx - w / 2), y: round(cy - h / 2), w: round(w), h: round(h), src, fit: "cover", ...IMAGE_DEFAULTS };
+}
+
+export const IMAGE_DEFAULTS = { posX: 0.5, posY: 0.5, zoom: 1, brightness: 1, contrast: 1, saturation: 1, blur: 0 } as const;
+
+/** 이미지 보정 → CSS·캔버스 filter 문자열(기본값이면 ""). unit 은 흐림 길이 단위 변환(화면은 cqw, 캔버스는 px) */
+export function imageFilter(l: Pick<ImageLayer, "brightness" | "contrast" | "saturation" | "blur">, unit: (px: number) => string = (px) => `${px}px`): string {
+  const out: string[] = [];
+  if (l.brightness !== 1) out.push(`brightness(${l.brightness})`);
+  if (l.contrast !== 1) out.push(`contrast(${l.contrast})`);
+  if (l.saturation !== 1) out.push(`saturate(${l.saturation})`);
+  if (l.blur > 0) out.push(`blur(${unit(l.blur)})`);
+  return out.join(" ");
 }
 
 // ── 카드(장) 연산 ───────────────────────────────────────
@@ -235,6 +261,15 @@ export function moveCard(deck: CardDeck, index: number, delta: number): CardDeck
   if (!at(deck.cards, index) || !at(deck.cards, to)) return deck;
   const cards = [...deck.cards];
   const [c] = cards.splice(index, 1);
+  cards.splice(to, 0, c!);
+  return { ...deck, cards };
+}
+
+/** 장을 from 자리에서 to 자리로(끌어서 순서 바꾸기) */
+export function moveCardTo(deck: CardDeck, from: number, to: number): CardDeck {
+  if (!at(deck.cards, from) || !at(deck.cards, to) || from === to) return deck;
+  const cards = [...deck.cards];
+  const [c] = cards.splice(from, 1);
   cards.splice(to, 0, c!);
   return { ...deck, cards };
 }
@@ -383,7 +418,13 @@ function parseLayer(v: unknown, where: string, errors: string[]): CardLayer | nu
     case "image":
       if (!str(v.src, 500) || !SRC.test(v.src) || v.src.includes("..")) return bad("src(같은 출처 /api/ 주소만)");
       if (v.fit !== "cover" && v.fit !== "contain") return bad("fit");
-      return { ...base, kind: "image", src: v.src, fit: v.fit };
+      {
+        const r = (k: string, lo: number, hi: number, d: number) => opt(k, (x) => num(x) && x >= lo && x <= hi, d);
+        const posX = r("posX", 0, 1, 0.5), posY = r("posY", 0, 1, 0.5), zoom = r("zoom", 1, 4, 1);
+        const brightness = r("brightness", 0, 2, 1), contrast = r("contrast", 0, 2, 1), saturation = r("saturation", 0, 2, 1), blur = r("blur", 0, 50, 0);
+        if ([posX, posY, zoom, brightness, contrast, saturation, blur].some((x) => x === null)) return null;
+        return { ...base, kind: "image", src: v.src, fit: v.fit, posX: posX!, posY: posY!, zoom: zoom!, brightness: brightness!, contrast: contrast!, saturation: saturation!, blur: blur! };
+      }
     case "text":
       if (!str(v.text, DECK_LIMITS.text)) return bad("text");
       if (!CARD_FONTS.includes(v.font as CardFont)) return bad("font");
@@ -405,15 +446,27 @@ function parseLayer(v: unknown, where: string, errors: string[]): CardLayer | nu
     case "overlay": {
       if (!unit(v.opacity)) return bad("opacity");
       const color = opt("color", hex, "#000000");
-      if (color === null) return null;
-      return { ...base, kind: "overlay", color: color.toLowerCase(), opacity: v.opacity as number };
+      const gradient = opt<OverlayGradient>("gradient", (x) => OVERLAY_GRADIENTS.includes(x as OverlayGradient), "none");
+      const gradFrom = opt("gradFrom", unit, 0);
+      const gradTo = opt("gradTo", unit, 1);
+      const blend = opt<BlendMode>("blend", (x) => BLEND_MODES.includes(x as BlendMode), "normal");
+      if (color === null || gradient === null || gradFrom === null || gradTo === null || blend === null) return null;
+      if (gradFrom >= gradTo) return bad("gradFrom < gradTo");
+      return { ...base, kind: "overlay", color: color.toLowerCase(), opacity: v.opacity as number, gradient, gradFrom, gradTo, blend };
     }
-    case "sticker":
+    case "sticker": {
       if (!STICKER_SHAPES.includes(v.shape as StickerShape)) return bad("shape");
-      if (!hex(v.fill) || !hex(v.labelColor)) return bad("fill");
-      if (!str(v.label, 40)) return bad("label");
+      if (!(hex(v.fill) || v.fill === "none") || !hex(v.labelColor)) return bad("fill");
+      if (!str(v.label, 80)) return bad("label");
       if (!unit(v.opacity)) return bad("opacity");
-      return { ...base, kind: "sticker", shape: v.shape as StickerShape, fill: (v.fill as string).toLowerCase(), label: v.label, labelColor: (v.labelColor as string).toLowerCase(), opacity: v.opacity as number };
+      const sticker = opt("sticker", (x) => x === "" || isStickerId(x), "");
+      const stroke = opt("stroke", hex, "#111111");
+      const strokeWidth = opt("strokeWidth", (x) => num(x) && x >= 0 && x <= 60, 0);
+      const radius = opt("radius", unit, 0);
+      const shadow = opt("shadow", unit, 0);
+      if (sticker === null || stroke === null || strokeWidth === null || radius === null || shadow === null) return null;
+      return { ...base, kind: "sticker", sticker, shape: v.shape as StickerShape, fill: (v.fill as string).toLowerCase(), stroke: stroke.toLowerCase(), strokeWidth, radius, shadow, label: v.label, labelColor: (v.labelColor as string).toLowerCase(), opacity: v.opacity as number };
+    }
     default:
       return bad("kind");
   }
