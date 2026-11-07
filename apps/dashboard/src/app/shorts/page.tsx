@@ -30,7 +30,7 @@ export default async function ShortsPage({ searchParams }: { searchParams: Promi
                 <PlatformIcon platform="instagram" label />
                 <PlatformIcon platform="youtube" label />
               </Stack>
-              <Stack direction="row" gap={3}>
+              <Stack direction="row" gap={3} wrap>
                 <Button as="a" href={`${asset(group.pieceId, version.renderId, "video")}?dl=1`} download variant="primary">
                   내려받기
                 </Button>

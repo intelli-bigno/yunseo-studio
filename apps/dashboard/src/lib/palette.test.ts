@@ -9,8 +9,8 @@ describe("빠른 이동 항목", () => {
         { id: "R-2", title: "나", kind: "research", hasClaims: false },
       ],
     });
-    expect(entries.map((e) => e.href)).toEqual(["/", "/schedule", "/content", "/publish", "/content/P-1", "/content/R-2", "/content/P-1?tab=sources"]);
-    expect(entries[4]).toMatchObject({ tag: "이전", hint: "P-1" });
-    expect(entries[6]).toMatchObject({ label: "출처 — 가", tag: "G2" });
+    expect(entries.map((e) => e.href)).toEqual(["/content", "/cards", "/reels", "/shorts", "/references", "/content/P-1", "/content/R-2", "/content/P-1?tab=sources"]);
+    expect(entries[5]).toMatchObject({ tag: "이전", hint: "P-1" });
+    expect(entries[7]).toMatchObject({ label: "출처 — 가", tag: "G2" });
   });
 });

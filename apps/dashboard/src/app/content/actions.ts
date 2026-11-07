@@ -16,13 +16,10 @@ function fail(error: unknown): { ok: false; error: string; issues: string[]; con
   return { ok: false, error: error instanceof Error ? error.message : "알 수 없는 오류", issues: [], conflict: false };
 }
 
-/** 편 하나가 바뀌면 그 편과 목록·오늘·발행 화면을 바로 다시 그린다(ISR 60초를 기다리지 않는다) */
+/** 편 하나가 바뀌면 그 편과 목록을 바로 다시 그린다 */
 function touched(id: string) {
   revalidatePath(`/content/${id}`);
   revalidatePath("/content");
-  revalidatePath("/");
-  revalidatePath("/publish");
-  revalidatePath("/schedule");
 }
 
 const who = (actor: string | undefined) => actor?.trim() || operatorName();

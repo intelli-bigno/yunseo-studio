@@ -1,4 +1,4 @@
-// 대시보드 디자인 시스템 「Club Green」 토큰 — 근거는 docs/design/directions-v2/ (안 B, 2026-11-04 사용자 결정).
+// 대시보드 디자인 시스템 「Club Green」 토큰 — 2026-11-04 사용자 결정(안 B). 시안·레퍼런스 파일은 2026-11-07 에 지웠다 — 토큰이 기준이다.
 // 딥그린 바탕 · 아이보리 글자 · 민트 1색 강조 · 버건디는 막힘에만.
 // 규격 원칙: 간격은 4/8 배수 한 줄 스케일, 글자는 6단계, 화면은 이 값(과 @yunseo/ui 컴포넌트)만 쓴다.
 
@@ -84,14 +84,13 @@ export const layout = {
   topbar: 64,
   rail: 360,
   row: 48,
-  contentMax: 1440,
   tile: 216, // 레퍼런스 그리드 한 칸
   story: 360, // 9:16 플레이어 폭
   appIcon: 40,
 } as const;
 
 /** 반응형 경계(px) — CSS @media 는 변수를 못 써서 ui 스타일과 테스트가 같은 값을 쓴다 */
-export const breakpoint = { rail: 1184, sidebar: 960 } as const;
+export const breakpoint = { rail: 1184, sidebar: 960, phone: 640 } as const;
 
 /** 그림자 — 떠 있는 것(미리보기 카드·대화상자)에만 */
 export const shadow = {

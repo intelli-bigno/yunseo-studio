@@ -47,7 +47,7 @@ export default async function PiecePage({ params, searchParams }: { params: Prom
     <Page>
       <PageHeader
         meta={
-          <Stack direction="row" gap={2} align="center">
+          <Stack direction="row" gap={2} align="center" wrap>
             <TextLink as={Link} href="/content">콘텐츠</TextLink>
             <KindMark kind={p.kind} />
             <Text size="label" tone="mute" mono>{fmtSlot(p.slot)}</Text>

@@ -1,4 +1,4 @@
-// 빠른 이동(⌘K) 항목 — 화면 4개 + 편마다 한 줄(+ 출처 문장이 있으면 출처 바로가기).
+// 빠른 이동(⌘K) 항목 — 화면 5개 + 편마다 한 줄(+ 출처 문장이 있으면 출처 바로가기).
 import type { PaletteIndex } from "@yunseo/application";
 import { KIND_LABEL } from "./labels";
 
@@ -10,10 +10,11 @@ export interface PaletteEntry {
 }
 
 const SCREENS: PaletteEntry[] = [
-  { href: "/", label: "오늘", tag: "화면", hint: "g t" },
-  { href: "/schedule", label: "편성", tag: "화면", hint: "g s" },
   { href: "/content", label: "콘텐츠", tag: "화면", hint: "g c" },
-  { href: "/publish", label: "발행", tag: "화면", hint: "g p" },
+  { href: "/cards", label: "카드뉴스 제작", tag: "화면", hint: "g n" },
+  { href: "/reels", label: "릴스 제작", tag: "화면", hint: "g r" },
+  { href: "/shorts", label: "쇼츠", tag: "화면", hint: "g s" },
+  { href: "/references", label: "레퍼런스", tag: "화면", hint: "g f" },
 ];
 
 export function buildPalette(index: PaletteIndex): PaletteEntry[] {

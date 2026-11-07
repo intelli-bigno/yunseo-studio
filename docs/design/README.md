@@ -13,15 +13,10 @@
 시각 시안은 둘 다 같은 구성이다: 기본 요소 → 세 종류가 같은 틀인 표지 → 본문·차트·출처 카드 → 스토리·릴스 표지·프로필 격자 → 구분 표시 규칙.
 카드는 실제 1080×1350 의 1/3(360×450), 세로 영상은 1080×1920 의 1/4(270×480)로 그렸다.
 
-## 대시보드 방향 — Pinterest 레퍼런스와 3안 (2026-11-04)
+## 대시보드 방향 (2026-11-07 정리)
 
-위 시안 A·B 는 **카드·표지**용이고, 운영 **대시보드 화면**의 방향은 별도로 제안했다 — Pinterest 레퍼런스 48개 무드보드, 분석, 같은 화면(편성 캘린더)을 3방향으로 그린 시안(안 1 Broadsheet = A 의 앱 확장 · 안 2 Terminal = 다크 · 안 3 Swiss = B 의 확장). **내부 참고 전용**. 입구: [references/index.html](references/index.html) · 분석: [references/analysis.md](references/analysis.md).
-
-**최종 1안 확정(2026-11-04): [final-direction.md](final-direction.md) — 「Private Ledger」** (안 2 다크 + 안 1 세리프·선 + 안 3 번호 블록, 추가 레퍼런스 30개 [references/pins-dandy.json](references/pins-dandy.json)). 토큰은 `packages/design-tokens`, 구현은 `apps/dashboard`.
-
-## 대시보드 방향 v2 — 새 3안 (2026-11-04)
-
-위 3안이 반려되어 새 레퍼런스 28개로 다시 그린 3안(A Atelier Noir · B Club Green · C Graphite Cockpit), 홈·카드뉴스 편집 두 화면씩. **내부 참고 전용**, 추천 B, 선택 대기. 입구: [directions-v2/index.html](directions-v2/index.html) · 설명: [directions-v2/README.md](directions-v2/README.md).
+대시보드 시안·UI 레퍼런스(Pinterest 48+30개 무드보드, Broadsheet·Terminal·Swiss·Private Ledger 3안, Atelier Noir·Club Green·Graphite Cockpit v2 3안)는 데이터·파일째 지웠다. 이력은 git(2026-11-07 이전 커밋)에 있다.
+채택한 Club Green 톤은 `packages/design-tokens`(토큰)와 `packages/ui`(컴포넌트)가 기준이다. 남은 레퍼런스는 카드뉴스 수집분([card-reference/](card-reference/README.md))뿐이다.
 
 ## 두 안 비교
 

@@ -11,12 +11,7 @@
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
-    "@yunseo/adapters-events-calendar": "workspace:*",
-    "@yunseo/adapters-metrics": "workspace:*",
-    "@yunseo/adapters-ops": "workspace:*",
-    "@yunseo/adapters-publisher-instagram": "workspace:*",
     "@yunseo/adapters-publisher-manual": "workspace:*",
-    "@yunseo/adapters-publisher-youtube": "workspace:*",
     "@yunseo/adapters-render-html": "workspace:*",
     "@yunseo/adapters-storage": "workspace:*",
     "@yunseo/adapters-video": "workspace:*",

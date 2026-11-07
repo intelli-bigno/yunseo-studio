@@ -1,12 +1,12 @@
-// 레퍼런스 — docs/design 에 모은 IG·Pinterest·Dribbble 수집분. 내부 참고 전용(그림은 받지 않고 원 주소로 보인다).
-// 필터: ?source·?set·?tag, 비교: ?pick=id,id(최대 3) — 칸을 누르면 비교에 넣고 뺀다.
+// 레퍼런스 — 카드뉴스 수집분만(docs/design/card-reference). 내부 참고 전용(그림은 저장소 캡처 또는 원 주소).
+// 필터: ?source·?set·?tag(값이 둘 이상일 때만 보인다), 비교: ?pick=id,id(최대 3) — 칸을 누르면 비교에 넣고 뺀다.
 import Link from "next/link";
 import { Card, CardHeader, EmptyState, Grid, Cell, Page, PageHeader, SegmentedItem, Segmented, Stack, Text, TextLink, Tile, TileGrid } from "@yunseo/ui";
 import { listReferences, type RefItem } from "@/server/library";
 
 export const dynamic = "force-dynamic";
 
-const SOURCE_LABEL: Record<RefItem["source"], string> = { pinterest: "Pinterest", dribbble: "Dribbble", instagram: "Instagram" };
+const SOURCE_LABEL: Record<RefItem["source"], string> = { instagram: "Instagram", pinterest: "Pinterest" };
 const MAX_PICK = 3;
 
 type Q = { source?: string | undefined; set?: string | undefined; tag?: string | undefined; pick?: string | undefined };
@@ -27,6 +27,7 @@ export default async function ReferencesPage({ searchParams }: { searchParams: P
   const pick = (q.pick ?? "").split(",").filter((id) => all.some((r) => r.id === id)).slice(0, MAX_PICK);
   const picked = pick.map((id) => all.find((r) => r.id === id)!);
   const toggle = (id: string) => (pick.includes(id) ? pick.filter((x) => x !== id) : [...pick, id].slice(-MAX_PICK)).join(",");
+  const filtered = sources.length > 1 || sets.length > 1 || tags.length > 1;
 
   return (
     <Page>
@@ -34,39 +35,45 @@ export default async function ReferencesPage({ searchParams }: { searchParams: P
         title="레퍼런스"
         meta={<Text tone="mute">내부 참고 전용 · {shown.length}/{all.length}</Text>}
         actions={
-          <Segmented label="출처">
-            <SegmentedItem as={Link} href={href({ ...q, source: undefined, tag: undefined })} current={!q.source}>
-              전체
-            </SegmentedItem>
-            {sources.map((s) => (
-              <SegmentedItem key={s} as={Link} href={href({ ...q, source: s, tag: undefined })} current={q.source === s}>
-                {SOURCE_LABEL[s]}
+          sources.length > 1 && (
+            <Segmented label="출처">
+              <SegmentedItem as={Link} href={href({ ...q, source: undefined, tag: undefined })} current={!q.source}>
+                전체
               </SegmentedItem>
-            ))}
-          </Segmented>
+              {sources.map((s) => (
+                <SegmentedItem key={s} as={Link} href={href({ ...q, source: s, tag: undefined })} current={q.source === s}>
+                  {SOURCE_LABEL[s]}
+                </SegmentedItem>
+              ))}
+            </Segmented>
+          )
         }
       />
-      <Stack direction="row" gap={5} wrap align="center">
-        <Segmented label="묶음">
-          <SegmentedItem as={Link} href={href({ ...q, set: undefined, tag: undefined })} current={!q.set}>
-            모든 묶음
-          </SegmentedItem>
-          {sets.map((s) => (
-            <SegmentedItem key={s} as={Link} href={href({ ...q, set: s, tag: undefined })} current={q.set === s}>
-              {s}
-            </SegmentedItem>
-          ))}
-        </Segmented>
-        {tags.length > 0 && (
-          <Stack direction="row" gap={4} wrap align="center">
-            {tags.map((t) => (
-              <TextLink key={t} as={Link} href={href({ ...q, tag: q.tag === t ? undefined : t })} aria-current={q.tag === t ? "true" : undefined}>
-                {q.tag === t ? `● ${t}` : t}
-              </TextLink>
-            ))}
-          </Stack>
-        )}
-      </Stack>
+      {filtered && (
+        <Stack direction="row" gap={5} wrap align="center">
+          {sets.length > 1 && (
+            <Segmented label="묶음">
+              <SegmentedItem as={Link} href={href({ ...q, set: undefined, tag: undefined })} current={!q.set}>
+                모든 묶음
+              </SegmentedItem>
+              {sets.map((s) => (
+                <SegmentedItem key={s} as={Link} href={href({ ...q, set: s, tag: undefined })} current={q.set === s}>
+                  {s}
+                </SegmentedItem>
+              ))}
+            </Segmented>
+          )}
+          {tags.length > 1 && (
+            <Stack direction="row" gap={4} wrap align="center">
+              {tags.map((t) => (
+                <TextLink key={t} as={Link} href={href({ ...q, tag: q.tag === t ? undefined : t })} aria-current={q.tag === t ? "true" : undefined}>
+                  {q.tag === t ? `● ${t}` : t}
+                </TextLink>
+              ))}
+            </Stack>
+          )}
+        </Stack>
+      )}
 
       {picked.length > 0 && (
         <Card>

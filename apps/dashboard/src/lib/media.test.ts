@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEVICE_SIZES, IMAGE_QUALITY, IMAGE_SIZES } from "./image-config";
-import { emptyMedia, heroMedia, media } from "./media";
+import { emptyMedia, media } from "./media";
 
 const widthsIn = (set: string) => [...set.matchAll(/[&?]w=(\d+)/g)].map((m) => Number(m[1]));
 const allowed = new Set([...IMAGE_SIZES, ...DEVICE_SIZES]);
@@ -13,14 +13,14 @@ describe("이미지 주소", () => {
   });
 
   it("가변 폭은 w 기준 srcset 과 sizes 를 준다", () => {
-    const m = heroMedia("/img/hero.jpg", { width: 1600, height: 1066 }, true);
+    const m = media("/img/a.jpg", { width: 1600, height: 1066, sizes: "(min-width: 1184px) 60vw, 100vw", priority: true });
     expect(widthsIn(m.srcSet ?? "")).toEqual(DEVICE_SIZES);
     expect(m.sizes).toBe("(min-width: 1184px) 60vw, 100vw");
     expect(m.priority).toBe(true);
   });
 
   it("만든 모든 폭·품질은 최적화기 허용 목록 안이다(밖이면 400)", () => {
-    const all = [media("/a", { width: 48, height: 60 }), media("/a", { width: 128, height: 128 }), media("/a", { width: 448, height: 560 }), heroMedia("/a", { width: 1600, height: 900 }), emptyMedia()];
+    const all = [media("/a", { width: 48, height: 60 }), media("/a", { width: 128, height: 128 }), media("/a", { width: 448, height: 560 }), media("/a", { width: 1600, height: 900, sizes: "100vw" }), emptyMedia()];
     for (const m of all) for (const w of [...widthsIn(m.src), ...widthsIn(m.srcSet ?? "")]) expect(allowed.has(w), `w=${w}`).toBe(true);
     for (const m of all) expect(m.src).toContain(`q=${IMAGE_QUALITY}`);
   });

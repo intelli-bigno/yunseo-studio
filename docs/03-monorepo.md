@@ -57,14 +57,14 @@ yunseo-studio/
 | `packages/adapters/publisher-youtube` | 동작(**dry-run 전용**, L5) — `videos.insert` 재개 가능 업로드 계획(비공개 업로드 → 사람이 공개)과 규격 위반. 호출 코드·토큰 저장소 없음 |
 | `packages/adapters/metrics` | 동작(L5) — 성과 스냅샷·CSV 열 매핑 기억·가져오기 기록을 SQLite 레인 전용 테이블 `l5_*` 로 저장(같은 `STUDIO_DB` 파일). 수동 입력·CSV 만, API 수집 없음 |
 | `apps/cli` | 동작 — `pnpm run validate [--publish]` (프리셋·콘텐츠·금지 표현 검증), `pnpm run render <content.yaml> --out <폴더> [--backgrounds <폴더>]` (카드 PNG 세트 + 캡션·대체텍스트), `reel <cards-dir> --out <dir>` (카드 PNG → 릴스 MP4+SRT, 합성은 ffmpeg 가 있는 Windows 실행기에서) |
-| `packages/design-tokens` | 동작 — 대시보드 디자인 토큰(색·서체·간격·컴포넌트)과 CSS 변수 변환, 대비 검사. 외부 의존 0 ([design/final-direction.md](design/final-direction.md)) |
+| `packages/design-tokens` | 동작 — 대시보드 디자인 토큰(색·서체·간격·컴포넌트)과 CSS 변수 변환, 대비 검사. 외부 의존 0 (기준은 토큰 자체 — 시안 파일은 2026-11-07 삭제) |
 | `packages/adapters/video` | 동작 — `ReelComposer` 구현 `createFfmpegReelComposer`: 카드 세트 → 1080×1920 MP4 + SRT(ffmpeg·ffprobe, 전환 4종·번인 자막·음성/음악 슬롯). ffmpeg 인자 생성은 순수 함수, 합성 뒤 ffprobe 로 규격 검사. 값은 `packages/domain/src/reel`(프리셋·배치·장면 계획·SRT) ([02 §4.1](02-sop.md)) |
-| `apps/dashboard` | 동작 — 오늘·편성 캘린더·콘텐츠·발행 대기열 + `GET /api/health`. **[L2] 콘텐츠 화면은 실데이터**: 새 편(3종) · 작성/출처/연결/이력/미리보기·묶음/검수 탭 · 서버 액션 저장(낙관적 동시성) · `GET /api/pieces/<id>/bundle`(zip)·`/cards/<n>`. 시안은 「빈 DB 데모 채우기」로만 |
-| `apps/dashboard` (L5 화면) | 동작 — **성과**(`/performance`: 주별·편별·종별 표, 수동 입력, CSV 가져오기 3단계(열 매핑 확인), 최근 입력 지우기)와 **발행 dry-run 미리보기**(`/publish/[pieceId]?channel=feed\|reels`: 요청 순서·파라미터·예상 할당량·규격 위반·규격 근거). 조립은 `server/studio.ts` 의 `[L5]` 블록 하나 |
+| `apps/dashboard` | 동작 — 콘텐츠·카드뉴스 제작(준비 중)·릴스 제작(준비 중)·쇼츠·레퍼런스 + `GET /api/health` (오늘·편성·발행·성과·운영 화면은 2026-11-07 삭제, `/` → `/content`). **[L2] 콘텐츠 화면은 실데이터**: 새 편(3종) · 작성/출처/연결/이력/미리보기·묶음/검수 탭 · 서버 액션 저장(낙관적 동시성) · `GET /api/pieces/<id>/bundle`(zip)·`/cards/<n>`. 시안은 「빈 DB 데모 채우기」로만 |
+| `apps/dashboard` (L5 화면) | **2026-11-07 화면 삭제** (아래는 옛 설명, 패키지 `adapters/metrics`·`publisher-*`·`application` 쪽 코드는 남아 있음) — **성과**(`/performance`: 주별·편별·종별 표, 수동 입력, CSV 가져오기 3단계(열 매핑 확인), 최근 입력 지우기)와 **발행 dry-run 미리보기**(`/publish/[pieceId]?channel=feed\|reels`: 요청 순서·파라미터·예상 할당량·규격 위반·규격 근거). 조립은 `server/studio.ts` 의 `[L5]` 블록 하나 |
 | `apps/worker` | 최소 진입점 — Node 상주 프로세스 + `GET /health`. 잡 큐 소비는 M3 이후 |
 | `packages/adapters/{render-html,publisher-manual,storage}` | 빈 모듈 (MVP 어댑터 3개 자리) |
 | `apps/cli` | 동작 — `pnpm run validate [--publish]` (프리셋·콘텐츠·금지 표현 검증), `events fetch --dry` (공식 일정을 받아 저장 없이 개수 보고) |
-| `packages/design-tokens` | 동작 — 대시보드 디자인 토큰(색·서체·간격·컴포넌트)과 CSS 변수 변환, 대비 검사. 외부 의존 0 ([design/final-direction.md](design/final-direction.md)) |
+| `packages/design-tokens` | 동작 — 대시보드 디자인 토큰(색·서체·간격·컴포넌트)과 CSS 변수 변환, 대비 검사. 외부 의존 0 (기준은 토큰 자체 — 시안 파일은 2026-11-07 삭제) |
 | `apps/dashboard` | 목업 동작 — 오늘·편성 캘린더·콘텐츠 3종(작성·출처·미리보기·검수)·발행 대기열 + `GET /api/health`. 데이터는 목업, 유스케이스 호출은 M2 |
 | `apps/worker` | 최소 진입점 — Node 상주 프로세스 + `GET /health`. 잡 큐 소비는 M3 이후. 일정 수집 1회 실행 함수 `collectEventsOnce`(`collect-events.ts`, 실행 `pnpm --filter @yunseo/app-worker run collect-events`) — 스케줄 등록은 L6 |
 | `apps/worker` (L6) | 스케줄러·작업 등록부(`registry.ts`·`jobs/`) — 일일 백업 03:30 KST·헬스 10분, `/health` 에 마지막·다음 실행, 운영 명령 `ops-cli.ts`(백업·복원) |
