@@ -59,7 +59,7 @@ export function reelAsset(pieceId: string, renderId: string, kind: "video" | "co
 }
 
 // ── 레퍼런스 ─────────────────────────────────────────────
-// 카드뉴스 레퍼런스만 둔다(docs/design/card-reference/capture). 대시보드·UI 시안 수집분은 2026-11-07 에 지웠다.
+// 카드뉴스 레퍼런스만 둔다 — 직접 캡처(docs/design/card-reference/capture)와 수집 목록(card-reference/refs.json, 그림은 외부 주소). 대시보드·UI 시안 수집분은 2026-11-07 에 지웠다.
 export type RefSource = "instagram" | "pinterest";
 export interface RefItem {
   id: string;
@@ -91,8 +91,32 @@ export function listReferences(): RefItem[] {
     const n = f.slice(4, 6);
     out.push({ id: `card-${n}`, set: "카드뉴스 형태", source: "instagram", title: `dy1.mag 캐러셀 ${Number(n)}장`, takeaway: "질문 → 한 줄 답 → 근거 문단", tags: ["카드뉴스"], thumb: `/api/refs/card-reference/capture/${f}`, href: "https://www.instagram.com/p/DeqRl2llMaq/" });
   }
+  out.push(...readRefsFile(join(dir, "card-reference/refs.json")));
   refCache = out;
   return refCache;
+}
+
+/** 수집 목록(docs/design/card-reference/refs.json) — 그림은 외부 주소(저장하지 않음). 모양이 틀린 줄은 건너뛴다. */
+function readRefsFile(file: string): RefItem[] {
+  if (!existsSync(file)) return [];
+  let rows: unknown;
+  try {
+    rows = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(rows)) return [];
+  const out: RefItem[] = [];
+  for (const r of rows as Record<string, unknown>[]) {
+    const str = (k: string) => (typeof r[k] === "string" ? (r[k] as string) : "");
+    const thumb = str("thumb");
+    const href = str("href") || str("pin");
+    if (!str("id") || !/^https:\/\//.test(thumb) || !/^https:\/\//.test(href)) continue;
+    const source: RefSource = r.source === "instagram" ? "instagram" : "pinterest";
+    const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [];
+    out.push({ id: str("id"), set: str("set") || "수집", source, title: str("title"), takeaway: str("takeaway"), tags, thumb, href });
+  }
+  return out;
 }
 
 /** 저장소 안 레퍼런스 그림 — docs/design 아래 jpg·png 만 */

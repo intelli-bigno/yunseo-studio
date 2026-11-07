@@ -22,7 +22,9 @@ export default async function ReferencesPage({ searchParams }: { searchParams: P
   const sets = [...new Set(all.map((r) => r.set))];
   const sources = [...new Set(all.map((r) => r.source))];
   const pool = all.filter((r) => (!q.source || r.source === q.source) && (!q.set || r.set === q.set));
-  const tags = [...new Set(pool.flatMap((r) => r.tags))].slice(0, 12);
+  const tagCount = new Map<string, number>();
+  for (const t of pool.flatMap((r) => r.tags)) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
+  const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t).slice(0, 12); // 많이 쓰인 순
   const shown = pool.filter((r) => !q.tag || r.tags.includes(q.tag));
   const pick = (q.pick ?? "").split(",").filter((id) => all.some((r) => r.id === id)).slice(0, MAX_PICK);
   const picked = pick.map((id) => all.find((r) => r.id === id)!);
