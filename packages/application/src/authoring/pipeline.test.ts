@@ -1,6 +1,6 @@
-// 파이프라인 산출물 읽기 — 기록에 적힌 경로가 지금 작업 폴더 밖(옛 네이티브 Windows 임시 폴더)이어도 같은 파일을 찾는다.
-// 회귀: 네이티브 → Docker 이관 뒤 DB 의 렌더 기록은 `C:\Users\…\yunseo-studio-work\…` 절대경로 그대로라 카드 라우트만 404,
-// 목록 썸네일은 기록의 카드 수만 보고 8장이라 해서 깨진 이미지가 전부 떴다(2026-11-07, 배포본 /content).
+// 파이프라인 산출물 읽기 — 기록에 적힌 경로를 그대로 쓰고, 목록 썸네일과 카드 라우트가 같은 판정을 한다.
+// 회귀(2026-11-07, 배포본 /content): 네이티브 → Docker 이관 뒤 옛 `C:\Users\…` 기록 때문에 카드 라우트만 404·썸네일은 깨진 이미지.
+// 옛 기록 경로는 저장소 마이그레이션 v3(rebase-pipeline-paths)이 한 번 옮겨 적는다(storage 테스트) — 여기서는 읽기 보정을 하지 않음을 본다.
 import { contentHash, newPiece, type Piece } from "@yunseo/domain";
 import { describe, expect, it, vi } from "vitest";
 import type { CardRenderResult, ReelResult, RenderedFile, UploadBundle } from "../pipeline/contracts";
@@ -43,61 +43,42 @@ function setup(p: Piece, rec: PipelineRecord | null, disk: Record<string, string
 const cardsOnDisk = (p: Piece): Record<string, string> => Object.fromEntries(CARD_NAMES.map((n) => [`${WORK}/${p.id}/${hash12(p)}/cards/${n}`, `png:${n}`]));
 const text = (b: Uint8Array | null) => (b ? new TextDecoder().decode(b) : null);
 
-describe("산출물 경로 — 옛 네이티브 경로로 저장된 기록", () => {
-  it("카드 라우트: 기록이 Windows 절대경로여도 지금 작업 폴더의 같은 파일을 읽는다", async () => {
+describe("산출물 경로 — 기록 그대로", () => {
+  it("카드 라우트: 지금 작업 폴더 안 경로를 읽는다", async () => {
     const p = piece();
-    const uc = setup(p, record(p, OLD, "\\"), cardsOnDisk(p));
+    const uc = setup(p, record(p, WORK, "/"), cardsOnDisk(p));
     expect(text(await uc.readRenderedCard(p.id, 0))).toBe("png:01-cover.png");
     expect(text(await uc.readRenderedCard(p.id, 2))).toBe("png:03-end.png");
   });
 
-  it("지금 작업 폴더 안 경로는 그대로 읽는다", async () => {
+  it("옛 Windows 절대경로 기록은 읽을 때 보정하지 않는다(마이그레이션 v3 몫) — 작업 폴더 밖이라 null", async () => {
     const p = piece();
-    const uc = setup(p, record(p, WORK, "/"), cardsOnDisk(p));
-    expect(text(await uc.readRenderedCard(p.id, 1))).toBe("png:02-why.png");
+    const uc = setup(p, record(p, OLD, "\\"), cardsOnDisk(p));
+    expect(await uc.readRenderedCard(p.id, 0)).toBeNull();
+    expect((await uc.status(p.id)).render?.cards[0]?.path).toBe([OLD, p.id, hash12(p), "cards", "01-cover.png"].join("\\"));
   });
 
   it("없는 카드 번호·낡은 해시·기록 없음·파일 없음은 null", async () => {
     const p = piece();
-    expect(await setup(p, record(p, OLD, "\\"), cardsOnDisk(p)).readRenderedCard(p.id, 3)).toBeNull();
-    expect(await setup(p, record(p, OLD, "\\", { contentHash: "stale" }), cardsOnDisk(p)).readRenderedCard(p.id, 0)).toBeNull();
+    expect(await setup(p, record(p, WORK, "/"), cardsOnDisk(p)).readRenderedCard(p.id, 3)).toBeNull();
+    expect(await setup(p, record(p, WORK, "/", { contentHash: "stale" }), cardsOnDisk(p)).readRenderedCard(p.id, 0)).toBeNull();
     expect(await setup(p, null, cardsOnDisk(p)).readRenderedCard(p.id, 0)).toBeNull();
-    expect(await setup(p, record(p, OLD, "\\"), {}).readRenderedCard(p.id, 0)).toBeNull();
+    expect(await setup(p, record(p, WORK, "/"), {}).readRenderedCard(p.id, 0)).toBeNull();
   });
 
-  it("기록의 파일 이름에 상위 경로(..)가 섞여도 작업 폴더 밖은 읽지 않는다", async () => {
-    const p = piece();
-    const rec = record(p, OLD, "\\");
-    rec.render!.cards[0] = file("x.png", `${OLD}\\..\\..\\secret\\01-cover.png`);
-    const disk = { ...cardsOnDisk(p), "/secret/01-cover.png": "nope" };
-    expect(text(await setup(p, rec, disk).readRenderedCard(p.id, 0))).toBe("png:01-cover.png");
-  });
-
-  it("status 의 산출물 경로(카드·릴스·묶음)도 지금 작업 폴더 기준이다 — 묶음기·게시 원본이 같은 경로를 쓴다", async () => {
-    const p = piece();
-    const view = await setup(p, record(p, OLD, "\\"), {}).status(p.id);
-    const base = `${WORK}/${p.id}/${hash12(p)}`;
-    expect(view.render?.cards.map((c) => c.path)).toEqual(CARD_NAMES.map((n) => `${base}/cards/${n}`));
-    expect(view.reel?.video.path).toBe(`${base}/reel/P-1-reel.mp4`);
-    expect(view.reel?.subtitles?.path).toBe(`${base}/reel/P-1-reel.srt`);
-    expect(view.bundle?.zip.path).toBe(`${base}/bundle/P-1-upload.zip`);
-    // 이름·크기·sha256 은 그대로(어댑터가 렌더 기록과 대조한다)
-    expect(view.render?.cards[0]).toMatchObject({ name: "01-cover.png", bytes: 3, sha256: "x" });
-  });
-
-  it("릴스 합성은 바로잡은 카드 경로를 합성기에 넘긴다", async () => {
+  it("릴스 합성은 기록의 카드 경로를 합성기에 넘긴다", async () => {
     const p = piece();
     const compose = vi.fn<(cards: CardRenderResult, outDir: string) => Promise<ReelResult>>(async () => record(p, WORK, "/").reel!);
-    const uc = setup(p, record(p, OLD, "\\", { reel: null, bundle: null }), cardsOnDisk(p), { reels: { compose } });
+    const uc = setup(p, record(p, WORK, "/", { reel: null, bundle: null }), cardsOnDisk(p), { reels: { compose } });
     await uc.composeReel(p.id);
     expect(compose.mock.calls[0]![0].cards.map((c) => c.path)).toEqual(CARD_NAMES.map((n) => `${WORK}/${p.id}/${hash12(p)}/cards/${n}`));
   });
 });
 
 describe("목록 썸네일과 카드 라우트는 같은 판정이다", () => {
-  it("옛 경로 기록이어도 파일이 있으면 카드 수를 돌려주고, 그 번호는 모두 라우트로 읽힌다", async () => {
+  it("파일이 있으면 카드 수를 돌려주고, 그 번호는 모두 라우트로 읽힌다", async () => {
     const p = piece();
-    const uc = setup(p, record(p, OLD, "\\"), cardsOnDisk(p));
+    const uc = setup(p, record(p, WORK, "/"), cardsOnDisk(p));
     const pv = (await uc.previews([p]))[p.id]!;
     expect(pv).toEqual({ cards: 3, alts: ["a", "b", "c"], reel: true });
     for (let i = 0; i < pv.cards; i++) expect(await uc.readRenderedCard(p.id, i)).not.toBeNull();
@@ -107,7 +88,7 @@ describe("목록 썸네일과 카드 라우트는 같은 판정이다", () => {
     const p = piece();
     const disk = cardsOnDisk(p);
     delete disk[`${WORK}/${p.id}/${hash12(p)}/cards/02-why.png`];
-    const uc = setup(p, record(p, OLD, "\\"), disk);
+    const uc = setup(p, record(p, WORK, "/"), disk);
     expect((await uc.previews([p]))[p.id]).toMatchObject({ cards: 0, alts: [] });
     expect(await uc.readRenderedCard(p.id, 1)).toBeNull();
   });

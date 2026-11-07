@@ -58,7 +58,8 @@ const l2 = globalThis as typeof globalThis & { __yunseoSqlite?: SqliteStudioRepo
 
 function sqliteRepo(): SqliteStudioRepository {
   const path = process.env.STUDIO_DB;
-  return (l2.__yunseoSqlite ??= createSqliteStudioRepository(path ? { path } : {}));
+  // workDir — 옛 기록의 산출물 경로를 지금 작업 폴더로 옮겨 적는 1회 마이그레이션(v3)
+  return (l2.__yunseoSqlite ??= createSqliteStudioRepository({ ...(path ? { path } : {}), workDir: workDir() }));
 }
 
 /** KST 지금(분 단위 + 시간대) */

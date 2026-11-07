@@ -2,7 +2,7 @@
 // 포트가 주입되지 않은 단계는 가짜로 채우지 않고 비활성 + 이유를 돌려준다(L1 렌더·L3 릴스는 통합 Worker 가 배선).
 // 산출물은 「어떤 내용 해시로 만들었나」와 함께 기록한다 — 내용이 바뀌면 낡은 산출물로 묶음을 만들지 않는다.
 import { contentHash, toContentBody, validApproval, type Piece } from "@yunseo/domain";
-import type { CardRenderer, CardRenderResult, ContentDocument, ReelComposer, ReelResult, RenderedFile, UploadBundle, UploadPackager } from "../pipeline/contracts";
+import type { CardRenderer, CardRenderResult, ContentDocument, ReelComposer, ReelResult, UploadBundle, UploadPackager } from "../pipeline/contracts";
 import { previewOf, type PiecePreview } from "./preview";
 import { PieceNotFoundError, type AuthoringClock, type AuthoringStore, type BundleFiles, type PipelineRecord } from "./ports";
 
@@ -61,9 +61,6 @@ export class PipelineStepError extends Error {
 }
 
 const join = (...parts: string[]) => parts.map((p, i) => (i === 0 ? p.replace(/[\\/]+$/, "") : p.replace(/^[\\/]+|[\\/]+$/g, ""))).join("/");
-/** 구분자를 / 로 통일 — Windows 에서 적힌 기록(`C:\…`)도 같은 방식으로 다룬다 */
-const slashed = (s: string) => s.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
-const lastSegment = (s: string) => slashed(s).split("/").pop() ?? "";
 
 export function createPipelineUseCases({ store, clock, renderer = null, reels = null, reelsReady = null, packager = null, files = null, workDir, language }: PipelineDeps) {
   let reelCheck: Promise<string | null> | null = null;
@@ -83,22 +80,10 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
   };
 
   /**
-   * 기록에 적힌 산출물 경로를 지금 작업 폴더 기준으로 바로잡는다. 기록은 절대경로로 저장되므로 작업 폴더가 옮겨지면(네이티브 Windows 임시 폴더 →
-   * Docker /data/work) 파일은 있어도 기록의 경로는 폴더 밖이라 읽기 어댑터가 거부한다. 산출물은 늘 `<작업 폴더>/<편>/<해시 12자>/<단계>/<이름>` 에
-   * 쓰이므로(outDir) 이름만 남기고 같은 자리로 되돌린다. 이미 작업 폴더 안인 경로는 건드리지 않는다.
+   * 지금 내용 해시로 만든 산출물만 쓴다 — 상태·미리보기·내려받기·묶음이 모두 이 한 곳을 거친다.
+   * 기록 경로는 그대로 믿는다: 옛 네이티브 Windows 경로 기록은 저장소 마이그레이션 v3(rebase-pipeline-paths)이 한 번 옮겨 적었다.
    */
-  const workRoot = slashed(workDir).replace(/\/$/, "");
-  const moved = (rec: PipelineRecord, step: "cards" | "reel" | "bundle", f: RenderedFile): RenderedFile =>
-    slashed(f.path).startsWith(`${workRoot}/`) ? f : { ...f, path: join(workDir, rec.pieceId, rec.contentHash.slice(0, 12), step, lastSegment(f.path)) };
-  const rebase = (rec: PipelineRecord): PipelineRecord => ({
-    ...rec,
-    render: rec.render && { ...rec.render, cards: rec.render.cards.map((c) => moved(rec, "cards", c)) },
-    reel: rec.reel && { ...rec.reel, video: moved(rec, "reel", rec.reel.video), subtitles: rec.reel.subtitles && moved(rec, "reel", rec.reel.subtitles) },
-    bundle: rec.bundle && { ...rec.bundle, zip: moved(rec, "bundle", rec.bundle.zip) },
-  });
-
-  /** 지금 내용 해시로 만든 산출물만 쓴다(경로는 지금 작업 폴더 기준) — 상태·미리보기·내려받기·묶음이 모두 이 한 곳을 거친다 */
-  const current = (rec: PipelineRecord | null, hash: string) => (rec && rec.contentHash === hash ? rebase(rec) : null);
+  const current = (rec: PipelineRecord | null, hash: string) => (rec && rec.contentHash === hash ? rec : null);
 
   function plan(p: Piece, rec: PipelineRecord | null, reelBlocked: string | null): PipelineView {
     const hash = contentHash(p);

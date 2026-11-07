@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { overlaps, projectIssues, type ReelsProject, type ReelsSource } from "@/lib/reels-timeline";
 import { toProjectV1, type ReelsProjectV2 } from "@yunseo/domain";
 import { listReels } from "./library";
-import { reelsStore, studioWorkDir } from "./studio";
+import { reelsStore, reelsTimelineTools, studioWorkDir } from "./studio";
 
 export { reelsStore, ReelsRevisionConflictError } from "./studio";
 
@@ -47,7 +47,40 @@ export function reelsCardAsset(pieceId: string, renderId: string, file: string):
   return existsSync(f) ? f : null;
 }
 
-/** 편집 소스 — 원고마다 최근 렌더의 쇼츠 영상 1개 + 카드 그림들 */
+// ── 오디오 전용 자산(BGM·내레이션) — 저장소 assets/audio/<종류>/<파일> ─────────
+export const REELS_AUDIO_KINDS = { bgm: "BGM", narration: "내레이션" } as const;
+export type ReelsAudioKind = keyof typeof REELS_AUDIO_KINDS;
+const AUDIO_FILE = /^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,63}\.(mp3|wav|m4a|ogg|flac)$/i;
+const isAudioKind = (k: string): k is ReelsAudioKind => Object.hasOwn(REELS_AUDIO_KINDS, k);
+const audioDir = (kind: ReelsAudioKind) => {
+  const root = reelsTimelineTools().assetsDir;
+  return root ? join(root, "audio", kind) : null;
+};
+
+/** 오디오 자산 경로 — 원본 id 는 audio/<bgm|narration>/<파일>. 모양이 틀리거나 없으면 null */
+export function reelsAudioAsset(kind: string, file: string): string | null {
+  if (!isAudioKind(kind) || !AUDIO_FILE.test(file) || file.includes("..")) return null;
+  const dir = audioDir(kind);
+  const f = dir ? join(dir, file) : null;
+  return f && existsSync(f) ? f : null;
+}
+
+function listAudioSources(): ReelsSource[] {
+  const out: ReelsSource[] = [];
+  for (const kind of Object.keys(REELS_AUDIO_KINDS) as ReelsAudioKind[]) {
+    const dir = audioDir(kind);
+    let files: string[];
+    try {
+      files = dir ? readdirSync(dir).filter((f) => AUDIO_FILE.test(f) && !f.includes("..")).sort() : [];
+    } catch {
+      files = [];
+    }
+    for (const f of files) out.push({ id: `audio/${kind}/${f}`, kind: "audio", label: `${REELS_AUDIO_KINDS[kind]} · ${f.replace(/\.[^.]+$/, "")}`, src: `/api/reels/audio/${kind}/${f}` });
+  }
+  return out;
+}
+
+/** 편집 소스 — 원고마다 최근 렌더의 쇼츠 영상 1개 + 카드 그림들 + 오디오 자산(BGM·내레이션) */
 export async function listReelsSources(): Promise<ReelsSource[]> {
   const out: ReelsSource[] = [];
   for (const g of await listReels()) {
@@ -62,5 +95,6 @@ export async function listReelsSources(): Promise<ReelsSource[]> {
     }
     for (const f of files) out.push({ id: `${g.pieceId}/${v.renderId}/${f}`, kind: "image", label: `${g.title} · ${f.slice(0, 2)}`, src: `/api/reels/assets/${g.pieceId}/${v.renderId}/${f}` });
   }
+  out.push(...listAudioSources());
   return out;
 }

@@ -4,10 +4,21 @@
 // 다른 레인의 전용 테이블(<레인>_ 접두사, CREATE TABLE IF NOT EXISTS)은 각 레인 모듈이 만든다 — 여기 목록에 넣지 않는다.
 import type { DatabaseSync } from "node:sqlite";
 
+export interface MigrateContext {
+  /** 지금 산출물 작업 폴더(STUDIO_WORK_DIR) — 경로 데이터 마이그레이션이 쓴다 */
+  workDir?: string;
+}
+
 export interface Migration {
   version: number;
   name: string;
-  sql: string;
+  /** 스키마 SQL */
+  sql?: string;
+  /**
+   * 데이터 마이그레이션 — 같은 쓰기 잠금 안에서 sql 뒤에 돈다. false 를 돌려주면 「지금은 못 한다」(필요한 맥락 없음):
+   * 버전을 남기지 않고 다음에 맥락을 가진 프로세스가 열 때 다시 시도한다.
+   */
+  data?: (db: DatabaseSync, ctx: MigrateContext) => boolean;
 }
 
 /** v1 — 버전 테이블 도입 전 스키마 그대로(IF NOT EXISTS 라 이미 있는 파일에서는 아무 일도 안 한다) */
@@ -54,15 +65,58 @@ CREATE TABLE pipeline_results (
 );
 `;
 
+// ── v3 — 파이프라인 기록의 산출물 경로를 지금 작업 폴더로 한 번 바로잡는다 ─────────
+// 기록은 절대경로로 저장된다. 네이티브 Windows(`C:\Users\…\Temp\yunseo-studio-work\…`) → Docker(/data/work) 이관 뒤 옛 기록은
+// 파일은 있어도 경로가 작업 폴더 밖이라 읽기 어댑터가 거부했다(2026-11-07 #30 — 그때는 읽을 때마다 보정했다).
+// 산출물은 늘 `<작업 폴더>/<편>/<내용 해시 12자>/<단계>/<이름>` 에 쓰이므로 이름만 남기고 그 자리로 옮겨 적는다.
+// 이미 작업 폴더 안인 경로는 그대로 둔다. 이 판 이후 읽기 쪽은 기록 경로를 그대로 믿는다.
+
+const slashed = (s: string) => s.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+const trimEnd = (s: string) => s.replace(/[\\/]+$/, "");
+
+/** 기록 하나의 경로 — 작업 폴더 밖이면 `<workDir>/<편>/<해시12>/<단계>/<이름>` */
+export function rebaseArtifactPath(path: string, workDir: string, pieceId: string, contentHash: string, step: "cards" | "reel" | "bundle"): string {
+  const root = trimEnd(slashed(workDir));
+  if (slashed(path).startsWith(`${root}/`)) return path;
+  const name = slashed(path).split("/").pop() ?? "";
+  return [trimEnd(workDir), pieceId, contentHash.slice(0, 12), step, name].join("/");
+}
+
+interface FileRef { path: string }
+const rebasePipelinePaths = (db: DatabaseSync, { workDir }: MigrateContext): boolean => {
+  if (!workDir) return false;
+  const rows = db.prepare("SELECT piece_id, content_hash, render, reel, bundle FROM pipeline_results").all() as Record<string, string | null>[];
+  const update = db.prepare("UPDATE pipeline_results SET render = ?, reel = ?, bundle = ? WHERE piece_id = ?");
+  for (const r of rows) {
+    const pieceId = String(r.piece_id);
+    const hash = String(r.content_hash);
+    const fix = <T extends FileRef>(f: T, step: "cards" | "reel" | "bundle"): T => (typeof f.path === "string" ? { ...f, path: rebaseArtifactPath(f.path, workDir, pieceId, hash, step) } : f);
+    const parse = (v: string | null) => (v === null ? null : (JSON.parse(v) as Record<string, unknown>));
+    const render = parse(r.render ?? null) as { cards?: FileRef[] } | null;
+    const reel = parse(r.reel ?? null) as { video?: FileRef; subtitles?: FileRef | null } | null;
+    const bundle = parse(r.bundle ?? null) as { zip?: FileRef } | null;
+    if (render?.cards) render.cards = render.cards.map((c) => fix(c, "cards"));
+    if (reel) {
+      if (reel.video) reel.video = fix(reel.video, "reel");
+      if (reel.subtitles) reel.subtitles = fix(reel.subtitles, "reel");
+    }
+    if (bundle?.zip) bundle.zip = fix(bundle.zip, "bundle");
+    const j = (v: unknown) => (v === null ? null : JSON.stringify(v));
+    update.run(j(render), j(reel), j(bundle), pieceId);
+  }
+  return true;
+};
+
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "base", sql: V1 },
   { version: 2, name: "l2-authoring", sql: V2 },
+  { version: 3, name: "rebase-pipeline-paths", data: rebasePipelinePaths },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
 
 /** 적용 안 된 버전을 차례로 적용하고, 이번에 적용한 버전 목록을 돌려준다 */
-export function migrate(db: DatabaseSync, migrations: readonly Migration[] = MIGRATIONS, now: () => string = () => new Date().toISOString()): number[] {
+export function migrate(db: DatabaseSync, migrations: readonly Migration[] = MIGRATIONS, now: () => string = () => new Date().toISOString(), ctx: MigrateContext = {}): number[] {
   db.exec("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)");
   const has = db.prepare("SELECT 1 FROM schema_migrations WHERE version = ?");
   const mark = db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)");
@@ -72,9 +126,11 @@ export function migrate(db: DatabaseSync, migrations: readonly Migration[] = MIG
     db.exec("BEGIN IMMEDIATE");
     try {
       if (!has.get(m.version)) {
-        db.exec(m.sql);
-        mark.run(m.version, m.name, now());
-        applied.push(m.version);
+        if (m.sql) db.exec(m.sql);
+        if (!m.data || m.data(db, ctx)) {
+          mark.run(m.version, m.name, now());
+          applied.push(m.version);
+        }
       }
       db.exec("COMMIT");
     } catch (error) {
