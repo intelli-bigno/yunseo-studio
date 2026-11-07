@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { breakpoint, cssVariables } from "../packages/design-tokens/src/index";
+import { breakpoint, component, contrastPairs, cssVariables, layout, space } from "../packages/design-tokens/src/index";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const walk = (dir: string): string[] =>
@@ -48,7 +48,7 @@ describe("ui 스타일은 토큰 값만 쓴다", () => {
 
   it("쓰는 변수는 모두 토큰에 있다", () => {
     const defined = new Set(Object.keys(cssVariables()));
-    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다)
+    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs", "--ar"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다), --ar: 캔버스 가로/세로 비(CanvasStage 가 넣는다)
     const used = new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]!));
     expect([...used].filter((v) => !defined.has(v) && !local.has(v))).toEqual([]);
   });
@@ -106,6 +106,56 @@ describe("빈 캔버스·썸네일 구분", () => {
 
   it("빈 카드 안내 겹침은 클릭을 막지 않는다", () => {
     expect(prop(".ui-canvas-empty", "pointer-events")).toBe("none");
+  });
+});
+
+describe("아이콘 버튼은 어두운 바탕에서 보인다", () => {
+  it("글자는 밝은 글자 토큰, 바탕은 어두운 표면 토큰 — 종이용(--c-paper*) 색을 쓰지 않는다", () => {
+    const body = rule(".ui-icon-btn");
+    expect(prop(".ui-icon-btn", "color")).toBe("var(--c-text)");
+    expect(prop(".ui-icon-btn", "background")).toBe("var(--c-raised)");
+    expect(body).not.toContain("--c-paper");
+    expect(rule(".ui-icon-btn[disabled]")).not.toContain("--c-paper");
+    expect(rule(".ui-icon-btn[disabled]")).not.toMatch(/opacity/); // 흐리게 하지 않고 색 토큰으로 구분
+  });
+
+  it("쓰는 글자/바탕 쌍은 모두 토큰 대비 검사에 들어 있다(본문 4.5 이상)", () => {
+    const has = (fg: string, bg: string) => contrastPairs.some((p) => p.fg === fg && p.bg === bg && p.min >= 4.5);
+    expect(has("text", "raised")).toBe(true); // 기본
+    expect(has("text", "surface")).toBe(true); // 패널·덱 줄 바탕
+    expect(has("text", "hover")).toBe(true); // 누르려고 올렸을 때
+    expect(has("textMute", "surface")).toBe(true); // 꺼진 상태
+  });
+
+  it("터치 최소 크기(24) 이상이다 — 버튼 높이에서 간격 한 단계를 뺀 28", () => {
+    expect(prop(".ui-icon-btn", "width")).toBe("calc(var(--button-height) - var(--sp-3))");
+    expect(component.button.height - space[3]).toBeGreaterThanOrEqual(24);
+  });
+});
+
+describe("편집 화면은 화면 높이에 맞춘다(스크롤 없이 조작)", () => {
+  // 넓은 화면(패널이 쌓이지 않는 폭)에만 적용된다 — 1184px 이하는 문서가 자연스럽게 길어진다
+  const block = /@media not all and \(max-width: 1184px\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+
+  it("페이지 높이는 헤더 아래 남은 100dvh 이고 안쪽만 스크롤한다", () => {
+    expect(block).toMatch(/\.ui-page\.is-fit \{[^}]*height:\s*calc\(100dvh - var\(--l-topbar\)\)/);
+    expect(block).toMatch(/\.ui-page\.is-fit \{[^}]*overflow:\s*hidden/);
+    expect(block).toMatch(/\.ui-page\.is-fit \.ui-editor \{[^}]*min-height:\s*0/);
+    expect(block).toMatch(/\.ui-page\.is-fit \.ui-editor-side \{[^}]*position:\s*static/);
+  });
+
+  it("캔버스는 남는 높이에 맞춰 줄고 카드 비율(--ar)을 지킨다", () => {
+    expect(block).toMatch(/\.ui-canvas-fit \{[^}]*container-type:\s*size/);
+    expect(block).toMatch(/\.ui-canvas-fit \.ui-canvas:not\(\.is-mini\) \{[^}]*width:\s*min\(100cqw, calc\(100cqh \* var\(--ar, 1\)\)\)/);
+  });
+
+  it("장 목록(strip)은 줄지 않고 캔버스 칸(stage)이 줄어든다", () => {
+    expect(block).toMatch(/\.ui-editor-strip \{[^}]*flex:\s*none/);
+    expect(block).toMatch(/\.ui-editor-stage \{[^}]*flex:\s*1 1 0[^}]*min-height:\s*0/);
+  });
+
+  it("셸·헤더 높이 변수와 Page fit 이 서로 맞는다", () => {
+    expect(cssVariables()["--l-topbar"]).toBe(`${layout.topbar}px`);
   });
 });
 

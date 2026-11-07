@@ -156,8 +156,11 @@ img { display: block; max-width: 100%; }
 .ui-btn-ghost { border-color: transparent; color: var(--c-text-dim); }
 .ui-btn-block { width: 100%; }
 .ui-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
-.ui-icon-btn { width: var(--button-height); height: var(--button-height); border-radius: var(--r-pill); border: 1px solid var(--c-paper-line); background: transparent; color: var(--c-paper-ink); cursor: pointer; }
-.ui-icon-btn[disabled] { opacity: 0.3; cursor: not-allowed; }
+/* 아이콘 버튼 — 어두운 바탕(표면·떠 있는 면) 위에 놓는다. 글자는 밝은 --c-text(대비 4.5 이상, 토큰 테스트가 검사), 종이용 --c-paper-* 는 쓰지 않는다.
+   꺼진 상태도 투명도를 낮추지 않고 --c-text-mute(역시 4.5 이상)로 보인다. 크기 28 = 터치 최소 24(WCAG 2.2 AA 2.5.8) 이상 */
+.ui-icon-btn { display: inline-grid; place-items: center; flex: none; width: calc(var(--button-height) - var(--sp-3)); height: calc(var(--button-height) - var(--sp-3)); padding: 0; border-radius: var(--r-pill); border: 1px solid var(--c-edge); background: var(--c-raised); color: var(--c-text); font-size: var(--fs-body); line-height: 1; cursor: pointer; }
+.ui-icon-btn:hover:not([disabled]) { background: var(--c-hover); border-color: var(--c-accent); }
+.ui-icon-btn[disabled] { background: transparent; border-color: var(--c-line); color: var(--c-text-mute); cursor: not-allowed; }
 
 /* ── 탭 · 세그먼트 ── */
 .ui-tabs { display: flex; flex-wrap: wrap; gap: 0 var(--sp-5); align-items: center; border-bottom: 1px solid var(--c-line); }
@@ -568,3 +571,19 @@ img { display: block; max-width: 100%; }
   .ui-deck-actions { flex-direction: row; flex-wrap: wrap; padding-left: 0; border-left: 0; }
 }
 .ui-mslide > .ui-canvas { width: 100%; height: 100%; max-width: none; aspect-ratio: auto !important; }
+
+/* ── 화면 높이에 맞춘 편집 화면(Page fit) — 스크롤해서 조작하지 않는다.
+   헤더(.ui-top) 아래 남은 높이를 꽉 채우고(100dvh), 캔버스는 남는 높이에 맞춰 줄고, 장 목록은 항상 첫 화면에 있다. 좌우 패널은 각자 안에서만 스크롤.
+   1184px 이하(패널이 위아래로 쌓이는 폭)에는 적용하지 않는다 — 그때는 문서가 자연스럽게 길어진다. ── */
+@media not all and (max-width: 1184px) {
+  .ui-page.is-fit { height: calc(100vh - var(--l-topbar)); height: calc(100dvh - var(--l-topbar)); min-height: calc(var(--sp-8) * 9); padding-top: var(--sp-4); padding-bottom: var(--sp-4); gap: var(--sp-3); overflow: hidden; }
+  .ui-page.is-fit > .ui-grow { min-height: 0; }
+  .ui-page.is-fit .ui-editor { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  .ui-page.is-fit .ui-editor-side { position: static; max-height: none; }
+  .ui-page.is-fit .ui-editor-center { min-height: 0; }
+  .ui-page.is-fit .ui-editor-stage { flex: 1 1 0; min-height: 0; padding: var(--sp-3); gap: var(--sp-2); }
+  .ui-page.is-fit .ui-editor-strip { flex: none; }
+  .ui-page.is-fit .ui-deck-thumb-wrap { width: calc(var(--sp-8) * 1.2); }
+  .ui-canvas-fit { flex: 1 1 0; min-height: calc(var(--sp-8) * 3); width: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
+  .ui-canvas-fit .ui-canvas:not(.is-mini) { width: min(100cqw, calc(100cqh * var(--ar, 1))); max-width: none; }
+}

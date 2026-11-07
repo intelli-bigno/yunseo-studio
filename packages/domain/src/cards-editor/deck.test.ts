@@ -8,6 +8,7 @@ import {
   duplicateCard,
   imageLayer,
   moveCard,
+  moveCardTo,
   moveLayer,
   overlayLayer,
   parseDeck,
@@ -53,6 +54,21 @@ describe("덱 — 장 연산", () => {
     expect(moveCard(d, 0, -1)).toBe(d); // 범위 밖은 그대로
     d = removeCard(d, 0);
     expect(d.cards.map((c) => c.id)).toEqual(["c1", "id1"]);
+  });
+
+  it("끌어서 순서 바꾸기(moveCardTo) — 3장에서 앞→뒤, 뒤→앞, 제자리·범위 밖", () => {
+    const d = addCard(addCard(base(), "c2"), "c3");
+    const order = (x: CardDeck) => x.cards.map((c) => c.id);
+    expect(order(d)).toEqual(["c1", "c2", "c3"]);
+    expect(order(moveCardTo(d, 0, 2))).toEqual(["c2", "c3", "c1"]); // 첫 장을 맨 끝으로
+    expect(order(moveCardTo(d, 2, 0))).toEqual(["c3", "c1", "c2"]); // 끝 장을 맨 앞으로
+    expect(order(moveCardTo(d, 1, 0))).toEqual(["c2", "c1", "c3"]);
+    expect(moveCardTo(d, 1, 1)).toBe(d); // 제자리에 놓으면 그대로
+    expect(moveCardTo(d, 0, 3)).toBe(d); // 없는 자리
+    expect(moveCardTo(d, -1, 1)).toBe(d);
+    expect(order(d)).toEqual(["c1", "c2", "c3"]); // 원본은 바뀌지 않는다
+    // 장 내용(레이어)은 순서와 함께 움직인다
+    expect(moveCardTo(d, 0, 2).cards[2]!.layers.map((l) => l.id)).toEqual(["o1", "t1"]);
   });
 
   it("마지막 한 장은 지우지 않는다", () => {
