@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { choreography, color, component, duration, contrastPairs, contrastRatio, cssText, cssVariables, grid, layout, radius, space, type, typeSteps } from "./index";
+import { canvasDefaultBackground, choreography, color, component, duration, contrastPairs, contrastRatio, cssText, cssVariables, grid, layout, radius, separationPairs, space, type, typeSteps } from "./index";
 
 describe("디자인 토큰 (Ink & Brass)", () => {
   it.each(contrastPairs.map((p) => [p.fg, p.bg, p.min] as const))("%s / %s 대비가 %s 이상", (fg, bg, min) => {
     expect(contrastRatio(color[fg], color[bg])).toBeGreaterThanOrEqual(min);
+  });
+
+  it.each(separationPairs.map((p) => [p.a, p.b, p.min] as const))("틀 구분: %s / %s 대비가 %s 이상", (a, b, min) => {
+    expect(contrastRatio(color[a], color[b])).toBeGreaterThanOrEqual(min);
+  });
+
+  it("빈 카드 기본 바탕(#111111)도 틀 선·표면과 갈린다", () => {
+    expect(contrastRatio(color.edge, canvasDefaultBackground)).toBeGreaterThanOrEqual(2);
+    expect(contrastRatio(color.raised, canvasDefaultBackground)).toBeGreaterThanOrEqual(1.1);
+    expect(cssVariables()["--c-edge"]).toBe(color.edge);
   });
 
   it("색은 모두 #rrggbb 이다", () => {

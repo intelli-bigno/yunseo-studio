@@ -267,7 +267,7 @@ img { display: block; max-width: 100%; }
 /* ── 갤러리 카드 · 캐러셀 (콘텐츠 목록) — 칸 폭은 --l-tile, 좁은 폰은 2열. 넘겨 보기는 스크롤 스냅(스와이프는 브라우저), 화살표·점은 덧댄다 ── */
 .ui-mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--l-tile), 1fr)); gap: var(--sp-6) var(--grid-gutter); }
 .ui-mcard { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; content-visibility: auto; contain-intrinsic-size: auto calc(var(--l-tile) * 1.6); }
-.ui-mcard-frame { position: relative; overflow: hidden; border-radius: var(--r-md); border: 1px solid var(--c-line); background: var(--c-sunken); }
+.ui-mcard-frame { position: relative; overflow: hidden; border-radius: var(--r-md); border: 1px solid var(--c-edge); background: var(--c-raised); }
 .ui-mcard-frame.is-portrait { aspect-ratio: 4 / 5; }
 .ui-mcard-frame.is-square { aspect-ratio: 1; }
 .ui-mcard-frame.is-story { aspect-ratio: 9 / 16; }
@@ -420,9 +420,15 @@ img { display: block; max-width: 100%; }
 /* ── [cards] 카드 편집기 — 덱 줄 · 캔버스 · 패널. 넓으면 세 칸, 1184 아래는 패널이 아래로, 640 아래는 덱 줄이 가로로 ── */
 .ui-editor { display: grid; grid-template-columns: calc(var(--sp-8) * 2) minmax(0, 1fr) var(--l-rail); gap: var(--grid-gutter); align-items: start; width: 100%; min-width: 0; }
 .ui-editor-deck, .ui-editor-stage, .ui-editor-panel { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
-.ui-editor-stage { align-items: center; }
-.ui-canvas { position: relative; width: 100%; max-width: calc(var(--sp-8) * 9); overflow: hidden; container-type: inline-size; border-radius: var(--r-sm); box-shadow: var(--shadow-card); touch-action: none; user-select: none; }
+.ui-editor-stage { align-items: center; padding: var(--sp-5); background: var(--c-raised); border: 1px solid var(--c-line); border-radius: var(--r-md); }
+.ui-canvas { position: relative; width: 100%; max-width: calc(var(--sp-8) * 9); overflow: hidden; container-type: inline-size; border-radius: var(--r-sm); box-shadow: var(--shadow-card); touch-action: none; user-select: none; box-shadow: var(--shadow-card), 0 0 0 1px var(--c-edge); }
 .ui-canvas.is-mini { max-width: none; box-shadow: none; pointer-events: none; border-radius: 0; }
+.ui-canvas.is-mini.is-empty { box-shadow: inset 0 0 0 1px var(--c-edge); }
+/* 빈 카드 안내 — 화면 전용 겹침. 큰 캔버스는 가운데 한 줄 상자, 썸네일은 표면색으로 덮고 짧은 글자만 */
+.ui-canvas-empty { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: var(--sp-3); pointer-events: none; }
+.ui-canvas-empty-text { max-width: 100%; padding: var(--sp-2) var(--sp-3); color: var(--c-text-dim); background: var(--c-raised); border: 1px solid var(--c-edge); border-radius: var(--r-sm); font-size: var(--fs-label); line-height: var(--lh-label); text-align: center; word-break: keep-all; }
+.ui-canvas.is-mini .ui-canvas-empty { background: var(--c-raised); }
+.ui-canvas.is-mini .ui-canvas-empty-text { padding: 0; background: none; border: 0; color: var(--c-text-mute); }
 .ui-canvas-layer { position: absolute; box-sizing: border-box; }
 .ui-canvas-layer.is-editable { cursor: move; }
 .ui-canvas-layer.is-selected { outline: 2px solid var(--c-accent); outline-offset: -1px; }
@@ -451,7 +457,7 @@ img { display: block; max-width: 100%; }
 .ui-canvas-handle.is-w { left: 0; top: 50%; cursor: ew-resize; }
 .ui-deck-strip { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
 .ui-deck-thumb-wrap { display: flex; flex-direction: column; gap: var(--sp-1); align-items: flex-start; min-width: 0; }
-.ui-deck-thumb { display: block; width: 100%; padding: 0; border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-sunken); overflow: hidden; cursor: pointer; opacity: 0.7; }
+.ui-deck-thumb { display: block; width: 100%; padding: 0; border: 1px solid var(--c-edge); border-radius: var(--r-sm); background: var(--c-raised); overflow: hidden; cursor: pointer; opacity: 0.7; }
 .ui-deck-thumb.is-current { opacity: 1; border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent); }
 .ui-asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--sp-8), 1fr)); gap: var(--sp-2); }
 .ui-asset { display: block; aspect-ratio: 4 / 5; padding: 0; border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-sunken); overflow: hidden; cursor: grab; }

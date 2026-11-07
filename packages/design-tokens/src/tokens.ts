@@ -12,6 +12,8 @@ export const color = {
   // 선
   line: "#262A30",
   lineStrong: "#333841",
+  // 틀 선(hairline) — 빈 캔버스·빈 썸네일처럼 바탕과 거의 같은 면을 앱 바탕에서 갈라 내는 한 줄. 화면 틀에만 쓴다(내보내는 PNG 에는 없다)
+  edge: "#4B515C",
   // 글자 — 웜 아이보리 3단
   text: "#EDE6D6",
   textDim: "#BDB6A8",
@@ -154,6 +156,8 @@ export const contrastPairs = [
   { fg: "textDim", bg: "surface", min: 4.5 },
   { fg: "textMute", bg: "bg", min: 4.5 },
   { fg: "textMute", bg: "surface", min: 4.5 },
+  { fg: "textMute", bg: "raised", min: 4.5 },
+  { fg: "textDim", bg: "raised", min: 4.5 },
   { fg: "accent", bg: "bg", min: 4.5 },
   { fg: "accent", bg: "surface", min: 4.5 },
   { fg: "alert", bg: "surface", min: 4.5 },
@@ -162,3 +166,13 @@ export const contrastPairs = [
   { fg: "accentInk", bg: "text", min: 4.5 },
   { fg: "paperInk", bg: "paper", min: 4.5 },
 ] as const satisfies readonly { fg: ColorToken; bg: ColorToken; min: number }[];
+
+/**
+ * 면/면 구분 쌍 — 빈 카드의 기본 바탕(#111111, 도메인 blankCard)이 앱 바탕(bg)과 거의 같아서(대비 1.0x) 틀로 갈라 낸다.
+ * 틀 선(edge)은 두 바탕 모두에서 2 이상, 틀 안쪽 표면(raised)은 한 단계 밝아야 한다. 테스트가 검사한다.
+ */
+export const canvasDefaultBackground = "#111111";
+export const separationPairs = [
+  { a: "edge", b: "bg", min: 2 },
+  { a: "raised", b: "bg", min: 1.1 },
+] as const satisfies readonly { a: ColorToken; b: ColorToken; min: number }[];

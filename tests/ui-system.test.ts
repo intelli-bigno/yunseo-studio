@@ -95,6 +95,20 @@ describe("정렬·여백·모양 규격", () => {
   });
 });
 
+describe("빈 캔버스·썸네일 구분", () => {
+  it("캔버스는 틀 선(--c-edge)으로 앱 바탕과 갈리고, 편집기 가운데 칸·썸네일 틀은 한 단계 밝은 표면이다", () => {
+    expect(prop(".ui-canvas", "box-shadow")).toContain("var(--c-edge)");
+    expect(prop(".ui-editor-stage", "background")).toBe("var(--c-raised)");
+    expect(prop(".ui-mcard-frame", "background")).toBe("var(--c-raised)");
+    expect(prop(".ui-mcard-frame", "border")).toContain("var(--c-edge)");
+    expect(prop(".ui-deck-thumb", "border")).toContain("var(--c-edge)");
+  });
+
+  it("빈 카드 안내 겹침은 클릭을 막지 않는다", () => {
+    expect(prop(".ui-canvas-empty", "pointer-events")).toBe("none");
+  });
+});
+
 describe("화면 글은 짧다", () => {
   // 화면에 그대로 찍히는 한글 문장(JSX 글자·따옴표 문자열)이 40자를 넘지 않는다 — 설명 대신 제목·숫자·행동
   it.each(appFiles.filter((f) => f.endsWith(".tsx")).map((f) => [f.slice(root.length)]))("%s", (rel) => {
