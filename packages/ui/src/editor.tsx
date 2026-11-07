@@ -1,7 +1,7 @@
 // [cards] 카드 편집기 부품 — 덱 줄·캔버스·레이어·핸들·자산 칸·레이어 패널.
 // 위치·크기는 카드 원본 픽셀을 받아 %(그리고 글자는 컨테이너 폭 단위 cqw)로 그린다 — 화면 폭이 달라도 같은 비율.
 // 화면(dashboard)은 style 을 못 쓰므로 계산된 기하 값은 여기서만 style 로 넣는다. 꾸밈(색·간격·선)은 styles.css 토큰만.
-import type { DragEvent, PointerEvent, ReactNode } from "react";
+import type { CSSProperties, DragEvent, PointerEvent, ReactNode } from "react";
 import { cx } from "./poly";
 
 const pct = (v: number, of: number) => `${(v / of) * 100}%`;
@@ -91,7 +91,7 @@ export function CanvasStage({
       data-canvas-stage=""
       role={mini ? undefined : "region"}
       aria-label={label}
-      style={{ aspectRatio: `${width} / ${height}`, background }}
+      style={{ aspectRatio: `${width} / ${height}`, background, "--ar": width / height } as CSSProperties}
       onPointerDown={onPointerDown}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -104,6 +104,14 @@ export function CanvasStage({
       {children}
     </div>
   );
+}
+
+/**
+ * 가운데 칸에서 캔버스가 남는 높이에 맞춰 줄어들게 하는 틀(넓은 화면). 카드 비율(--ar)을 지키면서 폭·높이 중 먼저 닿는 쪽에 맞춘다.
+ * 좁은 화면(패널이 쌓이는 폭)에서는 아무 효과가 없고 캔버스가 폭 100% 로 그려진다.
+ */
+export function CanvasFit({ children }: { children: ReactNode }) {
+  return <div className="ui-canvas-fit">{children}</div>;
 }
 
 export interface CanvasBox {

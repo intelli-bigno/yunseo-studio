@@ -152,6 +152,8 @@ export const component = {
 export const contrastPairs = [
   { fg: "text", bg: "bg", min: 4.5 },
   { fg: "text", bg: "raised", min: 4.5 },
+  { fg: "text", bg: "surface", min: 4.5 },
+  { fg: "text", bg: "hover", min: 4.5 }, // 아이콘 버튼 위에 올렸을 때(글자·글리프)
   { fg: "textDim", bg: "bg", min: 4.5 },
   { fg: "textDim", bg: "surface", min: 4.5 },
   { fg: "textMute", bg: "bg", min: 4.5 },

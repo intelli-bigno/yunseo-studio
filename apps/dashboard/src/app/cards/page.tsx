@@ -24,7 +24,7 @@ export default async function CardsPage({ searchParams }: { searchParams: Promis
   const { deck: id } = await searchParams;
   const [decks, list, rec] = await Promise.all([cardDecks().list(), assets(), id ? cardDecks().open(id) : Promise.resolve(null)]);
   return (
-    <Page>
+    <Page fit>
       <PageHeader title="카드뉴스 제작" />
       <CardsEditor initialDecks={decks} initial={rec ? { deck: rec.deck, revision: rec.revision } : null} assets={list} />
     </Page>

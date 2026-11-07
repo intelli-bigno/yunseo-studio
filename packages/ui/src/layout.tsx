@@ -70,8 +70,9 @@ export function TopBar({ children }: { children: ReactNode }) {
   return <header className="ui-top">{children}</header>;
 }
 
-export function Page({ children }: { children: ReactNode }) {
-  return <main className="ui-page">{children}</main>;
+/** fit: 화면 높이(헤더 아래 남은 100dvh)에 고정한다 — 편집 화면처럼 스크롤 없이 한 화면에 조작해야 할 때. 안쪽 칸(패널)이 따로 스크롤한다 */
+export function Page({ children, fit = false }: { children: ReactNode; fit?: boolean }) {
+  return <main className={cx("ui-page", fit && "is-fit")}>{children}</main>;
 }
 
 type Align = "start" | "center" | "end" | "baseline" | "stretch";

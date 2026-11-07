@@ -56,6 +56,7 @@ import {
   AssetGrid,
   AssetTile,
   Button,
+  CanvasFit,
   CanvasGuides,
   ColorField,
   DeckStrip,
@@ -779,7 +780,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
   );
 
   return (
-    <Stack gap={4}>
+    <Stack gap={3} grow>
       <Stack direction="row" gap={3} wrap align="center">
         <Input aria-label="덱 제목" value={deck.title} maxLength={80} onChange={(e) => edit((d) => ({ ...d, title: e.target.value }), "title")} />
         <Select aria-label="카드 규격" value={deck.preset} onChange={(e) => edit((d) => ({ ...d, preset: e.target.value as CardPresetId }))}>
@@ -835,9 +836,11 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
         right={right}
         stage={
           <>
-            <CardView card={card} preset={deck.preset} watermark={wm} selected={selected} onLayerDown={(l, e) => startDrag(l, "move", e)} onHandleDown={(l, m, e) => startDrag(l, m, e)} onDrop={onDrop}>
-              <CanvasGuides v={guides.v} h={guides.h} cw={cw} ch={ch} />
-            </CardView>
+            <CanvasFit>
+              <CardView card={card} preset={deck.preset} watermark={wm} selected={selected} onLayerDown={(l, e) => startDrag(l, "move", e)} onHandleDown={(l, m, e) => startDrag(l, m, e)} onDrop={onDrop}>
+                <CanvasGuides v={guides.v} h={guides.h} cw={cw} ch={ch} />
+              </CardView>
+            </CanvasFit>
             <Stack direction="row" gap={2} wrap>
               <Button variant="secondary" onClick={() => put(textLayer(newId(), deck.preset))}>
                 + 텍스트
