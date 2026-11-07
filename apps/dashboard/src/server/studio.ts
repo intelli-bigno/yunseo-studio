@@ -20,6 +20,10 @@ import type { CardRenderer, ReelComposer } from "@yunseo/application";
 import { DEFAULT_REEL_PRESET, type ContentRules } from "@yunseo/domain";
 // [W3 릴스] 릴스 편집 프로젝트 저장소 조립에 쓰는 것
 import { createReelsProjectStore, ReelsRevisionConflictError, type ReelsProjectStore } from "@yunseo/adapters-storage";
+// [W5 릴스] 편집 명령 로그·타임라인 합성기 조립에 쓰는 것
+import { DatabaseSync } from "node:sqlite";
+import { createReelsOpsStore, type ReelsOpsStore } from "@yunseo/adapters-storage";
+import { composeTimeline, detectSpeech, probeMedia, type ComposeTimelineOptions } from "@yunseo/adapters-video";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -161,10 +165,30 @@ export const operatorName = (): string => process.env.STUDIO_OPERATOR?.trim() ||
 
 // [W3 릴스] 릴스 편집 프로젝트 저장소(레인 전용 테이블 reels_projects) — 원고와 같은 STUDIO_DB 파일, 연결은 따로. 쓰는 곳은 server/reels.ts
 export { ReelsRevisionConflictError };
-const w3 = globalThis as typeof globalThis & { __yunseoReels?: ReelsProjectStore };
-export function reelsStore(): ReelsProjectStore {
+const w3 = globalThis as typeof globalThis & { __yunseoReels?: ReelsProjectStore; __yunseoReelsDb?: DatabaseSync; __yunseoReelsOps?: ReelsOpsStore };
+/** STUDIO_DB 가 없을 때 프로젝트 저장소와 op 로그가 같은 메모리 DB 를 쓰게 연결 하나를 나눈다 */
+const reelsDbOption = () => {
   const path = process.env.STUDIO_DB;
-  return (w3.__yunseoReels ??= createReelsProjectStore(path ? { path } : {}));
+  return path ? { path } : { db: (w3.__yunseoReelsDb ??= new DatabaseSync(":memory:")) };
+};
+export function reelsStore(): ReelsProjectStore {
+  return (w3.__yunseoReels ??= createReelsProjectStore(reelsDbOption()));
+}
+
+// [W5 릴스] 편집 명령 로그(reels_ops)·타임라인 합성기(ffmpeg) — 쓰는 곳은 server/reels-ops.ts
+export function reelsOpsStore(): ReelsOpsStore {
+  return (w3.__yunseoReelsOps ??= createReelsOpsStore(reelsDbOption()));
+}
+export function reelsTimelineTools() {
+  const bins = { ffmpegPath: process.env.FFMPEG_PATH || DEFAULT_BINARIES.ffmpegPath, ffprobePath: process.env.FFPROBE_PATH || DEFAULT_BINARIES.ffprobePath };
+  const fontsDir = repoPath("packages", "adapters", "render-html", "fonts") ?? undefined;
+  const preset = { ...DEFAULT_REEL_PRESET, subtitle: { ...DEFAULT_REEL_PRESET.subtitle, fontName: PRETENDARD_FAMILY, coversHangul: true } };
+  return {
+    assetsDir: repoPath("assets"),
+    probe: (file: string) => probeMedia(bins, file),
+    detectSpeech: (file: string, opt: { noiseDb: number; minMs: number }, durationMs: number) => detectSpeech(bins, file, opt, durationMs),
+    compose: (o: Omit<ComposeTimelineOptions, "bins" | "preset" | "fontsDir">) => composeTimeline({ ...o, bins, preset, ...(fontsDir ? { fontsDir } : {}) }),
+  };
 }
 
 // [cards] 카드뉴스 편집기 덱 저장 ─────────────────────────────────────────

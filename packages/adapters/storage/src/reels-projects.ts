@@ -44,8 +44,8 @@ export const REELS_PROJECTS_DDL = `CREATE TABLE IF NOT EXISTS reels_projects (
 type Row = Record<string, unknown>;
 const summary = (r: Row): ReelsProjectSummary => ({ id: String(r.id), title: String(r.title), revision: Number(r.revision), createdAt: String(r.created_at), updatedAt: String(r.updated_at) });
 
-export function createReelsProjectStore(options: { path?: string; now?: () => string } = {}): ReelsProjectStore {
-  const db = new DatabaseSync(options.path ?? ":memory:");
+export function createReelsProjectStore(options: { path?: string; now?: () => string; /** 이미 연 연결을 함께 쓴다(메모리 DB 를 편집 명령 로그와 나눌 때) */ db?: DatabaseSync } = {}): ReelsProjectStore {
+  const db = options.db ?? new DatabaseSync(options.path ?? ":memory:");
   db.exec("PRAGMA busy_timeout = 5000");
   if (options.path && options.path !== ":memory:") db.exec("PRAGMA journal_mode = WAL");
   db.exec(REELS_PROJECTS_DDL);

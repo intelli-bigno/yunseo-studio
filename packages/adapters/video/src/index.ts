@@ -6,3 +6,4 @@ export * from "./ffprobe";
 export * from "./ass";
 export * from "./png";
 export * from "./woff";
+export * from "./timeline-composer"; // [W5 릴스] 타임라인(v2) 합성기
