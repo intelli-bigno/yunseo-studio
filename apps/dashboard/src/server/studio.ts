@@ -156,3 +156,19 @@ export const pipelineSetupError = (): string | null => composeL7().error;
 
 /** 이력·게이트 기록의 기본 이름 */
 export const operatorName = (): string => process.env.STUDIO_OPERATOR?.trim() || "운영자";
+
+// [cards] 카드뉴스 편집기 덱 저장 ─────────────────────────────────────────
+// 같은 STUDIO_DB 파일의 레인 전용 테이블(cards_decks)을 쓴다 — 연결은 따로(WAL 이라 같은 파일을 함께 열어도 된다). 없으면 메모리.
+import { createSqliteCardDeckStore } from "@yunseo/adapters-storage";
+import { createCardDeckUseCases, type CardDeckUseCases } from "@yunseo/application";
+
+const cardsSlot = globalThis as typeof globalThis & { __yunseoCardDecks?: CardDeckUseCases };
+
+export function cardDecks(): CardDeckUseCases {
+  const path = process.env.STUDIO_DB;
+  return (cardsSlot.__yunseoCardDecks ??= createCardDeckUseCases({
+    store: createSqliteCardDeckStore(path ? { path } : {}),
+    now: () => new Date().toISOString(),
+    newId: () => randomBytes(8).toString("hex"),
+  }));
+}

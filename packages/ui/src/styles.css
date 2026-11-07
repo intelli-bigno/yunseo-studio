@@ -349,3 +349,52 @@ img { display: block; max-width: 100%; }
   .ui-cell > .ui-card:hover, .ui-slot:hover, .ui-btn:not([disabled]):hover, .ui-btn:not([disabled]):active, .ui-seg-item:active, .ui-thumb:active, .ui-slot:active { transform: none; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
+
+/* ── [cards] 카드 편집기 — 덱 줄 · 캔버스 · 패널. 넓으면 세 칸, 1184 아래는 패널이 아래로, 640 아래는 덱 줄이 가로로 ── */
+.ui-editor { display: grid; grid-template-columns: calc(var(--sp-8) * 2) minmax(0, 1fr) var(--l-rail); gap: var(--grid-gutter); align-items: start; width: 100%; min-width: 0; }
+.ui-editor-deck, .ui-editor-stage, .ui-editor-panel { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.ui-editor-stage { align-items: center; }
+.ui-canvas { position: relative; width: 100%; max-width: calc(var(--sp-8) * 9); overflow: hidden; container-type: inline-size; border-radius: var(--r-sm); box-shadow: var(--shadow-card); touch-action: none; user-select: none; }
+.ui-canvas.is-mini { max-width: none; box-shadow: none; pointer-events: none; border-radius: 0; }
+.ui-canvas-layer { position: absolute; box-sizing: border-box; }
+.ui-canvas-layer.is-editable { cursor: move; }
+.ui-canvas-layer.is-selected { outline: 2px solid var(--c-accent); outline-offset: -1px; }
+.ui-canvas-img { width: 100%; height: 100%; display: block; pointer-events: none; }
+.ui-canvas-text { width: 100%; height: 100%; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; word-break: keep-all; }
+.ui-canvas-overlay { width: 100%; height: 100%; background: #000; }
+.ui-canvas-handle { position: absolute; width: var(--sp-3); height: var(--sp-3); background: var(--c-accent); border: 1px solid var(--c-accent-ink); border-radius: var(--r-sm); transform: translate(-50%, -50%); touch-action: none; }
+.ui-canvas-handle.is-nw { left: 0; top: 0; cursor: nwse-resize; }
+.ui-canvas-handle.is-n { left: 50%; top: 0; cursor: ns-resize; }
+.ui-canvas-handle.is-ne { left: 100%; top: 0; cursor: nesw-resize; }
+.ui-canvas-handle.is-e { left: 100%; top: 50%; cursor: ew-resize; }
+.ui-canvas-handle.is-se { left: 100%; top: 100%; cursor: nwse-resize; }
+.ui-canvas-handle.is-s { left: 50%; top: 100%; cursor: ns-resize; }
+.ui-canvas-handle.is-sw { left: 0; top: 100%; cursor: nesw-resize; }
+.ui-canvas-handle.is-w { left: 0; top: 50%; cursor: ew-resize; }
+.ui-deck-strip { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.ui-deck-thumb-wrap { display: flex; flex-direction: column; gap: var(--sp-1); align-items: flex-start; min-width: 0; }
+.ui-deck-thumb { display: block; width: 100%; padding: 0; border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-sunken); overflow: hidden; cursor: pointer; opacity: 0.7; }
+.ui-deck-thumb.is-current { opacity: 1; border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent); }
+.ui-asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--sp-8), 1fr)); gap: var(--sp-2); }
+.ui-asset { display: block; aspect-ratio: 4 / 5; padding: 0; border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-sunken); overflow: hidden; cursor: grab; }
+.ui-asset:hover { border-color: var(--c-accent); }
+.ui-asset-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ui-layer-row { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-2); border-top: 1px solid var(--c-line); min-width: 0; }
+.ui-layer-row.is-current { background: color-mix(in srgb, var(--c-accent) 10%, transparent); box-shadow: inset 2px 0 0 var(--c-accent); }
+.ui-layer-row.is-hidden .ui-layer-title { color: var(--c-text-mute); text-decoration: line-through; }
+.ui-layer-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) 0; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; }
+.ui-layer-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-layer-actions { flex: none; display: inline-flex; gap: var(--sp-1); }
+.ui-range-head { display: flex; justify-content: space-between; gap: var(--sp-2); }
+.ui-range { width: 100%; accent-color: var(--c-accent); }
+.ui-color { display: flex; align-items: center; gap: var(--sp-2); }
+.ui-color-swatch { width: var(--input-height); height: var(--input-height); padding: 0; border: 1px solid var(--c-line-strong); border-radius: var(--input-radius); background: none; cursor: pointer; }
+@media (max-width: 1184px) {
+  .ui-editor { grid-template-columns: calc(var(--sp-8) * 2) minmax(0, 1fr); }
+  .ui-editor-panel { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .ui-editor { grid-template-columns: minmax(0, 1fr); }
+  .ui-deck-strip { flex-direction: row; overflow-x: auto; }
+  .ui-deck-thumb-wrap { flex: none; width: calc(var(--sp-8) * 1.5); }
+}
