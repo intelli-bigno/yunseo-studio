@@ -17,7 +17,11 @@ const sans = IBM_Plex_Sans_KR({ weight: ["400", "600"], variable: "--font-sans",
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--font-mono", display: "swap" });
 
 export const metadata = {
-  title: "yunseo-studio",
+  title: "YS-Studio",
+  applicationName: "YS-Studio",
+  description: "YS-Studio — 투자 매거진 카드뉴스·쇼츠 운영 대시보드",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon.png", apple: "/apple-icon.png" },
   robots: { index: false, follow: false }, // 운영자 전용 화면 — 검색 노출 금지
 };
 
@@ -36,7 +40,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <Html fonts={[sans.variable, mono.variable]} head={<style>{cssText()}</style>}>
       <Shell
         sidebar={
-          <Sidebar brand={<Brand mark="Y" name="Studio" />} foot={<KeyHint keys={["?"]} label="단축키" />}>
+          <Sidebar brand={<Brand logo="/icon.png" name="YS-Studio" />} foot={<KeyHint keys={["?"]} label="단축키" />}>
             <Nav items={nav} />
           </Sidebar>
         }

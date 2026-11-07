@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { choreography, color, component, duration, contrastPairs, contrastRatio, cssText, cssVariables, grid, layout, radius, space, type, typeSteps } from "./index";
 
-describe("디자인 토큰 (Club Green)", () => {
+describe("디자인 토큰 (Ink & Brass)", () => {
   it.each(contrastPairs.map((p) => [p.fg, p.bg, p.min] as const))("%s / %s 대비가 %s 이상", (fg, bg, min) => {
     expect(contrastRatio(color[fg], color[bg])).toBeGreaterThanOrEqual(min);
   });

@@ -1,4 +1,6 @@
-# yunseo-studio
+# YS-Studio
+
+> 저장소명 `yunseo-studio`, 화면 표시명 **YS-Studio**.
 
 최윤서 투자 매거진의 Instagram 카드뉴스·YouTube Shorts 운영 대시보드 저장소.
 
