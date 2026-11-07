@@ -1,6 +1,7 @@
 // [cards] 카드 편집기 부품 — 덱 줄·캔버스·레이어·핸들·자산 칸·레이어 패널.
 // 위치·크기는 카드 원본 픽셀을 받아 %(그리고 글자는 컨테이너 폭 단위 cqw)로 그린다 — 화면 폭이 달라도 같은 비율.
 // 화면(dashboard)은 style 을 못 쓰므로 계산된 기하 값은 여기서만 style 로 넣는다. 꾸밈(색·간격·선)은 styles.css 토큰만.
+import { Children } from "react";
 import type { ComponentPropsWithoutRef, CSSProperties, DragEvent, KeyboardEvent, PointerEvent, ReactNode } from "react";
 import { cx, vars, type Tone } from "./poly";
 
@@ -65,11 +66,13 @@ export const rightRatioFromPointer = (clientX: number, box: { right: number; wid
  * 오른쪽 패널은 기본 폭이 편집기의 40% 이고 경계선을 끌어(←→ 키도 됨) 바꾼다(rightRatio·onRightRatio — 저장은 화면이 한다).
  * sheet 는 오른쪽 패널 위에 뜨는 접이식 시트(요소를 골랐을 때의 속성) — 없으면 그리지 않는다.
  */
-export function EditorLayout({ left, stage, strip, right, leftOpen, rightOpen, onToggleLeft, onToggleRight, leftLabel, rightLabel, rightRatio, onRightRatio, sheet, sheetTitle = "", sheetOpen = true, onToggleSheet }: {
+export function EditorLayout({ left, stage, strip, right, rightBar, leftOpen, rightOpen, onToggleLeft, onToggleRight, leftLabel, rightLabel, rightRatio, onRightRatio, sheet, sheetTitle = "", sheetOpen = true, onToggleSheet }: {
   left: ReactNode;
   stage: ReactNode;
   strip: ReactNode;
   right: ReactNode;
+  /** 오른쪽 패널 위 고정 줄(PanelBar) — 스크롤 본문 밖에 두어 높이를 flex 가 계산한다(본문 ≥ 패널 50% 를 상수 없이 보장) */
+  rightBar?: ReactNode;
   leftOpen: boolean;
   rightOpen: boolean;
   onToggleLeft: () => void;
@@ -111,7 +114,8 @@ export function EditorLayout({ left, stage, strip, right, leftOpen, rightOpen, o
         </button>
         {rightOpen && (
           <div className="ui-editor-side-main">
-            <div className={cx("ui-editor-side-body", Boolean(sheet) && "has-sheet")}>{right}</div>
+            {rightBar}
+            <div className="ui-editor-side-body is-grid">{right}</div>
             {onRightRatio && (
               <div
                 className="ui-editor-split"
@@ -323,7 +327,7 @@ export function CanvasWatermark({ items, cw, ch, kind, text, src, size, color, o
 export function DeckStrip({ label, children, actions }: { label: string; children: ReactNode; actions?: ReactNode }) {
   return (
     <div className="ui-deck-bar">
-      <div className="ui-deck-strip" role="list" aria-label={label}>
+      <div className="ui-deck-strip" role="list" aria-label={label} style={vars({ "--deck-n": Math.max(1, Children.count(children)) })}>
         {children}
       </div>
       {actions && <div className="ui-deck-actions">{actions}</div>}

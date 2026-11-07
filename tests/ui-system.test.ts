@@ -48,7 +48,7 @@ describe("ui 스타일은 토큰 값만 쓴다", () => {
 
   it("쓰는 변수는 모두 토큰에 있다", () => {
     const defined = new Set(Object.keys(cssVariables()));
-    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs", "--ar", "--ed-left", "--ed-right", "--ed-right-w", "--ed-bar", "--ed-thumb", "--ed-scroll"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다), --ar: 캔버스 가로/세로 비(CanvasStage 가 넣는다), --ed-*: 편집기 패널 폭·패널 바·장 목록 치수(EditorLayout·styles.css 가 넣는다)
+    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs", "--ar", "--ed-left", "--ed-right", "--ed-right-w", "--ed-thumb", "--ed-scroll", "--ed-fit", "--deck-n"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다), --ar: 캔버스 가로/세로 비(CanvasStage 가 넣는다), --ed-*: 편집기 패널 폭·장 목록 치수, --deck-n: 장 수(DeckStrip 이 넣는다)
     const used = new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]!));
     expect([...used].filter((v) => !defined.has(v) && !local.has(v))).toEqual([]);
   });
@@ -186,10 +186,13 @@ describe("카드 편집기 오른쪽 패널은 레퍼런스가 주인이다", ()
 
   it("속성 시트는 패널 아래 흐름에 붙어(absolute 아님) 레퍼런스 그리드를 가리지 않는다 — 열리면 그리드가 줄고 둘 다 따로 스크롤된다", () => {
     expect(prop(".ui-sheet", "position")).toBeUndefined();
-    expect(prop(".ui-sheet", "flex")).toBe("none");
-    // 레퍼런스 우선 — 시트는 패널의 45% 와 (50% − 고정 바 높이) 중 작은 쪽까지만(바 아래 그리드가 패널 절반 이상), 넘치면 시트 안에서 스크롤
-    expect(prop(".ui-sheet", "max-height")).toBe("max(calc(var(--button-height) * 3), min(45%, calc(50% - var(--ed-bar))))");
-    expect(prop(".ui-editor-side-main", "--ed-bar")).toBe("calc(var(--sp-8) * 1.75)");
+    // 레퍼런스 우선(상수 없이 구조로) — 고정 바는 스크롤 밖 flex 항목, 그리드 본문은 flex: 1 0 50%(패널 50% 아래로 안 줄어듦), 시트만 줄어든다(상한 45%)
+    expect(prop(".ui-sheet", "flex")).toBe("0 1 auto");
+    expect(prop(".ui-sheet", "min-height")).toBe("var(--button-height)");
+    expect(prop(".ui-sheet", "max-height")).toBe("45%");
+    expect(prop(".ui-editor-side-body.is-grid", "flex")).toBe("1 0 50%");
+    expect(prop(".ui-editor-side-main > .ui-panel-bar", "flex")).toBe("none");
+    expect(css).not.toContain("--ed-bar"); // 바 높이를 가정한 매직 넘버를 두지 않는다
     expect(prop(".ui-sheet-body", "overflow-y")).toBe("auto");
     expect(prop(".ui-editor-side-body", "flex")).toBe("1");
     expect(prop(".ui-editor-side-body", "min-height")).toBe("0");

@@ -717,23 +717,23 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     <RefTile key={a.id} src={a.view ?? a.src} label={a.label} action={action} onDragStart={(e) => (e.dataTransfer.setData(DND_ASSET, a.id), (e.dataTransfer.effectAllowed = "copy"))} onClick={onClick} />
   );
 
-  const right = (
-    <>
-      <PanelBar>
-        <Segmented label="오른쪽 패널">
-          <SegmentedItem current={tab === "ref"} onClick={() => setTab("ref")}>
-            레퍼런스 {refs.length}
-          </SegmentedItem>
-          <SegmentedItem current={tab === "gen"} onClick={() => setTab("gen")}>
-            생성 {gens.length}
-          </SegmentedItem>
-          <SegmentedItem current={tab === "layers"} onClick={() => setTab("layers")}>
-            레이어
-          </SegmentedItem>
-        </Segmented>
-        {tab === "ref" && (
+  const rightBar = (
+    <PanelBar>
+      <Segmented label="오른쪽 패널">
+        <SegmentedItem current={tab === "ref"} onClick={() => setTab("ref")}>
+          레퍼런스 {refs.length}
+        </SegmentedItem>
+        <SegmentedItem current={tab === "gen"} onClick={() => setTab("gen")}>
+          생성 {gens.length}
+        </SegmentedItem>
+        <SegmentedItem current={tab === "layers"} onClick={() => setTab("layers")}>
+          레이어
+        </SegmentedItem>
+      </Segmented>
+      {tab === "ref" && (
+        <Stack direction="row" gap={2} align="center">
+          <Input aria-label="레퍼런스 검색" type="search" placeholder="검색 — 제목·태그" value={query} onChange={(e) => setQuery(e.target.value)} />
           <Stack direction="row" gap={2} align="center">
-            <Input aria-label="레퍼런스 검색" type="search" placeholder="검색 — 제목·태그" value={query} onChange={(e) => setQuery(e.target.value)} />
             <Select aria-label="묶음" value={refSet} onChange={(e) => setRefSet(e.target.value)}>
               <option value="">모든 묶음 {refs.length}</option>
               {sets.map((g) => (
@@ -746,8 +746,13 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
               {shownRefs.length}/{refs.length}
             </Text>
           </Stack>
-        )}
-      </PanelBar>
+        </Stack>
+      )}
+    </PanelBar>
+  );
+
+  const right = (
+    <>
       {tab === "ref" && (
         <PanelPad>
           {shownRefs.length === 0 ? (
@@ -907,6 +912,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
         onToggleRight={() => setRightOpen((v) => !v)}
         left={left}
         right={right}
+        rightBar={rightBar}
         rightRatio={ratio}
         onRightRatio={resizeRight}
         sheet={layer ? props : undefined}
