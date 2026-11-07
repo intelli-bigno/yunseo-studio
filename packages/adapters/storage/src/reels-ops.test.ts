@@ -112,3 +112,33 @@ describe("POST /api/reels/:id/ops 본체", () => {
     expect(r.body.effects).toMatchObject({ created: ["sub-0001", "sub-0002"] });
   });
 });
+
+describe("PUT 통째 저장(replace_project)", () => {
+  const moved = () => ({ ...V1, title: "새 이름", clips: [{ ...V1.clips[0]!, start: 1000 }, V1.clips[1]!] });
+
+  it("op 로그에 replace_project 로 남고 revision 이 오르며 undo 로 되돌린다", async () => {
+    const { uc, repo, projects } = setup();
+    const r = uc.replaceProject(ID, moved() as never, 1);
+    expect(r).toMatchObject({ status: 200, body: { revision: 2, opId: "op-000002", undo: { available: true, redo: false } } });
+    expect(JSON.parse(repo.log(ID).at(-1)!.op)).toEqual({ op: "replace_project" });
+    const saved = JSON.parse(projects.get(ID)!.data);
+    expect(saved).toMatchObject({ version: 2, title: "새 이름", clips: [{ id: "c1", start: 1000 }, { id: "a1" }] });
+    const u = await uc.postOp(ID, { revision: 2, op: { op: "undo" } });
+    expect(u.status).toBe(200);
+    expect(JSON.parse(projects.get(ID)!.data)).toMatchObject({ title: "옛 편", clips: [{ id: "c1", start: 0 }, { id: "a1" }] });
+  });
+
+  it("낡은 revision 은 409 REVISION_CONFLICT", () => {
+    const { uc } = setup();
+    expect(uc.replaceProject(ID, moved() as never, 7)).toMatchObject({ status: 409, body: { error: { code: "REVISION_CONFLICT" }, revision: 1 } });
+  });
+
+  it("v1 로 담을 수 없는 v2 편집(속도)이 있으면 409 LOSSY_OVERWRITE — 덮어쓰지 않는다", async () => {
+    const { uc, projects } = setup();
+    const s = await uc.postOp(ID, { revision: 1, op: { op: "set_speed", clipId: "c1", speed: 2 } });
+    expect(s.status).toBe(200);
+    const before = projects.get(ID)!.data;
+    expect(uc.replaceProject(ID, moved() as never, 2)).toMatchObject({ status: 409, body: { error: { code: "LOSSY_OVERWRITE" }, revision: 2 } });
+    expect(projects.get(ID)!.data).toBe(before);
+  });
+});

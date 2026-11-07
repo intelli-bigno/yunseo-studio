@@ -1,11 +1,11 @@
 // [W5 릴스] 타임라인 합성기 — 필터 그래프 생성 단위 테스트(ffmpeg 없이) + 짧은 샘플 렌더 통합 테스트 1개(진짜 ffmpeg, Windows 실행기).
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { emptyProjectV2, type ReelsProjectV2 } from "@yunseo/domain";
 import { assertFfmpegReady, runProcess, type FfmpegBinaries } from "./ffmpeg-runner";
-import { atempoChain, buildTimelineAss, buildTimelineGraph, composeTimeline, keyframeExpr, speechFromSilencedetect, xfadeName, type TimelineMedia } from "./timeline-composer";
+import { atempoChain, buildTimelineAss, buildTimelineGraph, composeTimeline, escapeFilterPath, keyframeExpr, speechFromSilencedetect, xfadeName, type TimelineMedia } from "./timeline-composer";
 import { grabFrame, pixelAt, writeTone } from "./testing";
 
 function sample(): ReelsProjectV2 {
@@ -83,6 +83,61 @@ describe("buildTimelineGraph(순수)", () => {
       { from: 2000, to: 3000 },
     ]);
   });
+});
+
+describe("escapeFilterPath(필터그래프 경로)", () => {
+  /** ffmpeg 가 하는 두 번 풀기를 흉내 — ① 그래프(\\ ' [ ] , ;) ② 옵션(\\ ' :) */
+  const unescape = (s: string, set: string) => {
+    let out = "";
+    for (let i = 0; i < s.length; i += 1) out += s[i] === "\\" && i + 1 < s.length && set.includes(s[i + 1]!) ? s[++i] : s[i];
+    return out;
+  };
+  const roundTrip = (p: string) => unescape(unescape(escapeFilterPath(p), "\\'[],;"), "\\':");
+
+  it("Windows 절대경로 — 콜론·역슬래시가 이스케이프되고 두 번 풀면 원래 경로", () => {
+    const win = "C:\\Users\\yjh99\\work\\luts\\film-warm.cube";
+    expect(escapeFilterPath(win)).toBe(String.raw`C\\:\\\\Users\\\\yjh99\\\\work\\\\luts\\\\film-warm.cube`);
+    expect(roundTrip(win)).toBe(win);
+    expect(roundTrip("/mnt/d/a/b.ass")).toBe("/mnt/d/a/b.ass");
+  });
+
+  it("주입 시도(' , ; [ ] :)는 값 안에 갇힌다 — 이스케이프 안 된 구분자가 남지 않는다", () => {
+    const evil = "x.cube':file=/etc/passwd[o];[o]drawtext=text=hi,null";
+    const e = escapeFilterPath(evil);
+    expect(roundTrip(evil)).toBe(evil);
+    // 그래프 수준에서 역슬래시 없이 남은 구분자가 없다
+    expect(e.replace(/\\./g, "")).not.toMatch(/['[\],;:]/);
+  });
+
+  it("줄바꿈·제어 문자·빈 값은 거부", () => {
+    expect(() => escapeFilterPath("a\nb.ass")).toThrow(/쓸 수 없는/);
+    expect(() => escapeFilterPath("")).toThrow();
+  });
+
+  it("그래프에 Windows 경로 LUT·ASS·서체 폴더가 그대로(이스케이프되어) 들어간다", () => {
+    const p = sample();
+    p.clips[0]!.color!.lut = { id: "film-warm", strength: 0.5 };
+    const g = buildTimelineGraph({ project: p, media: (id) => MEDIA[id], asset: () => "logo.png", lut: () => "D:\\luts\\film-warm.cube", assName: "C:\\out\\reel.ass", fontsDir: "C:\\fonts", outPath: "o.mp4" });
+    expect(g.filter).toContain(`lut3d=file=${escapeFilterPath("D:\\luts\\film-warm.cube")}[`);
+    expect(g.filter).toContain(`subtitles=${escapeFilterPath("C:\\out\\reel.ass")}:fontsdir=${escapeFilterPath("C:\\fonts")}`);
+  });
+
+  it(
+    "진짜 ffmpeg — 따옴표·쉼표·대괄호·공백이 든 절대경로의 ASS 를 subtitles 로 굽는다",
+    async () => {
+      await assertFfmpegReady(BINS, { burnIn: true });
+      const dir = await mkdtemp(join(tmpdir(), "yunseo-esc 'a,b[c];d-"));
+      try {
+        const ass = join(dir, "x.ass");
+        await writeFile(ass, "[Script Info]\nScriptType: v4.00+\nPlayResX: 64\nPlayResY: 64\n\n[V4+ Styles]\nFormat: Name, Fontsize\nStyle: Default,20\n\n[Events]\nFormat: Layer, Start, End, Style, Text\nDialogue: 0,0:00:00.00,0:00:01.00,Default,hi\n");
+        const r = await runProcess(BINS.ffmpegPath, ["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=0.2", "-filter_complex", `[0:v]subtitles=${escapeFilterPath(ass)}[v]`, "-map", "[v]", "-frames:v", "1", "-f", "null", "-"]);
+        expect(r.code).toBe(0);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+    60_000,
+  );
 });
 
 // ── 통합: 진짜 ffmpeg 로 3.6초 샘플 렌더 ─────────────────────

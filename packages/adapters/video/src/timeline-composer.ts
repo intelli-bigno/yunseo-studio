@@ -71,16 +71,24 @@ export interface TimelineGraph {
 const W = 1080;
 const H = 1920;
 const FPS = 30;
-const SAFE = /^[A-Za-z0-9_./-]+$/;
+
 const n = (v: number) => {
   const s = (Math.round(v * 10000) / 10000).toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
   return s === "-0" ? "0" : s;
 };
 const sec = (ms: number) => n(ms / 1000);
-const safePath = (p: string, what: string) => {
-  if (!SAFE.test(p)) throw new Error(`${what} 경로에는 영문·숫자·._/- 만 쓸 수 있다: ${p}`);
-  return p;
-};
+/**
+ * 필터그래프 안 경로 값 — Windows 절대경로(C:\\…)도 받는다. ffmpeg 는 두 번 푼다:
+ * ① 그래프 파서가 \\ ' [ ] , ; 앞 역슬래시를 풀고 ② 필터 옵션 파서가 \\ ' : 앞 역슬래시를 푼다. 그래서 ②를 먼저, ①을 나중에 씌운다.
+ * 줄바꿈·제어 문자는 거부한다.
+ */
+export function escapeFilterPath(p: string, what = "파일"): string {
+  // eslint-disable-next-line no-control-regex
+  if (!p || /[\u0000-\u001f\u007f]/.test(p)) throw new Error(`${what} 경로에 쓸 수 없는 문자가 있다: ${JSON.stringify(p)}`);
+  const opt = p.replace(/[\\':]/g, (m) => `\\${m}`);
+  return opt.replace(/[\\'[\],;]/g, (m) => `\\${m}`);
+}
+const safePath = escapeFilterPath;
 
 /** ffmpeg xfade 효과 이름 */
 export function xfadeName(kind: string, direction?: string): string | null {

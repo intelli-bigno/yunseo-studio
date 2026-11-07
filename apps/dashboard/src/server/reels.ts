@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { overlaps, projectIssues, type ReelsProject, type ReelsSource } from "@/lib/reels-timeline";
+import { toProjectV1, type ReelsProjectV2 } from "@yunseo/domain";
 import { listReels } from "./library";
 import { reelsStore, studioWorkDir } from "./studio";
 
@@ -20,9 +21,17 @@ export function reelsProjectProblems(v: unknown): string[] {
   return issues.length ? issues : overlaps(v as ReelsProject);
 }
 
-export function loadReelsProject(id: string): { project: ReelsProject; revision: number; updatedAt: string } | null {
+/**
+ * v1 편집기(통째 PUT)용 판. 저장값이 v2(ops 로 고친 판)면 v1 로 투영한다.
+ * lossless=false 면 v1 로 담을 수 없는 v2 편집이 있어 이 판으로 PUT 하면 409(LOSSY_OVERWRITE) — ops 로만 고친다.
+ */
+export function loadReelsProject(id: string): { project: ReelsProject; revision: number; updatedAt: string; lossless: boolean } | null {
   const r = isReelsProjectId(id) ? reelsStore().get(id) : null;
-  return r ? { project: JSON.parse(r.data) as ReelsProject, revision: r.revision, updatedAt: r.updatedAt } : null;
+  if (!r) return null;
+  const raw = JSON.parse(r.data) as { version?: unknown };
+  if (raw.version !== 2) return { project: raw as ReelsProject, revision: r.revision, updatedAt: r.updatedAt, lossless: true };
+  const v1 = toProjectV1(raw as ReelsProjectV2);
+  return { project: v1.project as ReelsProject, revision: r.revision, updatedAt: r.updatedAt, lossless: v1.lossless };
 }
 
 // ── 소스 ────────────────────────────────────────────────

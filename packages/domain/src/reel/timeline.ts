@@ -139,6 +139,7 @@ export const REELS_OP_ERROR_STATUS = {
   ID_EXISTS: 409,
   NOTHING_TO_UNDO: 409,
   NOTHING_TO_REDO: 409,
+  LOSSY_OVERWRITE: 409,
   TRACK_KIND_MISMATCH: 422,
   TRACK_LOCKED: 422,
   CLIP_OVERLAP: 422,
@@ -236,8 +237,8 @@ export function checkProject(p: ReelsProjectV2, opts: { subtitleMaxLines?: numbe
 }
 
 // ── v1 → v2 ───────────────────────────────────────────────
-interface V1Clip { id: string; trackId: string; start: number; duration: number; offset: number; sourceId?: string; sourceKind?: SourceKind; sourceMs?: number; text?: string; component?: "title" | "badge" | "cta" }
-interface V1Project { version: 1; title: string; tracks: { id: string; kind: string; name: string; muted?: boolean }[]; clips: V1Clip[] }
+export interface V1Clip { id: string; trackId: string; start: number; duration: number; offset: number; sourceId?: string; sourceKind?: SourceKind; sourceMs?: number; text?: string; component?: "title" | "badge" | "cta" }
+export interface V1Project { version: 1; title: string; tracks: { id: string; kind: string; name: string; muted?: boolean }[]; clips: V1Clip[] }
 
 /** 저장된 JSON 을 v2 로 — v1 이면 §6 규칙으로 바꾸고 v2 면 그대로 */
 export function toProjectV2(raw: unknown): ReelsProjectV2 {
@@ -265,6 +266,37 @@ export function migrateV1toV2(p: V1Project): ReelsProjectV2 {
       return out;
     }),
   };
+}
+
+/** v2 → v1 투영(통째 저장 PUT·v1 편집기용). lossless=false 면 v1 로 담을 수 없는 v2 편집(캔버스·속도·색·키프레임 등)이 버려진 판이다 */
+export function toProjectV1(p: ReelsProjectV2): { project: V1Project; lossless: boolean } {
+  const project: V1Project = {
+    version: 1,
+    title: p.title,
+    tracks: p.tracks.map((t) => ({ id: t.id, kind: t.kind === "overlay" ? "component" : t.kind, name: t.name, ...(t.muted ? { muted: true } : {}) })),
+    clips: p.clips.map((c) => {
+      const out: V1Clip = { id: c.id, trackId: c.trackId, start: c.start, duration: clipLength(c), offset: c.in };
+      if (c.sourceId !== undefined) out.sourceId = c.sourceId;
+      if (c.sourceKind !== undefined) out.sourceKind = c.sourceKind;
+      if (c.sourceMs !== undefined) out.sourceMs = c.sourceMs;
+      const comp = c.component;
+      if (comp && (comp.type === "title" || comp.type === "badge" || comp.type === "cta")) {
+        out.component = comp.type;
+        out.text = comp.text;
+      } else if (c.text) out.text = c.text.value;
+      return out;
+    }),
+  };
+  return { project, lossless: stableJson(migrateV1toV2(project)) === stableJson(p) };
+}
+
+function stableJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).filter((k) => o[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${stableJson(o[k])}`).join(",")}}`;
+  }
+  return JSON.stringify(v);
 }
 
 export const isTransitionKind = (v: unknown): v is ReelTransitionName => REEL_TRANSITIONS.includes(v as ReelTransitionName);

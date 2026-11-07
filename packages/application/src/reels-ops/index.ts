@@ -2,6 +2,9 @@
 // 라우트는 JSON 을 넘기고 { status, body } 를 받아 그대로 돌려준다. 읽기 → 멱등 확인 → revision 확인 → 적용 → 검사 → 저장(+op 로그)만 한다.
 import {
   applyCommand,
+  diffProjects,
+  migrateV1toV2,
+  toProjectV1,
   ReelsOpError,
   toProjectV2,
   undoState,
@@ -9,6 +12,7 @@ import {
   type OpLogEntry,
   type ReelsOp,
   type ReelsProjectV2,
+  type V1Project,
   type SpeechSegment,
 } from "@yunseo/domain";
 
@@ -93,6 +97,49 @@ export function createReelsOpsUseCases(deps: ReelsOpsDeps) {
       const body: Record<string, unknown> = { id, revision: rec.revision, project: toProjectV2(JSON.parse(rec.data)), undo: undoState(log.map(entryOf)) };
       if (since !== undefined)
         body.ops = log.filter((r) => r.revision > since).map((r) => ({ revision: r.revision, opId: r.opId, clientId: r.clientId, kind: r.kind, op: JSON.parse(r.op), createdAt: r.createdAt }));
+      return { status: 200, body };
+    },
+
+    /**
+     * PUT 통째 저장(docs/12 §5) — v1 판을 v2 로 올려 바꾸고 op 로그에 {op:"replace_project"} 로 남긴다(undo 가능).
+     * 지금 판에 v1 로 담을 수 없는 v2 편집이 있으면 덮어쓰면 잃으므로 409 LOSSY_OVERWRITE.
+     */
+    replaceProject(id: string, project: V1Project, expectedRevision: number, clientId: string | null = null): ReelsOpsResponse {
+      const rec = deps.repo.get(id);
+      if (!rec) return fail(new ReelsOpError("PROJECT_NOT_FOUND", `${id} 없음`));
+      if (expectedRevision !== rec.revision) return fail(new ReelsOpError("REVISION_CONFLICT", `revision ${expectedRevision} 이 낡았다(현재 ${rec.revision})`), rec.revision);
+      let cur: ReelsProjectV2;
+      try {
+        cur = toProjectV2(JSON.parse(rec.data));
+      } catch (e) {
+        if (e instanceof ReelsOpError) return fail(e, rec.revision);
+        throw e;
+      }
+      if (!toProjectV1(cur).lossless)
+        return fail(new ReelsOpError("LOSSY_OVERWRITE", "v1 통째 저장으로 담을 수 없는 v2 편집이 있다 — ops 로 고친다"), rec.revision);
+      const next: ReelsProjectV2 = { ...migrateV1toV2(project), canvas: cur.canvas };
+      const forward = diffProjects(cur, next);
+      const inverse = diffProjects(next, cur);
+      const revision = rec.revision + 1;
+      const opId = opIdOf(revision);
+      const undo = undoState([...deps.repo.log(id).map(entryOf), { kind: "do", forward, inverse }]);
+      const body = { id, revision, opId, undo };
+      const saved = deps.repo.commit({
+        projectId: id,
+        expectedRevision: rec.revision,
+        title: next.title,
+        data: JSON.stringify(next),
+        opId,
+        clientId,
+        requestId: null,
+        kind: "do",
+        steps: 1,
+        op: JSON.stringify({ op: "replace_project" }),
+        forward: JSON.stringify(forward),
+        inverse: JSON.stringify(inverse),
+        response: JSON.stringify(body),
+      });
+      if (!saved.ok) return fail(new ReelsOpError("REVISION_CONFLICT", `저장 중 다른 곳이 먼저 고쳤다(현재 ${saved.current})`), saved.current);
       return { status: 200, body };
     },
 

@@ -9,6 +9,8 @@ import {
   formatSrtTime,
   insideSafeArea,
   keySentence,
+  migrateV1toV2,
+  toProjectV1,
   measureEm,
   planReel,
   reelLayoutIssues,
@@ -239,5 +241,31 @@ describe("장면 계획 — 시간축과 자막", () => {
     const long = cards([58, 58, 58, 58, 58]);
     const totals = REEL_TRANSITIONS.map((tr) => planReel(long, P, { transition: tr }).totalFrames);
     expect(new Set(totals).size).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("toProjectV1(v2 → v1 투영)", () => {
+  const v1 = {
+    version: 1 as const,
+    title: "편",
+    tracks: [{ id: "t-video", kind: "video", name: "영상 1" }, { id: "t-text", kind: "text", name: "텍스트 1" }, { id: "t-c", kind: "component", name: "컴포넌트 1", muted: true }],
+    clips: [
+      { id: "c1", trackId: "t-video", start: 0, duration: 2000, offset: 500, sourceId: "v", sourceKind: "video" as const, sourceMs: 9000 },
+      { id: "x1", trackId: "t-text", start: 100, duration: 900, offset: 0, text: "안녕" },
+      { id: "b1", trackId: "t-c", start: 0, duration: 500, offset: 0, component: "badge" as const, text: "NEW" },
+    ],
+  };
+  it("v1 → v2 → v1 은 원래 판 그대로, lossless", () => {
+    const r = toProjectV1(migrateV1toV2(v1));
+    expect(r.lossless).toBe(true);
+    expect(r.project).toEqual(v1);
+  });
+  it("속도·색처럼 v1 에 없는 값이 있으면 lossless=false", () => {
+    const p = migrateV1toV2(v1);
+    p.clips[0]!.speed = 2;
+    expect(toProjectV1(p).lossless).toBe(false);
+    const q = migrateV1toV2(v1);
+    q.clips[0]!.color = { brightness: 0.1, contrast: 0, saturation: 0, temperature: 0, lut: null };
+    expect(toProjectV1(q).lossless).toBe(false);
   });
 });
