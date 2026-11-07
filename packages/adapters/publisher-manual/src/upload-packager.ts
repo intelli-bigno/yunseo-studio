@@ -1,7 +1,7 @@
 // [L2] UploadPackager(계약) 구현 — 수동 업로드 묶음 zip: 카드 PNG + caption.txt + hashtags.txt + alt-text.txt + (있으면) 릴스 mp4·자막 + manifest.json.
 // 게시하지 않는다(D2: MVP 는 수동 업로드). 렌더 결과에 적힌 크기·sha256 과 실제 파일이 다르면 묶지 않는다(낡거나 바뀐 파일 차단).
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import type { BundleFiles, CardRenderResult, ReelResult, RenderedFile, UploadBundle, UploadPackager } from "@yunseo/application";
 import { writeZip, type ZipEntry } from "./zip";
@@ -89,14 +89,28 @@ export function createZipUploadPackager(options: ZipUploadPackagerOptions = {}):
 /** 산출물 읽기(묶음 zip 내려받기·렌더 카드 미리보기) — 작업 폴더 밖·다른 확장자는 읽지 않는다(경로는 저장소 기록에서 오지만 한 겹 더 막는다) */
 export function createBundleFiles(root: string): BundleFiles {
   const base = join(root, "/");
+  /** 읽어도 되는 경로면 정규화한 전체 경로, 아니면 null */
+  const allowed = (path: string): string | null => {
+    const full = join(path);
+    return full.startsWith(base) && /\.(zip|png|mp4|srt|vtt)$/i.test(basename(full)) ? full : null;
+  };
   return {
     async read(path: string): Promise<Uint8Array | null> {
-      const full = join(path);
-      if (!full.startsWith(base) || !/\.(zip|png|mp4|srt|vtt)$/i.test(basename(full))) return null;
+      const full = allowed(path);
+      if (!full) return null;
       try {
         return await readFile(full);
       } catch {
         return null;
+      }
+    },
+    async has(path: string): Promise<boolean> {
+      const full = allowed(path);
+      if (!full) return false;
+      try {
+        return (await stat(full)).isFile();
+      } catch {
+        return false;
       }
     },
   };
