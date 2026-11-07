@@ -63,12 +63,12 @@ export interface CanvasBox {
 }
 
 /** 레이어 자리 — 상자는 원본 픽셀, 카드 크기(cw·ch)로 % 를 낸다 */
-export function CanvasLayer({ box, cw, ch, selected = false, label, children, onPointerDown }: { box: CanvasBox; cw: number; ch: number; selected?: boolean; label: string; children: ReactNode; onPointerDown?: ((e: PointerEvent<HTMLDivElement>) => void) | undefined }) {
+export function CanvasLayer({ box, cw, ch, selected = false, locked = false, rotation = 0, opacity = 1, label, children, onPointerDown }: { box: CanvasBox; cw: number; ch: number; selected?: boolean; locked?: boolean; rotation?: number; opacity?: number; label: string; children: ReactNode; onPointerDown?: ((e: PointerEvent<HTMLDivElement>) => void) | undefined }) {
   return (
     <div
-      className={cx("ui-canvas-layer", selected && "is-selected", onPointerDown && "is-editable")}
+      className={cx("ui-canvas-layer", selected && "is-selected", onPointerDown && !locked && "is-editable", locked && "is-locked")}
       aria-label={label}
-      style={{ left: pct(box.x, cw), top: pct(box.y, ch), width: pct(box.w, cw), height: pct(box.h, ch) }}
+      style={{ left: pct(box.x, cw), top: pct(box.y, ch), width: pct(box.w, cw), height: pct(box.h, ch), transform: rotation ? `rotate(${rotation}deg)` : undefined, opacity: opacity < 1 ? opacity : undefined }}
       onPointerDown={onPointerDown}
     >
       {children}
@@ -95,16 +95,53 @@ export function CanvasImage({ src, fit, alt = "" }: { src: string; fit: "cover" 
 }
 
 /** 글자 — size 는 원본 픽셀, cw 는 카드 폭. 화면에서는 컨테이너 폭 비율(cqw)로 줄어든다 */
-export function CanvasText({ text, family, size, cw, weight, color, align, lineHeight }: { text: string; family: string; size: number; cw: number; weight: number; color: string; align: "left" | "center" | "right"; lineHeight: number }) {
+const rgba = (hex: string, a: number) => `rgba(${parseInt(hex.slice(1, 3), 16)}, ${parseInt(hex.slice(3, 5), 16)}, ${parseInt(hex.slice(5, 7), 16)}, ${a})`;
+
+export function CanvasText({
+  text, family, size, cw, weight, color, align, lineHeight, letterSpacing = 0, vAlign = "top", margin = 0, padding = 0, boxColor = "#000000", boxOpacity = 0,
+}: { text: string; family: string; size: number; cw: number; weight: number; color: string; align: "left" | "center" | "right"; lineHeight: number; letterSpacing?: number; vAlign?: "top" | "middle" | "bottom"; margin?: number; padding?: number; boxColor?: string; boxOpacity?: number }) {
+  const u = (v: number) => `${(v / cw) * 100}cqw`;
   return (
-    <div className="ui-canvas-text" style={{ fontFamily: family, fontSize: `${(size / cw) * 100}cqw`, fontWeight: weight, color, textAlign: align, lineHeight }}>
-      {text}
+    <div className="ui-canvas-text-frame" style={{ padding: u(margin) }}>
+      <div
+        className="ui-canvas-text"
+        style={{
+          fontFamily: family, fontSize: u(size), fontWeight: weight, color, textAlign: align, lineHeight, letterSpacing: u(letterSpacing), padding: u(padding),
+          justifyContent: vAlign === "top" ? "flex-start" : vAlign === "middle" ? "center" : "flex-end",
+          background: boxOpacity > 0 ? rgba(boxColor, boxOpacity) : undefined,
+        }}
+      >
+        <span>{text}</span>
+      </div>
     </div>
   );
 }
 
-export function CanvasOverlay({ opacity }: { opacity: number }) {
-  return <div className="ui-canvas-overlay" style={{ opacity }} />;
+export function CanvasOverlay({ opacity, color = "#000000" }: { opacity: number; color?: string }) {
+  return <div className="ui-canvas-overlay" style={{ opacity, background: color }} />;
+}
+
+/** 스냅 가이드 선 — 원본 픽셀 x(세로선)·y(가로선) */
+export function CanvasGuides({ v, h, cw, ch }: { v: number[]; h: number[]; cw: number; ch: number }) {
+  return (
+    <>
+      {v.map((x) => <span key={`v${x}`} className="ui-canvas-guide is-v" aria-hidden style={{ left: pct(x, cw) }} />)}
+      {h.map((y) => <span key={`h${y}`} className="ui-canvas-guide is-h" aria-hidden style={{ top: pct(y, ch) }} />)}
+    </>
+  );
+}
+
+/** 워터마크 — 자리(가운데 점)마다 글자 또는 그림 하나. 누르기는 통과시킨다 */
+export function CanvasWatermark({ items, cw, ch, kind, text, src, size, color, opacity, angle }: { items: { x: number; y: number }[]; cw: number; ch: number; kind: "text" | "image"; text: string; src: string; size: number; color: string; opacity: number; angle: number }) {
+  return (
+    <div className="ui-canvas-wm" aria-hidden style={{ opacity }}>
+      {items.map((p, i) => (
+        <span key={i} className="ui-canvas-wm-item" style={{ left: pct(p.x, cw), top: pct(p.y, ch), transform: `translate(-50%, -50%) rotate(${angle}deg)` }}>
+          {kind === "image" && src ? <img src={src} alt="" draggable={false} style={{ width: `${(size / cw) * 100}cqw` }} /> : <span style={{ fontSize: `${(size / cw) * 100}cqw`, color }}>{text}</span>}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 /** 덱 줄 — 장 미리보기 목록(넓으면 세로, 좁으면 가로로 흐른다) */
@@ -175,5 +212,18 @@ export function ColorField({ label, value, onChange }: { label: string; value: s
         <span className="ui-mono">{value}</span>
       </span>
     </label>
+  );
+}
+
+/** 스티커 라이브러리 칸 — 끌어 놓거나 눌러 넣는다 */
+export function StickerGrid({ children }: { children: ReactNode }) {
+  return <div className="ui-sticker-grid">{children}</div>;
+}
+
+export function StickerTile({ src, label, onDragStart, onClick }: { src: string; label: string; onDragStart: (e: DragEvent<HTMLButtonElement>) => void; onClick: () => void }) {
+  return (
+    <button type="button" className="ui-sticker-tile" title={label} aria-label={`스티커 ${label} 넣기`} draggable onDragStart={onDragStart} onClick={onClick}>
+      <img src={src} alt="" draggable={false} />
+    </button>
   );
 }

@@ -19,12 +19,14 @@ async function assets(): Promise<EditorAsset[]> {
   return out;
 }
 
-export default async function CardsPage() {
-  const [decks, list] = await Promise.all([cardDecks().list(), assets()]);
+// 들어오면 바로 새 덱 캔버스(목록·중간 화면 없음). ?deck=<id> 면 그 덱을 열어 시작한다(콘텐츠 탭에서 누를 때)
+export default async function CardsPage({ searchParams }: { searchParams: Promise<{ deck?: string }> }) {
+  const { deck: id } = await searchParams;
+  const [decks, list, rec] = await Promise.all([cardDecks().list(), assets(), id ? cardDecks().open(id) : Promise.resolve(null)]);
   return (
     <Page>
       <PageHeader title="카드뉴스 제작" />
-      <CardsEditor initialDecks={decks} assets={list} />
+      <CardsEditor initialDecks={decks} initial={rec ? { deck: rec.deck, revision: rec.revision } : null} assets={list} />
     </Page>
   );
 }
