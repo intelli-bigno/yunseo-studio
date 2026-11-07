@@ -40,13 +40,8 @@ describe("장 목록 — 장 3개", () => {
   const deck = addCard(addCard(createDeck("d", "덱", "4:5", "c1"), "c2"), "c3");
 
   it("3장이 모두 목록 항목이고 끌 수 있다(순서 = 장 순서)", () => {
-    const html = renderToStaticMarkup(
-      createElement(
-        DeckStrip,
-        { label: "장 목록(끌어서 순서 바꾸기)", actions: createElement("span", null, "장 추가") },
-        deck.cards.map((c, i) => createElement(DeckThumb, { key: c.id, index: i, current: i === 1, label: `${i + 1}번째 장`, onClick: () => undefined, dragKey: KEY, onDropAt: () => undefined }, null)),
-      ),
-    );
+    const thumbs = deck.cards.map((c, i) => createElement(DeckThumb, { key: c.id, index: i, current: i === 1, label: `${i + 1}번째 장`, onClick: () => undefined, dragKey: KEY, onDropAt: () => undefined, children: null }));
+    const html = renderToStaticMarkup(createElement(DeckStrip, { label: "장 목록(끌어서 순서 바꾸기)", actions: createElement("span", null, "장 추가"), children: thumbs }));
     expect(html.match(/role="listitem"/g)).toHaveLength(3);
     expect(html.match(/draggable="true"/g)).toHaveLength(3);
     for (const n of ["1번째 장", "2번째 장", "3번째 장"]) expect(html).toContain(`aria-label="${n}"`);
@@ -57,7 +52,7 @@ describe("장 목록 — 장 3개", () => {
   });
 
   it("끌기 키를 주지 않으면 끌 수 없다", () => {
-    const html = renderToStaticMarkup(createElement(DeckThumb, { index: 0, current: true, label: "1번째 장", onClick: () => undefined }, null));
+    const html = renderToStaticMarkup(createElement(DeckThumb, { index: 0, current: true, label: "1번째 장", onClick: () => undefined, children: null }));
     expect(html).not.toContain("draggable");
   });
 
