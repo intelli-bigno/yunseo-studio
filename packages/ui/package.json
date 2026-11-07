@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./virtual": "./src/virtual.tsx",
+    "./carousel": "./src/carousel.tsx",
     "./motion": "./src/motion.ts",
     "./styles.css": "./src/styles.css"
   },

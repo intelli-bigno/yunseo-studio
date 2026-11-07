@@ -2,4 +2,5 @@
 export * from "./ports";
 export * from "./use-cases";
 export * from "./pipeline";
+export * from "./preview";
 export * from "./publish-source";

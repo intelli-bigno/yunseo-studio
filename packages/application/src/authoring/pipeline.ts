@@ -3,6 +3,7 @@
 // 산출물은 「어떤 내용 해시로 만들었나」와 함께 기록한다 — 내용이 바뀌면 낡은 산출물로 묶음을 만들지 않는다.
 import { contentHash, toContentBody, validApproval, type Piece } from "@yunseo/domain";
 import type { CardRenderer, CardRenderResult, ContentDocument, ReelComposer, ReelResult, UploadBundle, UploadPackager } from "../pipeline/contracts";
+import { previewOf, type PiecePreview } from "./preview";
 import { PieceNotFoundError, type AuthoringClock, type AuthoringStore, type BundleFiles, type PipelineRecord } from "./ports";
 
 export interface PipelineDeps {
@@ -170,6 +171,13 @@ export function createPipelineUseCases({ store, clock, renderer = null, reels = 
       const p = await load(id);
       const card = current(await store.getPipeline(id), contentHash(p))?.render?.cards[index];
       return card ? files.read(card.path) : null;
+    },
+
+    /** [W4] 목록 썸네일 — 편마다 지금 내용으로 렌더한 카드 수·릴스 유무. 산출물이 없거나 낡았으면 비어 있다 */
+    async previews(pieces: readonly Piece[]): Promise<Record<string, PiecePreview>> {
+      const out: Record<string, PiecePreview> = {};
+      for (const p of pieces) out[p.id] = previewOf(await store.getPipeline(p.id), contentHash(p));
+      return out;
     },
 
     /** 내려받기 — 지금 내용·지금 승인으로 만든 묶음만 */
