@@ -12,3 +12,5 @@ export * from "./authoring";
 // [L4] 일정 수집 — 포트·유스케이스·StudioRepository 데코레이터
 export * from "./events";
 export * from "./drafting";
+// [cards] 카드뉴스 편집기 덱 저장
+export * from "./cards-editor";
