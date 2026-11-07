@@ -1,5 +1,7 @@
 // [W3 릴스] 프로젝트 하나 — 불러오기(GET) · 저장(PUT {project, revision}) · 지우기(DELETE)
-import { isReelsProjectId, loadReelsProject, reelsProjectProblems, reelsStore, ReelsRevisionConflictError } from "@/server/reels";
+import type { ReelsProject } from "@/lib/reels-timeline";
+import { isReelsProjectId, loadReelsProject, reelsProjectProblems, reelsStore } from "@/server/reels";
+import { reelsOps } from "@/server/reels-ops";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +20,13 @@ export async function PUT(req: Request, ctx: Ctx): Promise<Response> {
   const problems = reelsProjectProblems(body.project);
   if (problems.length) return Response.json({ error: "모양이 틀렸다", problems }, { status: 400 });
   if (typeof body.revision !== "number") return Response.json({ error: "revision 이 없다" }, { status: 400 });
-  try {
-    const r = reelsStore().save({ id, title: (body.project as { title: string }).title.trim(), data: JSON.stringify(body.project), expectedRevision: body.revision });
-    return Response.json({ id, revision: r.revision, updatedAt: r.updatedAt });
-  } catch (e) {
-    if (e instanceof ReelsRevisionConflictError) return Response.json({ error: e.message, revision: e.current }, { status: 409 });
-    throw e;
+  // docs/12 §5 — 통째 저장도 op 로그에 {op:"replace_project"} 로 남겨 undo 가능하게. v2 편집을 잃는 덮어쓰기는 409
+  const r = reelsOps().replaceProject(id, body.project as ReelsProject, body.revision);
+  if (r.status !== 200) {
+    const err = r.body.error as { code?: string; message?: string } | undefined;
+    return Response.json({ error: err?.message ?? "저장 실패", code: err?.code, ...(r.body.revision !== undefined ? { revision: r.body.revision } : {}) }, { status: r.status });
   }
+  return Response.json({ id, revision: r.body.revision, updatedAt: reelsStore().get(id)?.updatedAt, opId: r.body.opId, undo: r.body.undo });
 }
 
 export async function DELETE(_req: Request, ctx: Ctx): Promise<Response> {

@@ -14,3 +14,5 @@ export * from "./events";
 export * from "./drafting";
 // [cards] 카드뉴스 편집기 덱 저장
 export * from "./cards-editor";
+// [W5 릴스] 편집 명령(op) 유스케이스
+export * from "./reels-ops";
