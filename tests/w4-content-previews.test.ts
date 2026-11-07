@@ -5,7 +5,14 @@ import { createSqliteStudioRepository } from "../packages/adapters/storage/src/i
 import { contentHash, type Piece } from "../packages/domain/src/index";
 
 const sqlite = createSqliteStudioRepository();
-const pipe = createPipelineUseCases({ store: sqlite, clock: { now: () => "2026-11-07T10:00" }, workDir: "work" });
+// 카드 파일을 읽는 포트 — 썸네일은 라우트가 읽을 수 있는 카드만 센다(기록만 보고 세면 이미지가 전부 404). 여기서는 있다/없다만 바꾼다
+let filesExist = true;
+const pipe = createPipelineUseCases({
+  store: sqlite,
+  clock: { now: () => "2026-11-07T10:00" },
+  workDir: "work",
+  files: { read: async () => (filesExist ? new Uint8Array() : null), has: async () => filesExist },
+});
 const file = (name: string) => ({ name, path: name, bytes: 1, sha256: "x" });
 const record = (p: Piece, over: Partial<PipelineRecord> = {}): PipelineRecord => ({
   pieceId: p.id,
@@ -39,6 +46,17 @@ describe("pipeline.previews", () => {
     expect(out[withReel.id]).toMatchObject({ cards: 2, reel: true });
     expect(out[stale.id]).toEqual(NO_PREVIEW);
     expect(out[none.id]).toEqual(NO_PREVIEW);
+  });
+
+  it("기록은 있어도 카드 파일을 못 읽으면 썸네일은 비어 있다(릴스 유무는 그대로)", async () => {
+    const [fresh] = pieces as [Piece];
+    await sqlite.savePipeline(record(fresh, { reel: { pieceId: fresh.id, video: file("r.mp4"), durationSec: 10, subtitles: null, warnings: [] } }));
+    filesExist = false;
+    try {
+      expect((await pipe.previews([fresh]))[fresh.id]).toEqual({ cards: 0, alts: [], reel: true });
+    } finally {
+      filesExist = true;
+    }
   });
 
   it("편이 없으면 빈 객체", async () => {
