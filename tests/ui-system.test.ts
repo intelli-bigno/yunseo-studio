@@ -48,7 +48,7 @@ describe("ui 스타일은 토큰 값만 쓴다", () => {
 
   it("쓰는 변수는 모두 토큰에 있다", () => {
     const defined = new Set(Object.keys(cssVariables()));
-    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs", "--ar", "--ed-left", "--ed-right", "--ed-right-w"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다), --ar: 캔버스 가로/세로 비(CanvasStage 가 넣는다), --ed-*: 편집기 패널 폭(EditorLayout 이 넣는다)
+    const local = new Set(["--cols", "--n", "--y", "--font-sans", "--font-mono", "--rx", "--ry", "--rs", "--ar", "--ed-left", "--ed-right", "--ed-right-w", "--ed-bar", "--ed-thumb", "--ed-scroll"]); // --r*: 누름 물결 위치·크기(motion.ts 가 넣는다), --ar: 캔버스 가로/세로 비(CanvasStage 가 넣는다), --ed-*: 편집기 패널 폭·패널 바·장 목록 치수(EditorLayout·styles.css 가 넣는다)
     const used = new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]!));
     expect([...used].filter((v) => !defined.has(v) && !local.has(v))).toEqual([]);
   });
@@ -187,7 +187,9 @@ describe("카드 편집기 오른쪽 패널은 레퍼런스가 주인이다", ()
   it("속성 시트는 패널 아래 흐름에 붙어(absolute 아님) 레퍼런스 그리드를 가리지 않는다 — 열리면 그리드가 줄고 둘 다 따로 스크롤된다", () => {
     expect(prop(".ui-sheet", "position")).toBeUndefined();
     expect(prop(".ui-sheet", "flex")).toBe("none");
-    expect(prop(".ui-sheet", "max-height")).toBe("50%");
+    // 레퍼런스 우선 — 시트는 패널의 45% 와 (50% − 고정 바 높이) 중 작은 쪽까지만(바 아래 그리드가 패널 절반 이상), 넘치면 시트 안에서 스크롤
+    expect(prop(".ui-sheet", "max-height")).toBe("max(calc(var(--button-height) * 3), min(45%, calc(50% - var(--ed-bar))))");
+    expect(prop(".ui-editor-side-main", "--ed-bar")).toBe("calc(var(--sp-8) * 1.75)");
     expect(prop(".ui-sheet-body", "overflow-y")).toBe("auto");
     expect(prop(".ui-editor-side-body", "flex")).toBe("1");
     expect(prop(".ui-editor-side-body", "min-height")).toBe("0");
