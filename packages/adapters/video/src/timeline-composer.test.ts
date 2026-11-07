@@ -105,8 +105,9 @@ describe("escapeFilterPath(필터그래프 경로)", () => {
     const evil = "x.cube':file=/etc/passwd[o];[o]drawtext=text=hi,null";
     const e = escapeFilterPath(evil);
     expect(roundTrip(evil)).toBe(evil);
-    // 그래프 수준에서 역슬래시 없이 남은 구분자가 없다
-    expect(e.replace(/\\./g, "")).not.toMatch(/['[\],;:]/);
+    // 그래프 수준: 역슬래시 없이 남은 그래프 구분자가 없다 / 옵션 수준(그래프를 푼 뒤): 남은 : ' 가 없다
+    expect(e.replace(/\\./g, "")).not.toMatch(/['[\],;]/);
+    expect(unescape(e, "\\'[],;").replace(/\\./g, "")).not.toMatch(/[':]/);
   });
 
   it("줄바꿈·제어 문자·빈 값은 거부", () => {
