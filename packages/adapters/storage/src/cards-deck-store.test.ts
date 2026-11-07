@@ -28,7 +28,7 @@ describe("SQLite 덱 저장(cards_decks)", () => {
     createSqliteCardDeckStore({ db });
     const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'cards%'").all() as { name: string }[]).map((r) => r.name);
     expect(tables).toEqual(["cards_decks"]);
-    expect(MIGRATIONS.some((m) => m.sql.includes("cards_"))).toBe(false);
+    expect(MIGRATIONS.some((m) => (m.sql ?? "").includes("cards_"))).toBe(false);
     // 두 번 열어도(IF NOT EXISTS) 문제없다
     expect(() => createSqliteCardDeckStore({ db })).not.toThrow();
   });

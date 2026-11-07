@@ -5,16 +5,20 @@ import { join } from "node:path";
 import { createReelsOpsUseCases, type ReelsOpsUseCases } from "@yunseo/application";
 import { toProjectV2, type OpContext, type SourceInfo } from "@yunseo/domain";
 import { reelAsset } from "./library";
-import { isReelsProjectId, reelsCardAsset } from "./reels";
+import { isReelsProjectId, reelsAudioAsset, reelsCardAsset } from "./reels";
 import { reelsOpsStore, reelsTimelineTools, studioWorkDir } from "./studio";
 
-interface MediaInfo { path: string; kind: "video" | "image"; durationMs?: number; hasAudio: boolean }
+interface MediaInfo { path: string; kind: "video" | "image" | "audio"; durationMs?: number; hasAudio: boolean }
 const probeCache = new Map<string, { durationMs?: number; hasAudio: boolean }>();
 
-/** 원본 id(<원고>/<렌더>/video | <원고>/<렌더>/<NN-카드>.png) → 파일 */
-function resolvePath(sourceId: string): { path: string; kind: "video" | "image" } | null {
+/** 원본 id(<원고>/<렌더>/video | <원고>/<렌더>/<NN-카드>.png | audio/<bgm|narration>/<파일>) → 파일 */
+function resolvePath(sourceId: string): { path: string; kind: MediaInfo["kind"] } | null {
   const [pieceId, renderId, rest, ...more] = sourceId.split("/");
   if (!pieceId || !renderId || !rest || more.length) return null;
+  if (pieceId === "audio") {
+    const path = reelsAudioAsset(renderId, rest);
+    return path ? { path, kind: "audio" } : null;
+  }
   if (rest === "video") {
     const path = reelAsset(pieceId, renderId, "video");
     return path ? { path, kind: "video" } : null;
@@ -30,7 +34,7 @@ async function media(sourceId: string): Promise<MediaInfo | null> {
   let info = probeCache.get(r.path);
   if (!info) {
     const p = await reelsTimelineTools().probe(r.path);
-    const sec = p.video?.durationSec ?? p.formatDurationSec;
+    const sec = (r.kind === "audio" ? null : p.video?.durationSec) ?? p.formatDurationSec; // 오디오 파일은 컨테이너 길이
     info = { ...(sec ? { durationMs: Math.round(sec * 1000) } : {}), hasAudio: p.audio !== null };
     probeCache.set(r.path, info);
   }

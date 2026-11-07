@@ -1,5 +1,7 @@
 // [W5 릴스] 편집 명령 — GET 상태(?since=<revision> 이면 그 뒤 op 로그도) · POST op/batch/undo/redo (docs/12-reels-ops-schema.md)
 // 폴더 이름이 [pieceId] 인 것은 같은 단계의 기존 라우트([pieceId]/[renderId]/[kind])와 슬러그 이름을 맞춰야 해서다 — 값은 릴스 프로젝트 id(R-…).
+import { REELS_OPS_MAX_BYTES } from "@yunseo/application";
+import { readJsonObject } from "@/server/http";
 import { isReelsProjectId } from "@/server/reels";
 import { reelsOps } from "@/server/reels-ops";
 
@@ -19,13 +21,9 @@ export async function GET(req: Request, ctx: Ctx): Promise<Response> {
 export async function POST(req: Request, ctx: Ctx): Promise<Response> {
   const id = (await ctx.params).pieceId;
   if (!isReelsProjectId(id)) return notFound(id);
-  const text = await req.text();
-  let body: unknown;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    body = null;
-  }
-  const r = await reelsOps().postOp(id, body, Buffer.byteLength(text));
+  // 상한(1MB)은 읽는 단계에서 끊는다 — 큰 본문을 메모리에 다 올린 뒤 재지 않는다
+  const body = await readJsonObject(req, REELS_OPS_MAX_BYTES, { badCode: "BAD_REQUEST" });
+  if (!body.ok) return body.response;
+  const r = await reelsOps().postOp(id, body.value, body.bytes);
   return Response.json(r.body, { status: r.status });
 }

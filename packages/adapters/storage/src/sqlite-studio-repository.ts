@@ -23,6 +23,8 @@ export interface SqliteStudioOptions {
   seed?: StudioSeed | false;
   /** 시각(이력·생성 시각). 기본은 시스템 시각 */
   now?: () => string;
+  /** 산출물 작업 폴더 — 주면 옛 기록 경로를 이 폴더로 옮겨 적는 마이그레이션(v3)이 한 번 돈다 */
+  workDir?: string;
 }
 
 type Row = Record<string, unknown>;
@@ -97,7 +99,7 @@ export class SqliteStudioRepository implements StudioRepository, AuthoringStore 
     // 여러 프로세스(빌드 워커·서버)가 같은 파일을 열 수 있다 — 잠금은 기다리고, 읽기는 쓰기를 막지 않게 WAL.
     this.#db.exec("PRAGMA busy_timeout = 5000");
     if (options.path && options.path !== ":memory:") this.#db.exec("PRAGMA journal_mode = WAL");
-    migrate(this.#db, undefined, this.#now);
+    migrate(this.#db, undefined, this.#now, options.workDir ? { workDir: options.workDir } : {});
     const p = (sql: string) => this.#db.prepare(sql);
     this.#q = {
       pieces: p("SELECT * FROM pieces ORDER BY position"),

@@ -37,8 +37,10 @@ export interface TimelineEncoder {
   crf: number;
   preset: string;
   /**
-   * 인코더·필터 스레드 상한. Windows 실행기 작업 cgroup(pids.max=256)에서 필터 그래프가 커지면
-   * pthread_create EAGAIN 으로 죽는다 — -threads·-filter_threads·-filter_complex_threads 를 모두 2 로 묶는다.
+   * 인코더·필터 스레드 상한. Windows 실행기 작업 cgroup(pids.max=256)에서 스레드가 늘면 pthread_create EAGAIN 으로 죽는다.
+   * ffmpeg 의 -threads 는 「바로 다음 입력」 또는 「출력」 옵션이라 맨 앞 한 번으로는 첫 입력에만 걸린다 — 나머지 입력 디코더와
+   * libx264 는 코어 수만큼 스레드를 띄워 기기마다 스레드 수가 달라졌다(간헐 실패의 원인). 그래서 입력마다 -threads 1,
+   * 인코더에 -threads <threads>, 필터에 -filter_threads·-filter_complex_threads <threads> 를 건다 — 스레드 수가 코어 수와 무관하게 정해진다.
    */
   threads: number;
 }
@@ -231,9 +233,10 @@ export function buildTimelineGraph(input: TimelineGraphInput): TimelineGraph {
   const warnings: string[] = [];
   const durationMs = Math.max(100, projectDurationV2(p));
   const T = sec(durationMs);
-  const args: string[] = ["-hide_banner", "-y", "-threads", String(enc.threads), "-filter_threads", String(enc.threads), "-filter_complex_threads", String(enc.threads)];
+  const args: string[] = ["-hide_banner", "-y", "-filter_threads", String(enc.threads), "-filter_complex_threads", String(enc.threads)];
   let inputs = 0;
   const addInput = (path: string, image: boolean, lenMs: number): number => {
+    args.push("-threads", "1"); // 입력 옵션 — 이 입력의 디코더만
     if (image) args.push("-loop", "1", "-framerate", String(FPS), "-t", sec(lenMs + 1000));
     args.push("-i", path);
     return inputs++;
@@ -417,7 +420,7 @@ export function buildTimelineGraph(input: TimelineGraphInput): TimelineGraph {
     "-map", "[vout]", "-map", "[aout]",
     "-t", T,
     "-r", String(FPS),
-    "-c:v", "libx264", "-preset", enc.preset, "-crf", String(enc.crf), "-pix_fmt", "yuv420p",
+    "-c:v", "libx264", "-preset", enc.preset, "-crf", String(enc.crf), "-threads", String(enc.threads), "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-b:a", `${preset.audio.bitrateKbps}k`, "-ar", String(preset.audio.sampleRate),
     "-movflags", "+faststart",
     input.outPath,
