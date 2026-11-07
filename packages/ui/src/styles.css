@@ -246,6 +246,14 @@ img { display: block; max-width: 100%; }
 .ui-tile-img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--m-slow) var(--m-ease-out); }
 .ui-tile:hover .ui-tile-img { transform: scale(1.03); }
 .ui-tile.is-current .ui-tile-frame { border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent); }
+/* 레퍼런스: 자르지 않는다 — natural 은 그림 비율대로(불러오기 전엔 4:5 자리), fit 은 폭·높이 안에 통째로. 확대 효과도 끈다(가장자리가 잘리므로) */
+.ui-tiles.is-masonry { display: block; column-width: var(--l-tile); column-gap: var(--grid-gutter); }
+.ui-tiles.is-masonry > .ui-tile { break-inside: avoid; margin-bottom: var(--grid-gutter); }
+.ui-tile-frame.is-natural, .ui-tile-frame.is-fit { display: flex; align-items: center; justify-content: center; }
+.ui-tile-frame.is-natural .ui-tile-img { height: auto; aspect-ratio: auto 4 / 5; object-fit: contain; }
+.ui-tile-frame.is-fit .ui-tile-img { height: auto; max-height: 80vh; object-fit: contain; }
+.ui-tile-frame.is-natural .ui-tile-img, .ui-tile-frame.is-fit .ui-tile-img { transition: none; }
+.ui-tile:hover .ui-tile-frame.is-natural .ui-tile-img, .ui-tile:hover .ui-tile-frame.is-fit .ui-tile-img { transform: none; }
 .ui-tile-body { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
 .ui-tile-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ui-story { display: block; width: min(var(--l-story), 100%); aspect-ratio: 9 / 16; overflow: hidden; border-radius: var(--r-md); background: var(--c-sunken); border: 1px solid var(--c-line); }

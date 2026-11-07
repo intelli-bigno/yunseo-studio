@@ -2,10 +2,13 @@
 import type { ElementType, ReactNode } from "react";
 import { cx, type Poly } from "./poly";
 
-/** 썸네일 그리드 — 칸 폭은 토큰(--l-tile) 하나, 줄 간격은 그리드 거터 */
-export function TileGrid({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  return <div className={cx("ui-tiles", wide && "is-wide")}>{children}</div>;
+/** 썸네일 그리드 — 칸 폭은 토큰(--l-tile) 하나, 줄 간격은 그리드 거터. masonry 는 칸마다 그림 비율대로 높이가 달라 쌓인다(자르지 않음) */
+export function TileGrid({ children, wide = false, masonry = false }: { children: ReactNode; wide?: boolean; masonry?: boolean }) {
+  return <div className={cx("ui-tiles", wide && "is-wide", masonry && "is-masonry")}>{children}</div>;
 }
+
+/** 칸 틀 — portrait·square·story 는 고정 비율로 채워 자르고, natural 은 그림 비율 그대로, fit 은 화면 안에 통째로 들어오게 맞춘다 */
+export type TileAspect = "portrait" | "square" | "story" | "natural" | "fit";
 
 /** 썸네일 한 칸 — 그림(외부 주소는 그대로, 받지 않는다) + 제목 + 보조 한 줄 */
 export function Tile<E extends ElementType = "a">({
@@ -18,7 +21,7 @@ export function Tile<E extends ElementType = "a">({
   current = false,
   children,
   ...rest
-}: Poly<E, { src: string; alt: string; title: ReactNode; meta?: ReactNode; aspect?: "portrait" | "square" | "story"; current?: boolean; children?: ReactNode }>) {
+}: Poly<E, { src: string; alt: string; title: ReactNode; meta?: ReactNode; aspect?: TileAspect; current?: boolean; children?: ReactNode }>) {
   const C = (as ?? "a") as ElementType;
   return (
     <C className={cx("ui-tile", current && "is-current")} {...rest}>

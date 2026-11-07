@@ -1,4 +1,5 @@
 // 레퍼런스 — 카드뉴스 수집분만(docs/design/card-reference). 내부 참고 전용(그림은 저장소 캡처 또는 원 주소).
+// 그림은 자르지 않는다 — 그리드는 메이슨리(그림 비율대로), 비교는 화면 높이 안에 통째로(aspect natural·fit).
 // 필터: ?source·?set·?tag(값이 둘 이상일 때만 보인다), 비교: ?pick=id,id(최대 3) — 칸을 누르면 비교에 넣고 뺀다.
 import Link from "next/link";
 import { Card, CardHeader, EmptyState, Grid, Cell, Page, PageHeader, SegmentedItem, Segmented, Stack, Text, TextLink, Tile, TileGrid } from "@yunseo/ui";
@@ -84,7 +85,7 @@ export default async function ReferencesPage({ searchParams }: { searchParams: P
             {picked.map((r) => (
               <Cell key={r.id} span={picked.length === 1 ? 6 : picked.length === 2 ? 6 : 4}>
                 <Stack gap={3}>
-                  <Tile as="a" href={r.href} target="_blank" rel="noreferrer noopener" src={r.thumb} alt={r.title} title={r.title} meta={`${SOURCE_LABEL[r.source]} · ${r.set}`} aspect="square" />
+                  <Tile as="a" href={r.href} target="_blank" rel="noreferrer noopener" src={r.thumb} alt={r.title} title={r.title} meta={`${SOURCE_LABEL[r.source]} · ${r.set}`} aspect="fit" />
                   <Text tone="dim">{r.takeaway}</Text>
                 </Stack>
               </Cell>
@@ -98,9 +99,9 @@ export default async function ReferencesPage({ searchParams }: { searchParams: P
           <EmptyState title="조건에 맞는 레퍼런스가 없다" action={<Link href="/references">필터 지우기</Link>} />
         </Card>
       ) : (
-        <TileGrid>
+        <TileGrid masonry>
           {shown.map((r) => (
-            <Tile key={r.id} as={Link} href={href({ ...q, pick: toggle(r.id) })} scroll={false} current={pick.includes(r.id)} src={r.thumb} alt={r.title} title={r.title || r.takeaway} meta={`${SOURCE_LABEL[r.source]} · ${r.set}`} />
+            <Tile key={r.id} as={Link} href={href({ ...q, pick: toggle(r.id) })} scroll={false} current={pick.includes(r.id)} src={r.thumb} alt={r.title} title={r.title || r.takeaway} aspect="natural" meta={`${SOURCE_LABEL[r.source]} · ${r.set}`} />
           ))}
         </TileGrid>
       )}
