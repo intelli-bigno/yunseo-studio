@@ -27,6 +27,10 @@ const PUBLISH_SCREENS = ["apps/dashboard/src/app", "apps/dashboard/src/component
 // 주소 문자열(데이터)은 계획에 들어가므로 막지 않는다 — 막는 것은 호출 코드와 호출용 라이브러리 import 다.
 const NETWORK = /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|node:(?:https?|http2|net|tls|dns|dgram)\b|from\s*["'](?:googleapis|@googleapis\/[^"']*|google-auth-library|facebook-nodejs-business-sdk|node-fetch|axios|got|undici|superagent|ky)["']/i;
 const SECRETS = /process\.env|access_token|refresh_token|client_secret|api[_-]?key|\bpassword\b|authorization\s*:|\bbearer\s+[A-Za-z0-9]/i;
+// 의도된 서버 fetch 허용 목록 — 파일마다 fetch 호출 1회만, 받는 호스트를 명시한다. 이 밖의 파일·호스트는 계속 막는다.
+const SERVER_FETCH_ALLOW: Record<string, { hosts: string[]; hostGuard: { file: string; pattern: string } }> = {
+  "apps/dashboard/src/app/api/ref-image/[id]/route.ts": { hosts: ["i.pinimg.com"], hostGuard: { file: "apps/dashboard/src/server/library.ts", pattern: "/^https:\\/\\/i\\.pinimg\\.com\\//" } },
+};
 const CREDENTIAL_INPUT = /type=["']password["']|name=["'][^"']*(?:token|secret|password|api_?key)[^"']*["']/i;
 
 describe("게시 어댑터는 dry-run 전용이다", () => {
@@ -67,13 +71,24 @@ describe("화면에 자격 증명 입력 칸이 없다", () => {
 
   it("소스를 충분히 읽었다", () => {
     expect(files.length).toBeGreaterThanOrEqual(31);
+    for (const [f, a] of Object.entries(SERVER_FETCH_ALLOW)) {
+      expect(files.map(rel), f).toContain(f);
+      expect(a.hosts.every((h) => a.hostGuard.pattern.includes(h.replace(/\./g, "\\."))), f).toBe(true);
+    }
   });
 
   it("비밀번호·토큰·키 입력 칸과 네트워크 호출이 없다", () => {
     for (const f of files) {
       const src = strip(readFileSync(f, "utf8"));
       // 같은 출처 상대경로(fetch("/api/...")) 내부 조회만 허용한다. 절대 URL·외부 호스트·자격 증명 호출은 계속 막는다.
-      const external = src.replace(/\bfetch\s*\(\s*(["'`])\/(?!\/)[^"'`]*\1/g, "");
+      let external = src.replace(/\bfetch\s*\(\s*(["'`])\/(?!\/)[^"'`]*\1/g, "");
+      const allow = SERVER_FETCH_ALLOW[rel(f)];
+      if (allow) {
+        expect(external.match(/\bfetch\s*\(/g) ?? [], rel(f)).toHaveLength(1);
+        expect(external, rel(f)).not.toMatch(/https?:\/\//);
+        expect(readFileSync(join(root, allow.hostGuard.file), "utf8"), allow.hostGuard.file).toContain(allow.hostGuard.pattern);
+        external = external.replace(/\bfetch\s*\(/, "");
+      }
       expect(src, rel(f)).not.toMatch(CREDENTIAL_INPUT);
       expect(external, rel(f)).not.toMatch(NETWORK);
     }
