@@ -13,7 +13,7 @@ export interface NavEntry {
 
 export function Nav({ items }: { items: NavEntry[] }) {
   const path = usePathname();
-  const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
+  const active = (href: string) => path === href || path.startsWith(`${href}/`);
   return (
     <NavList label="주 메뉴">
       {items.map((it) => (

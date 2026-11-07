@@ -24,7 +24,7 @@ export default async function ContentPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="콘텐츠"
         actions={
-          <Stack direction="row" gap={3} align="center">
+          <Stack direction="row" gap={3} align="center" wrap>
             <Button as={Link} href="/content/new" variant="primary">새 편</Button>
             <Segmented label="종류">
               {KINDS.map((k) => (

@@ -7,10 +7,11 @@ export interface Shortcut {
 }
 
 export const SHORTCUTS: Shortcut[] = [
-  { keys: "g t", label: "오늘", href: "/" },
-  { keys: "g s", label: "편성 캘린더", href: "/schedule" },
   { keys: "g c", label: "콘텐츠", href: "/content" },
-  { keys: "g p", label: "발행 대기열", href: "/publish" },
+  { keys: "g n", label: "카드뉴스 제작", href: "/cards" },
+  { keys: "g r", label: "릴스 제작", href: "/reels" },
+  { keys: "g s", label: "쇼츠", href: "/shorts" },
+  { keys: "g f", label: "레퍼런스", href: "/references" },
   { keys: "⌘ k", label: "빠른 이동", action: "palette" },
   { keys: "?", label: "단축키 보기", action: "help" },
   { keys: "[", label: "이전 탭 (편 상세)", action: "prevTab" },

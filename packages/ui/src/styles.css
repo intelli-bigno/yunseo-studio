@@ -1,6 +1,6 @@
 /* @yunseo/ui — Club Green. 값은 전부 @yunseo/design-tokens CSS 변수.
    규칙(tests/ui-system.test.ts 가 검사): 글자 크기는 --fs-* 만, 여백·패딩·간격은 --sp-*·0 만,
-   px 숫자는 선 두께 1px·2px 와 @media 경계(1184·960)만. */
+   px 숫자는 선 두께 1px·2px 와 @media 경계(1184·960·640)만. 화면 폭은 100% — 고정 max-width 없음(360~2560px). */
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -14,6 +14,7 @@ body {
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: lining-nums tabular-nums;
   word-break: keep-all;
+  overflow-wrap: break-word;
 }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; color: inherit; }
@@ -58,7 +59,7 @@ img { display: block; max-width: 100%; }
 .ui-nav-count.is-alert { color: var(--c-alert); }
 .ui-side-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-2); padding: 0 var(--sp-3); }
 .ui-top { position: sticky; top: 0; z-index: 5; height: var(--l-topbar); display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); padding: 0 var(--grid-margin); border-bottom: 1px solid var(--c-line); background: color-mix(in srgb, var(--c-bg) 92%, transparent); backdrop-filter: blur(var(--sp-2)); }
-.ui-page { padding: var(--sp-6) var(--grid-margin) var(--sp-8); max-width: var(--l-content-max); display: flex; flex-direction: column; gap: var(--sp-6); }
+.ui-page { padding: var(--sp-6) var(--grid-margin) var(--sp-8); min-width: 0; display: flex; flex-direction: column; gap: var(--sp-6); }
 .ui-page-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-5); flex-wrap: wrap; min-height: var(--button-height); }
 .ui-page-head-text { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
 .ui-page-head-actions { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
@@ -158,11 +159,11 @@ img { display: block; max-width: 100%; }
 .ui-icon-btn[disabled] { opacity: 0.3; cursor: not-allowed; }
 
 /* ── 탭 · 세그먼트 ── */
-.ui-tabs { display: flex; gap: var(--sp-5); align-items: center; border-bottom: 1px solid var(--c-line); }
+.ui-tabs { display: flex; flex-wrap: wrap; gap: 0 var(--sp-5); align-items: center; border-bottom: 1px solid var(--c-line); }
 .ui-tab { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3) 0; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--c-text-mute); font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--fw-title); }
 .ui-tab:hover { color: var(--c-text); }
 .ui-tab[aria-current="page"] { color: var(--c-text); border-bottom-color: var(--c-accent); }
-.ui-seg { display: inline-flex; gap: var(--sp-1); padding: var(--sp-1); border-radius: var(--r-sm); background: var(--c-surface); border: 1px solid var(--c-line); }
+.ui-seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: var(--sp-1); padding: var(--sp-1); border-radius: var(--r-sm); background: var(--c-surface); border: 1px solid var(--c-line); }
 .ui-seg-item { display: inline-flex; align-items: center; height: calc(var(--button-height) - var(--sp-3)); padding: 0 var(--sp-3); border-radius: var(--r-sm); border: 0; background: none; cursor: pointer; color: var(--c-text-dim); font-size: var(--fs-body); }
 .ui-seg-item[aria-current="page"] { background: var(--c-text); color: var(--c-accent-ink); font-weight: var(--fw-title); }
 
@@ -276,6 +277,22 @@ img { display: block; max-width: 100%; }
   .ui-span-3, .ui-span-4, .ui-span-5 { grid-column: span 12; }
   .ui-cal { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ui-field-row { grid-template-columns: minmax(0, 1fr); }
+}
+/* 폰 폭: 사이드바는 위 띠(글자 메뉴)로 눕고, 표 행은 한 줄에 한 칸씩 쌓는다 */
+@media (max-width: 640px) {
+  .ui-shell { grid-template-columns: minmax(0, 1fr); }
+  .ui-side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); padding: var(--sp-3) var(--sp-4); border-right: 0; border-bottom: 1px solid var(--c-line); }
+  .ui-brand { margin-top: 0; height: auto; padding: 0; }
+  .ui-brand-name { display: inline; }
+  .ui-nav { flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; }
+  .ui-nav-item { justify-content: flex-start; padding: 0 var(--sp-3); }
+  .ui-nav-label { display: block; flex: none; }
+  .ui-nav-count { display: inline; }
+  .ui-top { padding: 0 var(--sp-4); }
+  .ui-page { padding: var(--sp-5) var(--sp-4) var(--sp-7); }
+  .ui-paper { padding: var(--sp-4); }
+  .ui-thead { display: none; }
+  .ui-tr { grid-template-columns: minmax(0, 1fr); align-items: start; gap: var(--sp-1); }
 }
 .ui-slot > .ui-badge, .ui-stack > .ui-badge, .ui-card > .ui-badge { align-self: flex-start; }
 

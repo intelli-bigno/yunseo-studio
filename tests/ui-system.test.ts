@@ -41,7 +41,7 @@ describe("ui 스타일은 토큰 값만 쓴다", () => {
   });
 
   it("px 숫자는 선 두께(1·2px)와 반응형 경계뿐이다", () => {
-    const allowed = new Set(["1px", "2px", "-1px", `${breakpoint.rail}px`, `${breakpoint.sidebar}px`]);
+    const allowed = new Set(["1px", "2px", "-1px", `${breakpoint.rail}px`, `${breakpoint.sidebar}px`, `${breakpoint.phone}px`]);
     const px = [...css.matchAll(/-?\d+(\.\d+)?px/g)].map((m) => m[0]).filter((v) => !allowed.has(v));
     expect(px).toEqual([]);
   });

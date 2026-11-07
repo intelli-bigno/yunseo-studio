@@ -1,7 +1,7 @@
-// 보관함 — 만든 쇼츠(렌더 산출물 폴더)·디자인 레퍼런스(docs/design 수집분)·설치 앱 목록(기기에서 수집한 파일)을 읽는다.
+// 보관함 — 만든 쇼츠(렌더 산출물 폴더)·카드뉴스 레퍼런스(docs/design/card-reference 수집분)를 읽는다.
 // 파일 이름·경로는 정해진 모양만 받는다(경로 탈출 금지). 쓰기는 하지 않는다.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { studio, studioWorkDir } from "./studio";
 
 // ── 쇼츠 ────────────────────────────────────────────────
@@ -59,7 +59,8 @@ export function reelAsset(pieceId: string, renderId: string, kind: "video" | "co
 }
 
 // ── 레퍼런스 ─────────────────────────────────────────────
-export type RefSource = "pinterest" | "dribbble" | "instagram";
+// 카드뉴스 레퍼런스만 둔다(docs/design/card-reference/capture). 대시보드·UI 시안 수집분은 2026-11-07 에 지웠다.
+export type RefSource = "instagram" | "pinterest";
 export interface RefItem {
   id: string;
   set: string;
@@ -78,18 +79,6 @@ function designDir(): string | null {
   return null;
 }
 
-const readJson = (p: string): Record<string, unknown> | null => {
-  try {
-    return JSON.parse(readFileSync(p, "utf8")) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-};
-
-type Raw = Record<string, unknown>;
-const str = (v: unknown) => (typeof v === "string" ? v : "");
-const list = (v: unknown): Raw[] => (Array.isArray(v) ? (v as Raw[]) : []);
-
 let refCache: RefItem[] | null = null;
 
 export function listReferences(): RefItem[] {
@@ -97,23 +86,12 @@ export function listReferences(): RefItem[] {
   const dir = designDir();
   if (!dir) return [];
   const out: RefItem[] = [];
-  const pins = readJson(join(dir, "references/pins.json"));
-  for (const p of list(pins?.pins))
-    out.push({ id: `pin-${str(p.pinId)}`, set: "편집형 대시보드", source: "pinterest", title: str(p.label), takeaway: str(p.takeaway), tags: (p.tags as string[] | undefined) ?? [], thumb: str(p.thumb), href: str(p.pinUrl) });
-  const dandy = readJson(join(dir, "references/pins-dandy.json"));
-  for (const p of list(dandy?.pins))
-    out.push({ id: `dandy-${str(p.pinId)}`, set: "Private Ledger", source: "pinterest", title: str(p.takeaway).split(" — ")[0] ?? "", takeaway: str(p.takeaway), tags: p.tag ? [str(p.tag)] : [], thumb: str(p.thumb), href: str(p.pinUrl) });
-  const v2 = readJson(join(dir, "directions-v2/refs.json"));
-  for (const r of list(v2?.refs)) {
-    const source = str(r.source) === "dribbble" ? "dribbble" : "pinterest";
-    out.push({ id: `v2-${String(r.n)}`, set: "Club Green", source, title: str(r.label), takeaway: str(r.takeaway), tags: [`안 ${str(r.dir)}`], thumb: str(r.thumb), href: str(r.url) });
-  }
   const capDir = join(dir, "card-reference/capture");
   for (const f of existsSync(capDir) ? readdirSync(capDir).filter((n) => /^ref-\d{2}\.jpg$/.test(n)).sort() : []) {
     const n = f.slice(4, 6);
     out.push({ id: `card-${n}`, set: "카드뉴스 형태", source: "instagram", title: `dy1.mag 캐러셀 ${Number(n)}장`, takeaway: "질문 → 한 줄 답 → 근거 문단", tags: ["카드뉴스"], thumb: `/api/refs/card-reference/capture/${f}`, href: "https://www.instagram.com/p/DeqRl2llMaq/" });
   }
-  refCache = out.filter((r) => r.thumb && r.href);
+  refCache = out;
   return refCache;
 }
 
@@ -124,48 +102,6 @@ export function referenceAsset(parts: string[]): string | null {
   const f = resolve(dir, ...parts);
   if (!f.startsWith(dir + sep) || !/\.(jpg|png)$/i.test(f) || !existsSync(f)) return null;
   return f;
-}
-
-// ── 설치 앱 ──────────────────────────────────────────────
-// 기기마다 수집 스크립트(ops/apps/)가 <데이터>/apps/<기기>/apps.json + icons/*.png 를 만든다(브라우저는 설치 앱을 볼 수 없다).
-export interface InstalledApp {
-  name: string;
-  icon: string | null;
-}
-export interface MachineApps {
-  machine: string;
-  collectedAt: string;
-  apps: InstalledApp[];
-}
-const MACHINE = /^[a-z0-9-]{1,40}$/;
-const ICON = /^[a-z0-9-]{1,80}\.png$/;
-
-function appsDir(): string | null {
-  const base = process.env.YUNSEO_DATA_DIR ?? (process.env.STUDIO_DB ? dirname(process.env.STUDIO_DB) : null);
-  return base ? join(base, "apps") : null;
-}
-
-export function listInstalledApps(): MachineApps[] {
-  const dir = appsDir();
-  if (!dir) return [];
-  return dirs(dir)
-    .filter((m) => MACHINE.test(m))
-    .flatMap((machine) => {
-      const j = readJson(join(dir, machine, "apps.json"));
-      if (!j) return [];
-      const apps = list(j.apps)
-        .map((a) => ({ name: str(a.name), icon: ICON.test(str(a.icon)) ? `/api/apps/${machine}/${str(a.icon)}` : null }))
-        .filter((a) => a.name)
-        .sort((a, b) => a.name.localeCompare(b.name, "ko"));
-      return [{ machine, collectedAt: str(j.collectedAt), apps }];
-    });
-}
-
-export function appIconAsset(machine: string, file: string): string | null {
-  const dir = appsDir();
-  if (!dir || !MACHINE.test(machine) || !ICON.test(file)) return null;
-  const f = join(dir, machine, "icons", file);
-  return existsSync(f) ? f : null;
 }
 
 // ── 파일 응답(영상은 구간 요청 지원 — 탐색·이어보기) ─────────────────

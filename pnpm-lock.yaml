@@ -59,24 +59,9 @@ importers:
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
-      '@yunseo/adapters-events-calendar':
-        specifier: workspace:*
-        version: link:../../packages/adapters/events-calendar
-      '@yunseo/adapters-metrics':
-        specifier: workspace:*
-        version: link:../../packages/adapters/metrics
-      '@yunseo/adapters-ops':
-        specifier: workspace:*
-        version: link:../../packages/adapters/ops
-      '@yunseo/adapters-publisher-instagram':
-        specifier: workspace:*
-        version: link:../../packages/adapters/publisher-instagram
       '@yunseo/adapters-publisher-manual':
         specifier: workspace:*
         version: link:../../packages/adapters/publisher-manual
-      '@yunseo/adapters-publisher-youtube':
-        specifier: workspace:*
-        version: link:../../packages/adapters/publisher-youtube
       '@yunseo/adapters-render-html':
         specifier: workspace:*
         version: link:../../packages/adapters/render-html

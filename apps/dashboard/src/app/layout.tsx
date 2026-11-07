@@ -24,14 +24,11 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const summary = await studio().getNavSummary();
   const nav: NavEntry[] = [
-    { href: "/", label: "오늘", count: summary.awaiting + summary.stuck, alert: summary.stuck > 0 },
-    { href: "/schedule", label: "편성" },
     { href: "/content", label: "콘텐츠", count: summary.unpublished },
-    { href: "/publish", label: "발행", count: summary.ready },
+    { href: "/cards", label: "카드뉴스 제작" },
+    { href: "/reels", label: "릴스 제작" },
     { href: "/shorts", label: "쇼츠" },
     { href: "/references", label: "레퍼런스" },
-    { href: "/performance", label: "성과" },
-    { href: "/status", label: "운영" },
     { href: "/settings", label: "설정", disabled: true },
   ];
 
