@@ -28,7 +28,6 @@ export function Brand({ mark, logo, name }: { mark?: string; logo?: string; name
   return (
     <div className="ui-brand">
       {logo ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img className="ui-crest ui-crest-img" src={logo} alt="" aria-hidden />
       ) : (
         <span className="ui-crest" aria-hidden>
