@@ -7,7 +7,7 @@ import { MediaCard, MediaGrid, MediaSlide } from "@yunseo/ui";
 import { Carousel } from "@yunseo/ui/carousel";
 
 const slides = (n: number) => Array.from({ length: n }, (_, i) => createElement(MediaSlide, { key: i, href: "/content/P-1", src: `/api/pieces/P-1/cards/${i + 1}`, alt: `카드 ${i + 1}` }));
-const carousel = (n: number) => renderToStaticMarkup(createElement(Carousel, { count: n, label: "FOMC 전" }, ...slides(n)));
+const carousel = (n: number) => renderToStaticMarkup(createElement(Carousel, { count: n, label: "FOMC 전", children: slides(n) }));
 
 describe("캐러셀 마크업", () => {
   it("장 수만큼 그림을 그리고, 처음엔 이전 화살표 없이 다음 화살표만 있다", () => {
@@ -41,7 +41,7 @@ describe("캐러셀 마크업", () => {
 
 describe("갤러리 카드 마크업", () => {
   const card = renderToStaticMarkup(
-    createElement(MediaGrid, null, createElement(MediaCard, { href: "/content/P-1", title: "FOMC 전", meta: "11.06 금 21:00", frame: createElement(Carousel, { count: 2, label: "FOMC 전" }, ...slides(2)) })),
+    createElement(MediaGrid, null, createElement(MediaCard, { href: "/content/P-1", title: "FOMC 전", meta: "11.06 금 21:00", frame: createElement(Carousel, { count: 2, label: "FOMC 전", children: slides(2) }) })),
   );
 
   it("장 링크는 탭 순서에서 빠지고(tabindex -1) 제목 링크만 탭으로 닿는다", () => {
