@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./virtual": "./src/virtual.tsx",
     "./carousel": "./src/carousel.tsx",
+    "./menu": "./src/menu.tsx",
     "./motion": "./src/motion.ts",
     "./reels": "./src/reels.tsx",
     "./styles.css": "./src/styles.css"

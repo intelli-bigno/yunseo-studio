@@ -184,16 +184,59 @@ describe("카드 편집기 오른쪽 패널은 레퍼런스가 주인이다", ()
     expect(prop(".ui-ref-img", "object-fit")).toBeUndefined();
   });
 
-  it("속성 시트는 패널 위에 뜨고(absolute) 접을 수 있다 — 좁은 화면에서는 흐름에 놓인다", () => {
-    expect(prop(".ui-sheet", "position")).toBe("absolute");
-    expect(prop(".ui-sheet", "max-height")).toBe("55%");
-    expect(prop(".ui-editor-side-main", "position")).toBe("relative");
-    expect(css).toMatch(/@media \(max-width: 1184px\) \{[\s\S]*?\.ui-sheet \{[^}]*position:\s*static/);
+  it("속성 시트는 패널 아래 흐름에 붙어(absolute 아님) 레퍼런스 그리드를 가리지 않는다 — 열리면 그리드가 줄고 둘 다 따로 스크롤된다", () => {
+    expect(prop(".ui-sheet", "position")).toBeUndefined();
+    expect(prop(".ui-sheet", "flex")).toBe("none");
+    expect(prop(".ui-sheet", "max-height")).toBe("50%");
+    expect(prop(".ui-sheet-body", "overflow-y")).toBe("auto");
+    expect(prop(".ui-editor-side-body", "flex")).toBe("1");
+    expect(prop(".ui-editor-side-body", "min-height")).toBe("0");
+    expect(prop(".ui-editor-side-body", "overflow-y")).toBe("auto");
+    expect(css).not.toContain(".ui-editor-side-body.has-sheet"); // 시트 높이를 가늠한 아래 여백으로 비워 두지 않는다
+    expect(css).toMatch(/@media \(max-width: 1184px\) \{[\s\S]*?\.ui-sheet \{[^}]*max-height:\s*none/);
   });
 
   it("폭 조절 경계는 패널 왼쪽 가장자리에 있고 좁은 화면에서는 숨긴다", () => {
     expect(prop(".ui-editor-split", "cursor")).toBe("col-resize");
     expect(prop(".ui-editor-split", "left")).toBe("0");
     expect(css).toMatch(/@media \(max-width: 1184px\) \{[\s\S]*?\.ui-editor-split \{[^}]*display:\s*none/);
+  });
+});
+
+describe("편집 도구줄은 한 줄이다(제목 중복·여러 줄 헤더 없음)", () => {
+  const block = /@media not all and \(max-width: 1184px\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+
+  it("도구줄 높이는 48~56 (간격 토큰 48 + 안쪽 여백) 이고 화면 높이 고정에서는 줄바꿈하지 않는다", () => {
+    expect(prop(".ui-toolbar", "min-height")).toBe("var(--sp-7)");
+    expect(space[7]).toBeGreaterThanOrEqual(48);
+    const height = Math.max(space[7], component.button.height + space[1] * 2 + 2); // 단추 40 + 위아래 여백 4×2 + 테두리 2
+    expect(height).toBeGreaterThanOrEqual(48);
+    expect(height).toBeLessThanOrEqual(56);
+    expect(block).toMatch(/\.ui-page\.is-fit \.ui-toolbar \{[^}]*flex-wrap:\s*nowrap/);
+    expect(block).toMatch(/\.ui-page\.is-fit \.ui-toolbar \{[^}]*flex:\s*none/);
+  });
+
+  it("덱 제목 칸은 테두리 없는 글자처럼 보이고, 규격 선택은 폭이 자동이다", () => {
+    expect(prop(".ui-toolbar-title", "border-color")).toBe("transparent");
+    expect(prop(".ui-toolbar-title", "background")).toBe("transparent");
+    expect(prop(".ui-toolbar .ui-select", "width")).toBe("auto");
+  });
+
+  it("메뉴 면은 떠 있는 어두운 면(raised)이고 글자·경고 색은 대비 4.5 이상 쌍이다", () => {
+    expect(prop(".ui-menu-panel", "position")).toBe("absolute");
+    expect(prop(".ui-menu-panel", "background")).toBe("var(--c-raised)");
+    expect(prop(".ui-menu-item", "color")).toBe("var(--c-text)");
+    expect(prop(".ui-menu-item.is-alert", "color")).toBe("var(--c-alert)");
+    expect(prop(".ui-menu-item[disabled]", "color")).toBe("var(--c-text-mute)");
+    const has = (fg: string, bg: string) => contrastPairs.some((p) => p.fg === fg && p.bg === bg && p.min >= 4.5);
+    expect(has("alert", "raised")).toBe(true);
+    expect(has("textMute", "raised")).toBe(true);
+  });
+
+  it("화면 제목 숨김은 눈에만 안 보인다(보조기기에는 읽힌다)", () => {
+    const r = rule(".ui-sr-only");
+    expect(r).not.toMatch(/display\s*:\s*none/);
+    expect(r).not.toMatch(/visibility\s*:\s*hidden/);
+    expect(prop(".ui-sr-only", "position")).toBe("absolute");
   });
 });

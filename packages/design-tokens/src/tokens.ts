@@ -163,6 +163,7 @@ export const contrastPairs = [
   { fg: "accent", bg: "bg", min: 4.5 },
   { fg: "accent", bg: "surface", min: 4.5 },
   { fg: "alert", bg: "surface", min: 4.5 },
+  { fg: "alert", bg: "raised", min: 4.5 }, // 메뉴의 위험 행동(덱 삭제)
   { fg: "alert", bg: "alertBg", min: 4.5 },
   { fg: "accentInk", bg: "accent", min: 4.5 },
   { fg: "accentInk", bg: "text", min: 4.5 },

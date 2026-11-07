@@ -1,10 +1,55 @@
 // [cards] 카드 편집기 부품 — 덱 줄·캔버스·레이어·핸들·자산 칸·레이어 패널.
 // 위치·크기는 카드 원본 픽셀을 받아 %(그리고 글자는 컨테이너 폭 단위 cqw)로 그린다 — 화면 폭이 달라도 같은 비율.
 // 화면(dashboard)은 style 을 못 쓰므로 계산된 기하 값은 여기서만 style 로 넣는다. 꾸밈(색·간격·선)은 styles.css 토큰만.
-import type { CSSProperties, DragEvent, KeyboardEvent, PointerEvent, ReactNode } from "react";
-import { cx } from "./poly";
+import type { ComponentPropsWithoutRef, CSSProperties, DragEvent, KeyboardEvent, PointerEvent, ReactNode } from "react";
+import { cx, vars, type Tone } from "./poly";
 
 const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+
+/**
+ * 편집 도구줄 — 한 줄(높이 약 50). 덱 제목(바로 고친다)·규격·상태는 왼쪽, 실행취소·메뉴·저장은 오른쪽.
+ * 자주 안 쓰는 것(내보내기·덱 열기/삭제·단축키 안내)은 메뉴/도움말로 넣어 높이를 아낀다. 쌓이는 폭(1184 이하)에서는 줄바꿈한다.
+ */
+export function Toolbar({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="ui-toolbar" role="toolbar" aria-label={label}>
+      {children}
+    </div>
+  );
+}
+
+/** 도구줄 안 묶음 — 오른쪽 끝으로 밀린다(앞의 상태 칸이 남는 폭을 가진다) */
+export function ToolbarGroup({ children }: { children: ReactNode }) {
+  return <div className="ui-toolbar-group">{children}</div>;
+}
+
+export function ToolbarSep() {
+  return <span className="ui-toolbar-sep" role="separator" aria-orientation="vertical" />;
+}
+
+/** 덱 제목 — 테두리 없는 글자처럼 보이다가 올리면 입력 칸이 된다 */
+export function ToolbarTitle(props: Omit<ComponentPropsWithoutRef<"input">, "className" | "style">) {
+  return <input className="ui-input ui-toolbar-title" {...props} />;
+}
+
+/** 도구줄 상태 글자(장 수·저장 안 됨) — 줄어들지 않는다 */
+export function ToolbarStatus({ tone, children }: { tone?: Tone | undefined; children: ReactNode }) {
+  return <span className={cx("ui-toolbar-status ui-t-label", tone && tone !== "default" ? `ui-tone-${tone}` : "ui-tone-mute")}>{children}</span>;
+}
+
+/** 도구줄 알림(저장했습니다·실패) — 남는 폭만 쓰고 넘치면 …, 전체 글은 마우스를 올리면 */
+export function ToolbarNote({ tone, children }: { tone: "alert" | "accent"; children: string }) {
+  return (
+    <span className={cx("ui-toolbar-note ui-t-label ui-truncate", `ui-tone-${tone}`)} role={tone === "alert" ? "alert" : "status"} title={children}>
+      {children}
+    </span>
+  );
+}
+
+/** 눈에는 안 보이고 보조기기에만 읽히는 화면 제목 — 화면에 같은 이름이 이미 있을 때(덱 제목) */
+export function HiddenTitle({ children }: { children: ReactNode }) {
+  return <h1 className="ui-sr-only">{children}</h1>;
+}
 
 /** 오른쪽 패널 폭 비율(편집기 폭 기준)의 범위 — 기본은 CSS 의 40%, 끌어서 바꾼 값은 이 범위로 자른다 */
 export const RIGHT_RATIO_MIN = 0.2;
@@ -286,14 +331,15 @@ export function DeckStrip({ label, children, actions }: { label: string; childre
   );
 }
 
-/** 장 썸네일 — 끌어서 순서를 바꾼다(onDropAt 에 놓인 자리). tools 는 현재 장 위에 겹치는 작은 버튼들 */
-export function DeckThumb({ index, current, label, onClick, children, tools, dragKey, onDropAt }: {
+/** 장 썸네일 — 끌어서 순서를 바꾼다(onDropAt 에 놓인 자리). tools 는 현재 장 위에 겹치는 작은 버튼들. ratio(가로/세로)를 주면 화면 높이 고정 편집에서 규격이 달라도 썸네일 높이를 같게 맞춘다 */
+export function DeckThumb({ index, current, label, onClick, children, tools, ratio, dragKey, onDropAt }: {
   index: number;
   current: boolean;
   label: string;
   onClick: () => void;
   children: ReactNode;
   tools?: ReactNode;
+  ratio?: number | undefined;
   /** 끌기 자료형(dataTransfer type) — 주면 끌어 옮길 수 있다 */
   dragKey?: string;
   onDropAt?: (from: number, to: number) => void;
@@ -315,7 +361,7 @@ export function DeckThumb({ index, current, label, onClick, children, tools, dra
     }
   };
   return (
-    <div className={cx("ui-deck-thumb-wrap", current && "is-current")} role="listitem" onDragOver={over} onDragLeave={leave} onDrop={drop}>
+    <div className={cx("ui-deck-thumb-wrap", current && "is-current")} role="listitem" style={ratio ? vars({ "--ar": ratio }) : undefined} onDragOver={over} onDragLeave={leave} onDrop={drop}>
       <button
         type="button"
         className={cx("ui-deck-thumb", current && "is-current")}

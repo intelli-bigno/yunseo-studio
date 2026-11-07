@@ -469,9 +469,35 @@ img { display: block; max-width: 100%; }
   .ui-reels-row { grid-template-columns: calc(var(--sp-8) * 2) minmax(0, 1fr); }
 }
 
+/* ── [cards] 편집 도구줄 — 한 줄. 제목·규격·상태는 왼쪽, 나머지 조작은 오른쪽 묶음 ── */
+.ui-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); min-width: 0; min-height: var(--sp-7); padding: var(--sp-1) var(--sp-3); background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-md); }
+.ui-toolbar-group { flex: none; display: flex; align-items: center; gap: var(--sp-2); margin-left: auto; }
+.ui-toolbar-sep { flex: none; align-self: stretch; width: 1px; margin: var(--sp-2) var(--sp-1); background: var(--c-line-strong); }
+.ui-toolbar .ui-select { width: auto; flex: none; }
+.ui-toolbar-title { flex: 1 1 calc(var(--sp-8) * 2); min-width: calc(var(--sp-8) * 2); max-width: calc(var(--sp-8) * 5); background: transparent; border-color: transparent; font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--fw-title); text-overflow: ellipsis; }
+.ui-toolbar-title:hover { border-color: var(--c-line-strong); }
+.ui-toolbar-title:focus { border-color: var(--c-accent); background: var(--c-sunken); }
+.ui-toolbar-status { flex: none; white-space: nowrap; }
+.ui-toolbar-note { flex: 1 1 0; min-width: 0; }
+.ui-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* ── 메뉴·팝오버 — 단추 아래로 펼친다(바깥 누름·Esc 로 닫힘은 menu.tsx) ── */
+.ui-menu { position: relative; flex: none; display: inline-flex; }
+.ui-menu-trigger { gap: var(--sp-1); }
+.ui-menu-panel { position: absolute; z-index: 40; top: calc(100% + var(--sp-1)); left: 0; display: flex; flex-direction: column; min-width: calc(var(--sp-8) * 3); max-width: calc(var(--sp-8) * 6); max-height: min(60vh, calc(var(--sp-8) * 7)); overflow: hidden auto; overscroll-behavior: contain; padding: var(--sp-1); background: var(--c-raised); border: 1px solid var(--c-line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-dialog); }
+.ui-menu.is-end .ui-menu-panel { left: auto; right: 0; }
+.ui-menu-panel.is-panel { gap: var(--sp-2); padding: var(--sp-3); }
+.ui-menu-item { display: block; width: 100%; padding: 0 var(--sp-3); overflow: hidden; text-overflow: ellipsis; background: none; border: 0; border-radius: var(--r-sm); color: var(--c-text); font-size: var(--fs-body); line-height: calc(var(--button-height) - var(--sp-2)); text-align: left; white-space: nowrap; cursor: pointer; }
+.ui-menu-item:hover:not([disabled]), .ui-menu-item:focus-visible { background: var(--c-hover); }
+.ui-menu-item.is-current { box-shadow: inset 2px 0 0 var(--c-accent); }
+.ui-menu-item.is-alert { color: var(--c-alert); }
+.ui-menu-item[disabled] { color: var(--c-text-mute); cursor: not-allowed; }
+.ui-menu-label { padding: var(--sp-2) var(--sp-3) var(--sp-1); }
+.ui-menu-sep { height: 1px; margin: var(--sp-1) 0; border: 0; background: var(--c-line); }
+
 /* ── [cards] 카드 편집기 — 덱 줄 · 캔버스 · 패널. 넓으면 세 칸, 1184 아래는 패널이 아래로, 640 아래는 덱 줄이 가로로 ── */
 /* 세 칸 — 왼쪽 스티커 · 가운데(캔버스 + 아래 장 목록) · 오른쪽 자산·속성. 양쪽은 접으면 얇은 띠 */
-.ui-editor { --ed-left: calc(var(--sp-8) * 3.4); --ed-right-w: clamp(calc(var(--sp-8) * 4.5), var(--ed-right, 40%), calc(100% - var(--ed-left) - var(--sp-4) * 2 - var(--sp-8) * 4)); display: grid; grid-template-columns: var(--ed-left) minmax(0, 1fr) var(--ed-right-w); gap: var(--sp-4); align-items: start; width: 100%; min-width: 0; }
+.ui-editor { --ed-left: calc(var(--sp-8) * 3); --ed-right-w: clamp(calc(var(--sp-8) * 4.5), var(--ed-right, 40%), calc(100% - var(--ed-left) - var(--sp-4) * 2 - var(--sp-8) * 4)); display: grid; grid-template-columns: var(--ed-left) minmax(0, 1fr) var(--ed-right-w); gap: var(--sp-4); align-items: start; width: 100%; min-width: 0; }
 .ui-editor.is-left-closed { --ed-left: calc(var(--sp-6) + var(--sp-2)); }
 .ui-editor.is-right-closed { --ed-right-w: calc(var(--sp-6) + var(--sp-2)); }
 .ui-editor-center { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
@@ -480,13 +506,12 @@ img { display: block; max-width: 100%; }
 .ui-editor-side { position: sticky; top: var(--sp-4); display: flex; flex-direction: column; min-width: 0; max-height: calc(100vh - var(--sp-8)); background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-md); overflow: hidden; }
 .ui-editor-side-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .ui-editor-side-main { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.ui-editor-side-body.has-sheet { padding-bottom: var(--sp-8); }
 /* 폭 조절 경계 — 오른쪽 패널 왼쪽 가장자리 */
 .ui-editor-split { position: absolute; z-index: 6; top: 0; bottom: 0; left: 0; width: var(--sp-2); cursor: col-resize; touch-action: none; }
 .ui-editor-split::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: transparent; }
 .ui-editor-split:hover::after, .ui-editor-split:focus-visible::after { background: var(--c-accent); }
-/* 속성 시트 — 오른쪽 패널 아래에 떠서 접는다(접으면 머리 줄만) */
-.ui-sheet { position: absolute; z-index: 5; left: var(--sp-2); right: var(--sp-2); bottom: var(--sp-2); max-height: 55%; display: flex; flex-direction: column; background: var(--c-raised); border: 1px solid var(--c-line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-card); overflow: hidden; }
+/* 속성 시트 — 오른쪽 패널 아래에 붙어(흐름 안) 접는다. 열리면 위 그리드가 그만큼 줄어 둘 다 따로 스크롤되고 서로 가리지 않는다(접으면 머리 줄만) */
+.ui-sheet { flex: none; max-height: 50%; display: flex; flex-direction: column; background: var(--c-raised); border-top: 1px solid var(--c-line-strong); overflow: hidden; }
 .ui-sheet-head { flex: none; display: flex; align-items: center; gap: var(--sp-2); width: 100%; height: var(--button-height); padding: 0 var(--sp-3); background: var(--c-raised); border: 0; color: var(--c-accent); font-size: var(--fs-label); font-weight: 700; cursor: pointer; text-align: left; }
 .ui-sheet-head:hover { background: color-mix(in srgb, var(--c-accent) 8%, var(--c-raised)); }
 .ui-sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--c-line); }
@@ -541,7 +566,7 @@ img { display: block; max-width: 100%; }
 .ui-canvas-wm { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
 .ui-canvas-wm-item { position: absolute; white-space: nowrap; line-height: 1; font-weight: 700; }
 .ui-canvas-wm-item img { display: block; height: auto; }
-.ui-sticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--sp-8) * 1.25), 1fr)); gap: var(--sp-2); }
+.ui-sticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--sp-8), 1fr)); gap: var(--sp-2); }
 .ui-sticker-tile { aspect-ratio: 1; display: grid; grid-template-rows: minmax(0, 1fr) auto; place-items: center; gap: var(--sp-1); padding: var(--sp-2); border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-text); cursor: grab; }
 .ui-sticker-tile:hover { border-color: var(--c-accent); }
 .ui-sticker-tile img { max-width: 100%; max-height: 100%; pointer-events: none; }
@@ -558,7 +583,8 @@ img { display: block; max-width: 100%; }
 .ui-canvas-handle.is-w { left: 0; top: 50%; cursor: ew-resize; }
 .ui-deck-bar { display: flex; align-items: stretch; gap: var(--sp-3); min-width: 0; padding: var(--sp-3); background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-md); }
 .ui-deck-strip { flex: 1; display: flex; flex-direction: row; gap: var(--sp-3); min-width: 0; overflow-x: auto; padding-bottom: var(--sp-1); }
-.ui-deck-actions { flex: none; display: flex; flex-direction: column; justify-content: center; gap: var(--sp-2); padding-left: var(--sp-3); border-left: 1px solid var(--c-line); }
+.ui-deck-actions { flex: none; display: flex; flex-direction: column; justify-content: center; gap: var(--sp-1); padding-left: var(--sp-3); border-left: 1px solid var(--c-line); }
+.ui-deck-actions .ui-btn { height: calc(var(--button-height) - var(--sp-3)); padding: 0 var(--sp-3); }
 .ui-deck-thumb-wrap { flex: none; width: calc(var(--sp-8) * 1.3); display: flex; flex-direction: column; gap: var(--sp-1); align-items: stretch; min-width: 0; border-radius: var(--r-sm); }
 .ui-deck-thumb-wrap.is-drop { outline: 2px dashed var(--c-accent); outline-offset: 2px; }
 .ui-deck-thumb[draggable="true"] { cursor: grab; }
@@ -585,8 +611,7 @@ img { display: block; max-width: 100%; }
   .ui-editor, .ui-editor.is-left-closed, .ui-editor.is-right-closed, .ui-editor.is-left-closed.is-right-closed { grid-template-columns: minmax(0, 1fr); }
   .ui-editor-side { position: static; max-height: none; }
   .ui-editor-split { display: none; }
-  .ui-sheet { position: static; max-height: none; margin: var(--sp-2); }
-  .ui-editor-side-body.has-sheet { padding-bottom: 0; }
+  .ui-sheet { max-height: none; }
   .ui-editor-side.is-closed { height: auto; }
   .ui-editor-side.is-closed .ui-editor-toggle { flex-direction: row; height: auto; padding: var(--sp-2) var(--sp-3); }
   .ui-editor-side.is-closed .ui-editor-toggle-label { writing-mode: horizontal-tb; }
@@ -604,14 +629,19 @@ img { display: block; max-width: 100%; }
    헤더(.ui-top) 아래 남은 높이를 꽉 채우고(100dvh), 캔버스는 남는 높이에 맞춰 줄고, 장 목록은 항상 첫 화면에 있다. 좌우 패널은 각자 안에서만 스크롤.
    1184px 이하(패널이 위아래로 쌓이는 폭)에는 적용하지 않는다 — 그때는 문서가 자연스럽게 길어진다. ── */
 @media not all and (max-width: 1184px) {
-  .ui-page.is-fit { height: calc(100vh - var(--l-topbar)); height: calc(100dvh - var(--l-topbar)); min-height: calc(var(--sp-8) * 9); padding-top: var(--sp-4); padding-bottom: var(--sp-4); gap: var(--sp-3); overflow: hidden; }
+  .ui-page.is-fit { height: calc(100vh - var(--l-topbar)); height: calc(100dvh - var(--l-topbar)); min-height: calc(var(--sp-8) * 9); padding: var(--sp-3) var(--sp-4); gap: var(--sp-3); overflow: hidden; }
   .ui-page.is-fit > .ui-grow { min-height: 0; }
-  .ui-page.is-fit .ui-editor { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  .ui-page.is-fit .ui-editor { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; gap: var(--sp-3); }
+  .ui-page.is-fit .ui-toolbar { flex: none; flex-wrap: nowrap; }
   .ui-page.is-fit .ui-editor-side { position: static; max-height: none; }
   .ui-page.is-fit .ui-editor-center { min-height: 0; }
   .ui-page.is-fit .ui-editor-stage { flex: 1 1 0; min-height: 0; padding: var(--sp-3); gap: var(--sp-2); }
   .ui-page.is-fit .ui-editor-strip { flex: none; }
-  .ui-page.is-fit .ui-deck-thumb-wrap { width: calc(var(--sp-8) * 1.2); }
+  .ui-page.is-fit .ui-deck-bar { padding: var(--sp-2) var(--sp-3); }
+  /* 썸네일 높이는 규격과 상관없이 같다(--ar = 가로/세로). 아래 번호·도구 줄이 들어갈 최소 폭만 지킨다 */
+  .ui-page.is-fit .ui-deck-thumb-wrap { width: auto; min-width: calc(var(--sp-8) * 1.4); align-items: center; }
+  .ui-page.is-fit .ui-deck-thumb { width: calc(var(--sp-8) * 1.25 * var(--ar, 0.8)); }
+  .ui-page.is-fit .ui-deck-thumb-foot { align-self: stretch; }
   .ui-canvas-fit { flex: 1 1 0; min-height: calc(var(--sp-8) * 3); width: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
   .ui-canvas-fit .ui-canvas:not(.is-mini) { width: min(100cqw, calc(100cqh * var(--ar, 1))); max-width: none; }
 }

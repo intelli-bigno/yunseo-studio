@@ -1,5 +1,6 @@
 "use client";
 // [cards] 카드뉴스 편집기 — 들어오자마자 새 덱 캔버스(저장 전 초안, revision 0). 「저장」을 처음 누를 때 덱을 만들고(POST) 이어서 저장(PUT)한다.
+// 맨 위 = 한 줄 도구줄(CardsToolbar — 제목 바로 고침·규격·실행취소·추가/내보내기/덱 메뉴·저장·? 단축키 도움말).
 // 왼쪽 패널(접기) = 스티커 라이브러리 · 가운데 = 캔버스 + 아래 가로 장 목록(끌어서 순서) · 오른쪽 패널(접기, 폭 끌어 조절·기억) = 레퍼런스 메이슨리 그리드가 패널 전체(탭: 레퍼런스·생성·레이어).
 // 요소를 고르면 그 속성이 오른쪽 패널 위에 뜨는 접이식 시트로 나온다(레퍼런스를 가리지 않게 접을 수 있다).
 // 같은 편집을 JSON 명령으로도 할 수 있다 — POST /api/cards/:id/ops (docs/13-cards-ops-schema.md).
@@ -68,7 +69,6 @@ import {
   Input,
   LayerRow,
   Lightbox,
-  Notice,
   PanelBar,
   PanelPad,
   PanelSection,
@@ -89,6 +89,7 @@ import {
 import { drawCard, exportName, type Ctx2D, type LoadedImage } from "@/lib/cards-export";
 import { filterRefs, refSets } from "@/lib/ref-filter";
 import { CardView, cssFamily } from "./CardView";
+import { CardsToolbar } from "./CardsToolbar";
 
 export interface EditorAsset {
   id: string;
@@ -130,7 +131,6 @@ const FONT_LABEL: Record<CardFont, string> = { sans: "고딕(본문 서체)", se
 const KIND_LABEL: Record<CardLayer["kind"], string> = { image: "IMG", text: "TXT", overlay: "DIM", sticker: "STK" };
 const SHAPE_LABEL: Record<StickerShape, string> = { rect: "사각형", circle: "원", arrow: "화살표", bubble: "말풍선", badge: "배지", star: "별", emoji: "이모지" };
 const POS_LABEL: Record<WatermarkPosition, string> = { tl: "↖", tc: "↑", tr: "↗", ml: "←", mc: "·", mr: "→", bl: "↙", bc: "↓", br: "↘" };
-const PRESET_IDS = Object.keys(CARD_PRESETS) as CardPresetId[];
 
 /** 캔버스 글자 서체 — CSS 변수를 실제 이름으로 푼다 */
 function canvasFamily(f: CardFont): string {
@@ -282,6 +282,12 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
   };
 
   useEffect(() => clearTimers, []);
+  // 도구줄 한 줄에 들어가는 알림이라 성공 알림은 잠깐만 둔다(실패는 다음 행동까지)
+  useEffect(() => {
+    if (msg?.tone !== "accent") return;
+    const t = setTimeout(() => setMsg(null), 6000);
+    return () => clearTimeout(t);
+  }, [msg]);
   // 요소를 고르면 오른쪽 패널과 그 위 속성 시트를 바로 펼친다
   useEffect(() => {
     if (selected) {
@@ -314,7 +320,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  // 단축키 — 입력칸 밖에서: Delete/Backspace 삭제, ⌘/Ctrl+Z 실행취소, ⇧⌘Z·Ctrl+Y 다시실행, ⌘/Ctrl+D 복제 (크게 보기 중에는 끈다)
+  // 단축키 — 입력칸 밖에서: Delete/Backspace 삭제, ⌘/Ctrl+Z 실행취소, ⇧⌘Z·Ctrl+Y 다시실행, ⌘/Ctrl+D 복제, Esc 선택 해제 (크게 보기 중에는 끈다)
   useEffect(() => {
     if (preview) return;
     const h = (e: KeyboardEvent) => {
@@ -325,6 +331,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
       if (mod && k === "z") return e.preventDefault(), e.shiftKey ? redo() : undo();
       if (mod && k === "y") return e.preventDefault(), redo();
       if (!selected) return;
+      if (e.key === "Escape") return setSelected(null);
       if (mod && k === "d") {
         e.preventDefault();
         const id = newId();
@@ -858,50 +865,36 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
 
   return (
     <Stack gap={3} grow>
-      <Stack direction="row" gap={3} wrap align="center">
-        <Input aria-label="덱 제목" value={deck.title} maxLength={80} onChange={(e) => edit((d) => ({ ...d, title: e.target.value }), "title")} />
-        <Select aria-label="카드 규격" value={deck.preset} onChange={(e) => edit((d) => ({ ...d, preset: e.target.value as CardPresetId }))}>
-          {PRESET_IDS.map((p) => (
-            <option key={p} value={p}>
-              {CARD_PRESETS[p].label}
-            </option>
-          ))}
-        </Select>
-        <Text tone="mute">
-          {deck.cards.length}장{cur.revision === 0 ? " · 새 덱(저장 전)" : ""}
-          {dirty ? " · 저장 안 됨" : ""}
-        </Text>
-        <Button variant="secondary" onClick={undo} disabled={!h.past.length} title="실행취소 (⌘Z)">
-          실행취소
-        </Button>
-        <Button variant="secondary" onClick={redo} disabled={!h.future.length} title="다시실행 (⇧⌘Z)">
-          다시실행
-        </Button>
-        <Button variant="primary" onClick={save} disabled={busy || (!dirty && cur.revision > 0)}>
-          저장
-        </Button>
-        <Button variant="secondary" onClick={() => exportCards([at])} disabled={busy}>
-          이 장 PNG
-        </Button>
-        <Button variant="secondary" onClick={() => exportCards(deck.cards.map((_, i) => i))} disabled={busy}>
-          전체 PNG
-        </Button>
-        <Button variant="secondary" onClick={fresh} disabled={busy}>
-          새 덱
-        </Button>
-        <Select aria-label="저장된 덱 열기" value="" onChange={(e) => void open(e.target.value)} disabled={busy || decks.length === 0}>
-          <option value="">{decks.length ? `저장된 덱 열기(${decks.length})` : "저장된 덱 없음"}</option>
-          {decks.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.title} · {d.cardCount}장 · {d.updatedAt.slice(0, 16).replace("T", " ")}
-            </option>
-          ))}
-        </Select>
-        <Button variant="secondary" onClick={remove} disabled={busy}>
-          덱 삭제
-        </Button>
-      </Stack>
-      {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
+      <CardsToolbar
+        title={deck.title}
+        onTitle={(v) => edit((d) => ({ ...d, title: v }), "title")}
+        preset={deck.preset}
+        onPreset={(p) => edit((d) => ({ ...d, preset: p }))}
+        size={`${cw}×${ch}`}
+        cardCount={deck.cards.length}
+        isNew={cur.revision === 0}
+        dirty={dirty}
+        busy={busy}
+        msg={msg}
+        canUndo={h.past.length > 0}
+        canRedo={h.future.length > 0}
+        onUndo={undo}
+        onRedo={redo}
+        canSave={!busy && (dirty || cur.revision === 0)}
+        onSave={save}
+        decks={decks}
+        currentId={cur.revision > 0 ? deck.id : null}
+        onOpen={(id) => void open(id)}
+        onNew={fresh}
+        onRemove={remove}
+        canDeselect={Boolean(selected)}
+        onAddText={() => put(textLayer(newId(), deck.preset))}
+        onAddOverlay={() => put(overlayLayer(newId(), deck.preset))}
+        onAddGradient={() => put({ ...overlayLayer(newId(), deck.preset, 0.85), name: "아래 그라데이션", gradient: "to-top", gradFrom: 0, gradTo: 0.6 })}
+        onDeselect={() => setSelected(null)}
+        onExportOne={() => void exportCards([at])}
+        onExportAll={() => void exportCards(deck.cards.map((_, i) => i))}
+      />
       <EditorLayout
         leftLabel="스티커"
         rightLabel="레퍼런스"
@@ -918,30 +911,11 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
         sheetOpen={sheetOpen}
         onToggleSheet={() => setSheetOpen((v) => !v)}
         stage={
-          <>
-            <CanvasFit>
-              <CardView card={card} preset={deck.preset} watermark={wm} selected={selected} onLayerDown={(l, e) => startDrag(l, "move", e)} onHandleDown={(l, m, e) => startDrag(l, m, e)} onDrop={onDrop}>
-                <CanvasGuides v={guides.v} h={guides.h} cw={cw} ch={ch} />
-              </CardView>
-            </CanvasFit>
-            <Stack direction="row" gap={2} wrap>
-              <Button variant="secondary" onClick={() => put(textLayer(newId(), deck.preset))}>
-                + 텍스트
-              </Button>
-              <Button variant="secondary" onClick={() => put(overlayLayer(newId(), deck.preset))}>
-                + 덮개
-              </Button>
-              <Button variant="secondary" onClick={() => put({ ...overlayLayer(newId(), deck.preset, 0.85), name: "아래 그라데이션", gradient: "to-top", gradFrom: 0, gradTo: 0.6 })}>
-                + 그라데이션 덮개
-              </Button>
-              <Button variant="secondary" onClick={() => setSelected(null)} disabled={!selected}>
-                선택 해제
-              </Button>
-            </Stack>
-            <Text tone="mute">
-              {cw}×{ch} · 끌어 옮기면 가장자리·가운데·다른 레이어에 붙음(Alt 로 끔) · 모서리로 크기(이미지·스티커는 비율 유지, Shift 로 해제) · Delete 삭제 · ⌘D 복제 · ⌘Z 실행취소
-            </Text>
-          </>
+          <CanvasFit>
+            <CardView card={card} preset={deck.preset} watermark={wm} selected={selected} onLayerDown={(l, e) => startDrag(l, "move", e)} onHandleDown={(l, m, e) => startDrag(l, m, e)} onDrop={onDrop}>
+              <CanvasGuides v={guides.v} h={guides.h} cw={cw} ch={ch} />
+            </CardView>
+          </CanvasFit>
         }
         strip={
           <DeckStrip
@@ -964,6 +938,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
               <DeckThumb
                 key={c.id}
                 index={i}
+                ratio={cw / ch}
                 current={i === at}
                 label={`${i + 1}번째 장`}
                 onClick={() => (setIndex(i), setSelected(null))}
