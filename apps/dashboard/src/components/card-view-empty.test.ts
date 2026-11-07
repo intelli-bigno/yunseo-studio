@@ -4,7 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { addLayer, blankCard, textLayer } from "@yunseo/domain";
-import { drawCard, type Ctx2D } from "@/lib/cards-export";
+import { drawCard, type Ctx2D } from "../lib/cards-export";
 import { CardView, EMPTY_HINT, EMPTY_HINT_MINI } from "./CardView";
 
 const render = (card = blankCard("c"), mini = false) => renderToStaticMarkup(createElement(CardView, { card, preset: "4:5", mini }));
