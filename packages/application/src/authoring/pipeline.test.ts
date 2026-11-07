@@ -87,7 +87,7 @@ describe("산출물 경로 — 옛 네이티브 경로로 저장된 기록", () 
 
   it("릴스 합성은 바로잡은 카드 경로를 합성기에 넘긴다", async () => {
     const p = piece();
-    const compose = vi.fn(async (_cards: CardRenderResult, _out: string) => record(p, WORK, "/").reel!);
+    const compose = vi.fn<(cards: CardRenderResult, outDir: string) => Promise<ReelResult>>(async () => record(p, WORK, "/").reel!);
     const uc = setup(p, record(p, OLD, "\\", { reel: null, bundle: null }), cardsOnDisk(p), { reels: { compose } });
     await uc.composeReel(p.id);
     expect(compose.mock.calls[0]![0].cards.map((c) => c.path)).toEqual(CARD_NAMES.map((n) => `${WORK}/${p.id}/${hash12(p)}/cards/${n}`));
