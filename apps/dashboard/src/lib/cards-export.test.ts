@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addLayer, blankCard, imageLayer, overlayLayer, textLayer } from "@yunseo/domain";
+import { addLayer, blankCard, defaultWatermark, imageLayer, overlayLayer, stickerLayer, textLayer } from "@yunseo/domain";
 import { drawCard, exportName, fitImage, type Ctx2D } from "./cards-export";
 
 function recorder() {
@@ -19,6 +19,8 @@ function recorder() {
     drawImage: (_i, ...n) => void calls.push(`drawImage ${n.map((v) => Math.round(v)).join(",")}`),
     fillText: (t, x, y) => void calls.push(`fillText ${t} ${x},${y} ${ctx.font} ${ctx.textAlign}`),
     measureText: (t) => ({ width: [...t].length * 10 }),
+    translate: (x, y) => void calls.push(`translate ${x},${y}`),
+    rotate: (r) => void calls.push(`rotate ${r.toFixed(2)}`),
   };
   return { ctx, calls };
 }
@@ -51,6 +53,24 @@ describe("PNG 내보내기 — 카드 그리기", () => {
     const { ctx, calls } = recorder();
     await drawCard(ctx, card, "4:5", { load: async () => null, family: () => "Sans" });
     expect(calls.filter((c) => c.startsWith("fillText"))).toEqual(["fillText 가나다 0,5 700 10px Sans left", "fillText 라 0,25 700 10px Sans left"]);
+  });
+
+  it("세로 가운데·여백·배경 상자", async () => {
+    const card = addLayer(blankCard("c"), textLayer("t", "1:1", { x: 0, y: 0, w: 100, h: 100, size: 10, lineHeight: 2, text: "가", vAlign: "middle", margin: 10, padding: 5, boxOpacity: 0.5, boxColor: "#ff0000" }));
+    const { ctx, calls } = recorder();
+    await drawCard(ctx, card, "1:1", { load: async () => null, family: () => "Sans" });
+    expect(calls).toContain("fillRect rgba(255, 0, 0, 0.5) a=1 10,10,80,80");
+    expect(calls.filter((c) => c.startsWith("fillText"))).toEqual(["fillText 가 15,45 700 10px Sans left"]); // 안쪽 15..85, 줄 높이 20 → 가운데 40 + 반 줄 여백 5
+  });
+
+  it("회전·스티커·반복 워터마크", async () => {
+    const card = addLayer(blankCard("c"), { ...stickerLayer("s", "1:1", "star"), rotation: 90 });
+    const { ctx, calls } = recorder();
+    const loads: string[] = [];
+    await drawCard(ctx, card, "1:1", { load: async (s) => (loads.push(s), { img: {}, width: 10, height: 10 }), family: () => "Sans" }, { ...defaultWatermark(), tile: true, gap: 540 });
+    expect(calls).toContain("rotate 1.57");
+    expect(loads[0]).toMatch(/^data:image\/svg\+xml/);
+    expect(calls.filter((c) => c.startsWith("fillText @yunseo")).length).toBeGreaterThan(3);
   });
 
   it("contain 은 상자 안 가운데", () => {

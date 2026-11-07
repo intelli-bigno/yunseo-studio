@@ -19,6 +19,8 @@ import {
   type CardDeck,
 } from "./deck";
 import { wrapText } from "./wrap";
+import * as m from "./deck";
+import { stickerSvg } from "./sticker-svg";
 
 const ids = () => {
   let n = 0;
@@ -163,5 +165,56 @@ describe("wrapText — 내보내기 줄바꿈", () => {
   it("공백 없는 긴 낱말은 글자 단위로 자른다", () => {
     expect(wrapText("가나다라마바사", 30, measure)).toEqual(["가나다", "라마바", "사"]);
     expect(wrapText("ab 가나다라마바", 30, measure)).toEqual(["ab", "가나다", "라마바"]);
+  });
+});
+
+describe("편집 속성 v2", () => {
+  it("예전 문서(잠금·회전·새 글자 칸 없음)는 기본값으로 읽고, 워터마크는 없음", () => {
+    const old = { id: "d", title: "t", preset: "1:1", cards: [{ id: "c", background: "#111111", layers: [{ id: "t", kind: "text", name: "n", hidden: false, x: 0, y: 0, w: 10, h: 10, text: "a", font: "sans", size: 20, weight: 700, color: "#ffffff", align: "left", lineHeight: 1.2 }, { id: "o", kind: "overlay", name: "o", hidden: false, x: 0, y: 0, w: 10, h: 10, opacity: 0.4 }] }] };
+    const r = parseDeck(old);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.deck.watermark).toBeNull();
+    expect(r.deck.cards[0]!.layers[0]).toMatchObject({ locked: false, rotation: 0, letterSpacing: 0, vAlign: "top", margin: 0, padding: 0, boxOpacity: 0 });
+    expect(r.deck.cards[0]!.layers[1]).toMatchObject({ color: "#000000" });
+  });
+
+  it("스티커·워터마크 왕복, 틀린 워터마크는 거절", () => {
+    const d = createDeck("d", "t", "4:5", "c");
+    const deck: CardDeck = { ...d, watermark: m.defaultWatermark(), cards: [{ ...d.cards[0]!, layers: [m.stickerLayer("s", "4:5", "badge")] }] };
+    const r = parseDeck(JSON.parse(JSON.stringify(deck)));
+    expect(r.ok && r.deck).toEqual(deck);
+    expect(parseDeck({ ...deck, watermark: { ...deck.watermark, src: "https://x/y.png" } }).ok).toBe(false);
+  });
+
+  it("레이어 복제·잠금·맨 앞/뒤", () => {
+    let c = base().cards[0]!;
+    c = m.duplicateLayer(c, "o1", "o2");
+    expect(c.layers.map((l) => l.id)).toEqual(["o1", "o2", "t1"]);
+    expect(c.layers[1]).toMatchObject({ x: 24, y: 24 });
+    c = m.toggleLayerLocked(c, "t1");
+    expect(c.layers[2]!.locked).toBe(true);
+    expect(m.moveLayerToEdge(c, "t1", -1).layers[0]!.id).toBe("t1");
+    expect(m.moveLayerToEdge(c, "o1", 1).layers.at(-1)!.id).toBe("o1");
+  });
+
+  it("스냅 — 카드 가운데·다른 레이어 가장자리에 붙고 가이드를 낸다", () => {
+    const r = m.snapBox({ x: 437, y: 50, w: 200, h: 100 }, [{ x: 700, y: 305, w: 100, h: 100 }], "1:1");
+    expect(r.box).toEqual({ x: 440, y: 50, w: 200, h: 100 }); // 가운데 540
+    expect(r.guides.v).toEqual([540]);
+    expect(m.snapBox({ x: 300, y: 207, w: 100, h: 100 }, [{ x: 0, y: 305, w: 10, h: 10 }], "1:1").box.y).toBe(205); // 아래 307 → 305
+    expect(m.snapBox({ x: 300, y: 300, w: 10, h: 10 }, [], "1:1").guides).toEqual({ v: [], h: [] });
+  });
+
+  it("워터마크 자리 — 9칸 위치·반복 격자", () => {
+    expect(m.watermarkAnchors({ position: "br", tile: false, gap: 300 }, "1:1", 100, 40)).toEqual([{ x: 982, y: 1012 }]);
+    expect(m.watermarkAnchors({ position: "mc", tile: false, gap: 300 }, "1:1", 100, 40)).toEqual([{ x: 540, y: 540 }]);
+    expect(m.watermarkAnchors({ position: "tl", tile: true, gap: 540 }, "1:1", 10, 10).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("스티커 SVG — 글자는 이스케이프", () => {
+    const svg = stickerSvg({ shape: "badge", fill: "#ff0000", label: "<b>", labelColor: "#ffffff", w: 200, h: 80 });
+    expect(svg).toContain("&lt;b&gt;");
+    expect(svg).toContain('viewBox="0 0 200 80"');
   });
 });

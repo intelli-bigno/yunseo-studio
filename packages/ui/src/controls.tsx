@@ -22,7 +22,7 @@ export function Button<E extends ElementType = "button">({
 
 export function IconButton({ label, children, ...rest }: NoStyle<"button"> & { label: string; children: ReactNode }) {
   return (
-    <button className="ui-icon-btn" aria-label={label} {...rest}>
+    <button className="ui-icon-btn" aria-label={label} title={label} {...rest}>
       {children}
     </button>
   );
