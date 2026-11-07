@@ -56,7 +56,17 @@ export function ReelsEditor({ projects, current, sources }: ReelsEditorProps) {
   const [busy, setBusy] = useState(false);
   const drag = useRef<Drag | null>(null);
 
-  const edit = (f: (p: ReelsProject) => ReelsProject) => {
+  // 요청 취소 — 화면을 떠나면(언마운트) 진행 중인 저장·생성·삭제 요청을 끊는다. 개발 모드 재마운트에 대비해 효과 안에서 만든다
+  const abort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const ctl = new AbortController();
+    abort.current = ctl;
+    return () => ctl.abort();
+  }, []);
+  const signal = () => abort.current?.signal ?? null;
+  const aborted = (e: unknown) => e instanceof DOMException && e.name === "AbortError";
+
+  const edit =(f: (p: ReelsProject) => ReelsProject) => {
     setProject((p) => {
       if (!p) return p;
       const next = f(p);
@@ -113,7 +123,7 @@ export function ReelsEditor({ projects, current, sources }: ReelsEditorProps) {
     if (!project || !current || busy) return;
     setBusy(true);
     try {
-      const r = await fetch(`/api/reels/projects/${current.id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ project, revision }) });
+      const r = await fetch(`/api/reels/projects/${current.id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ project, revision }), signal: signal() });
       const body = (await r.json()) as { revision?: number; error?: string; problems?: string[] };
       if (!r.ok) {
         setMessage({ tone: "alert", text: r.status === 409 ? "다른 곳에서 먼저 저장했다 — 새로 불러와야 한다" : `${body.error ?? "저장 실패"} ${body.problems?.join(" · ") ?? ""}` });
@@ -123,7 +133,8 @@ export function ReelsEditor({ projects, current, sources }: ReelsEditorProps) {
       setDirty(false);
       setMessage({ tone: "accent", text: `저장했다 · ${body.revision}판` });
       router.refresh();
-    } catch {
+    } catch (e) {
+      if (aborted(e)) return;
       setMessage({ tone: "alert", text: "저장 실패 — 연결을 확인" });
     } finally {
       setBusy(false);
@@ -133,11 +144,12 @@ export function ReelsEditor({ projects, current, sources }: ReelsEditorProps) {
   const create = async () => {
     setBusy(true);
     try {
-      const r = await fetch("/api/reels/projects", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+      const r = await fetch("/api/reels/projects", { method: "POST", headers: { "content-type": "application/json" }, body: "{}", signal: signal() });
       const body = (await r.json()) as { id?: string; error?: string };
       if (!r.ok || !body.id) throw new Error(body.error);
       router.push(`/reels?p=${body.id}`);
-    } catch {
+    } catch (e) {
+      if (aborted(e)) return;
       setMessage({ tone: "alert", text: "만들기 실패" });
     } finally {
       setBusy(false);
@@ -146,9 +158,13 @@ export function ReelsEditor({ projects, current, sources }: ReelsEditorProps) {
 
   const destroy = async () => {
     if (!current || !window.confirm("이 프로젝트를 지울까?")) return;
-    const r = await fetch(`/api/reels/projects/${current.id}`, { method: "DELETE" });
-    if (r.ok) router.push("/reels");
-    else setMessage({ tone: "alert", text: "지우기 실패" });
+    try {
+      const r = await fetch(`/api/reels/projects/${current.id}`, { method: "DELETE", signal: signal() });
+      if (r.ok) router.push("/reels");
+      else setMessage({ tone: "alert", text: "지우기 실패" });
+    } catch (e) {
+      if (!aborted(e)) setMessage({ tone: "alert", text: "지우기 실패 — 연결을 확인" });
+    }
   };
 
   // 단축키 — Space 재생, S 자르기, Delete 삭제, ⌘S 저장 (입력 칸에서는 안 먹는다)

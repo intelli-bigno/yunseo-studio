@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  REELS_MAX_MS,
   activeAt,
   addClip,
   addTrack,
@@ -121,6 +122,18 @@ describe("이동", () => {
 
   it("음수로는 가지 않는다", () => {
     expect(moveClip(base(), "a", -500).clips.find((c) => c.id === "a")!.start).toBe(0);
+  });
+
+  it("뒤 빈자리로 밀려 끝이 3분 상한을 넘으면 이동을 거부하고 원위치를 지킨다", () => {
+    // a(0~4000) · b(4000~6000) 뒤에 상한 1초 전까지(6000~179000) 채우는 클립 c 를 둔다
+    const full = addClip(base(), "t-video", video("c", REELS_MAX_MS - 6000 - 1000, { start: 6000 }));
+    // c 와 겹치는 자리로 b 를 옮기면 c 뒤(179000)로 밀려 끝이 181000 > 180000 이 된다
+    const moved = moveClip(full, "b", 8000);
+    expect(moved).toBe(full);
+    expect(moved.clips.find((c) => c.id === "b")).toMatchObject({ trackId: "t-video", start: 4000 });
+    // 상한에 정확히 닿는 이동은 허용한다
+    const edge = moveClip(base(), "b", REELS_MAX_MS - 2000);
+    expect(edge.clips.find((c) => c.id === "b")!.start).toBe(REELS_MAX_MS - 2000);
   });
 });
 

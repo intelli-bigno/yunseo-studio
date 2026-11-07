@@ -18,6 +18,8 @@ import { DEFAULT_BINARIES, assertFfmpegReady, createFfmpegReelComposer } from "@
 import { loadPresets } from "@yunseo/presets-schema";
 import type { CardRenderer, ReelComposer } from "@yunseo/application";
 import { DEFAULT_REEL_PRESET, type ContentRules } from "@yunseo/domain";
+// [W3 릴스] 릴스 편집 프로젝트 저장소 조립에 쓰는 것
+import { createReelsProjectStore, ReelsRevisionConflictError, type ReelsProjectStore } from "@yunseo/adapters-storage";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -158,7 +160,6 @@ export const pipelineSetupError = (): string | null => composeL7().error;
 export const operatorName = (): string => process.env.STUDIO_OPERATOR?.trim() || "운영자";
 
 // [W3 릴스] 릴스 편집 프로젝트 저장소(레인 전용 테이블 reels_projects) — 원고와 같은 STUDIO_DB 파일, 연결은 따로. 쓰는 곳은 server/reels.ts
-import { createReelsProjectStore, ReelsRevisionConflictError, type ReelsProjectStore } from "@yunseo/adapters-storage";
 export { ReelsRevisionConflictError };
 const w3 = globalThis as typeof globalThis & { __yunseoReels?: ReelsProjectStore };
 export function reelsStore(): ReelsProjectStore {

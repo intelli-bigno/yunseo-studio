@@ -139,7 +139,7 @@ export function updateClip(p: ReelsProject, clipId: string, patch: Partial<Pick<
   return { ...p, clips: p.clips.map((c) => (c.id === clipId ? { ...c, ...patch } : c)) };
 }
 
-/** 이동 — 다른 트랙으로 옮기면 그 트랙이 받아야 한다(아니면 그대로). 겹치면 뒤 빈자리로 */
+/** 이동 — 다른 트랙으로 옮기면 그 트랙이 받아야 한다(아니면 그대로). 겹치면 뒤 빈자리로 밀리고, 밀린 끝이 3분 상한을 넘으면 이동을 거부한다(원위치) */
 export function moveClip(p: ReelsProject, clipId: string, start: number, trackId?: string): ReelsProject {
   const c = p.clips.find((x) => x.id === clipId);
   if (!c) return p;
@@ -148,6 +148,7 @@ export function moveClip(p: ReelsProject, clipId: string, start: number, trackId
   const kind = c.component ? "component" : c.sourceKind ?? "text";
   if (!track || !accepts(track.kind, kind)) target = c.trackId;
   const at = firstFreeStart(p, target, clamp(start, 0, REELS_MAX_MS - c.duration), c.duration, c.id);
+  if (at + c.duration > REELS_MAX_MS) return p;
   return { ...p, clips: p.clips.map((x) => (x.id === clipId ? { ...x, trackId: target, start: at } : x)) };
 }
 
