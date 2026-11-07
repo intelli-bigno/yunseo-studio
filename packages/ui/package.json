@@ -8,6 +8,7 @@
     "./virtual": "./src/virtual.tsx",
     "./carousel": "./src/carousel.tsx",
     "./motion": "./src/motion.ts",
+    "./reels": "./src/reels.tsx",
     "./styles.css": "./src/styles.css"
   },
   "scripts": {

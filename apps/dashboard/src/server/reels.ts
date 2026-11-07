@@ -1,0 +1,57 @@
+// [W3 릴스] 릴스 편집기 조립 — 프로젝트 저장소(reels_projects)와 편집 소스(만든 쇼츠 영상·렌더 카드 그림) 목록.
+// 저장 파일은 원고 저장소와 같은 STUDIO_DB(없으면 메모리). 쓰기 전 모양 검사는 lib/reels-timeline 이 한다.
+import { randomBytes } from "node:crypto";
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { overlaps, projectIssues, type ReelsProject, type ReelsSource } from "@/lib/reels-timeline";
+import { listReels } from "./library";
+import { reelsStore, studioWorkDir } from "./studio";
+
+export { reelsStore, ReelsRevisionConflictError } from "./studio";
+
+/** R-<12자 무작위> */
+export const newReelsProjectId = () => `R-${randomBytes(6).toString("hex")}`;
+const PROJECT_ID = /^R-[a-f0-9]{12}$/;
+export const isReelsProjectId = (id: string) => PROJECT_ID.test(id);
+
+/** 저장 가능한 프로젝트인지 — 문제 목록(비면 통과) */
+export function reelsProjectProblems(v: unknown): string[] {
+  const issues = projectIssues(v);
+  return issues.length ? issues : overlaps(v as ReelsProject);
+}
+
+export function loadReelsProject(id: string): { project: ReelsProject; revision: number; updatedAt: string } | null {
+  const r = isReelsProjectId(id) ? reelsStore().get(id) : null;
+  return r ? { project: JSON.parse(r.data) as ReelsProject, revision: r.revision, updatedAt: r.updatedAt } : null;
+}
+
+// ── 소스 ────────────────────────────────────────────────
+const PIECE_ID = /^[A-Z]-\d{6}-[a-z0-9]{4}$/;
+const RENDER_ID = /^[a-f0-9]{6,64}$/;
+const CARD_FILE = /^\d{2}-[a-z0-9-]+\.png$/;
+const cardsDir = (pieceId: string, renderId: string) => join(studioWorkDir(), pieceId, renderId, "cards");
+
+/** 렌더 카드 그림 경로 — 모양이 틀리거나 없으면 null */
+export function reelsCardAsset(pieceId: string, renderId: string, file: string): string | null {
+  if (!PIECE_ID.test(pieceId) || !RENDER_ID.test(renderId) || !CARD_FILE.test(file)) return null;
+  const f = join(cardsDir(pieceId, renderId), file);
+  return existsSync(f) ? f : null;
+}
+
+/** 편집 소스 — 원고마다 최근 렌더의 쇼츠 영상 1개 + 카드 그림들 */
+export async function listReelsSources(): Promise<ReelsSource[]> {
+  const out: ReelsSource[] = [];
+  for (const g of await listReels()) {
+    const v = g.versions[0]!;
+    const base = `/api/reels/${g.pieceId}/${v.renderId}`;
+    out.push({ id: `${g.pieceId}/${v.renderId}/video`, kind: "video", label: `${g.title} · 쇼츠`, src: `${base}/video`, ...(v.hasCover ? { poster: `${base}/cover` } : {}) });
+    let files: string[];
+    try {
+      files = readdirSync(cardsDir(g.pieceId, v.renderId)).filter((f) => CARD_FILE.test(f)).sort();
+    } catch {
+      files = [];
+    }
+    for (const f of files) out.push({ id: `${g.pieceId}/${v.renderId}/${f}`, kind: "image", label: `${g.title} · ${f.slice(0, 2)}`, src: `/api/reels/assets/${g.pieceId}/${v.renderId}/${f}` });
+  }
+  return out;
+}
