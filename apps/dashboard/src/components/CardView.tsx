@@ -6,6 +6,10 @@ import { CanvasHandles, CanvasImage, CanvasLayer, CanvasOverlay, CanvasStage, Ca
 /** 화면 글자 서체 — 본문·고정폭은 앱 서체 변수, 명조는 시스템 */
 export const cssFamily = (f: CardFont) => (f === "sans" ? "var(--font-sans), sans-serif" : f === "mono" ? "var(--font-mono), monospace" : "'Noto Serif KR', 'Nanum Myeongjo', serif");
 
+/** 빈 카드 안내 — 화면에만 겹친다(PNG 내보내기는 drawCard 로 따로 그려서 들어가지 않는다) */
+export const EMPTY_HINT = "이미지를 끌어오거나 텍스트 추가";
+export const EMPTY_HINT_MINI = "빈 카드";
+
 export function WatermarkView({ wm, preset }: { wm: Watermark; preset: CardPresetId }) {
   const { width: cw, height: ch } = CARD_PRESETS[preset];
   // 화면에서는 글자 폭을 재지 않고 대략(글자 수 × 0.6em)으로 가장자리 여백을 잡는다
@@ -26,8 +30,9 @@ export function CardView({ card, preset, watermark = null, mini = false, selecte
   children?: ReactNode;
 }) {
   const { width: cw, height: ch, label } = CARD_PRESETS[preset];
+  const hint = card.layers.length === 0 ? (mini ? EMPTY_HINT_MINI : EMPTY_HINT) : undefined;
   return (
-    <CanvasStage width={cw} height={ch} background={card.background} label={`카드 캔버스 ${label}`} mini={mini} onDragOver={onDrop ? (e) => e.preventDefault() : undefined} onDrop={onDrop}>
+    <CanvasStage width={cw} height={ch} background={card.background} label={`카드 캔버스 ${label}`} mini={mini} hint={hint} onDragOver={onDrop ? (e) => e.preventDefault() : undefined} onDrop={onDrop}>
       {card.layers.map((l) =>
         l.hidden ? null : (
           <CanvasLayer key={l.id} box={l} cw={cw} ch={ch} label={l.name} rotation={l.rotation} locked={l.locked} opacity={l.kind === "sticker" ? l.opacity : 1} selected={!mini && selected === l.id} onPointerDown={onLayerDown ? (e) => onLayerDown(l, e) : undefined}>

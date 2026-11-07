@@ -24,6 +24,7 @@ export function CanvasStage({
   background,
   label,
   mini = false,
+  hint,
   children,
   onPointerDown,
   onDragOver,
@@ -34,6 +35,8 @@ export function CanvasStage({
   background: string;
   label: string;
   mini?: boolean;
+  /** 빈 카드 안내(레이어 0장일 때만 준다). 화면에만 겹치고 내보내는 PNG 에는 들어가지 않는다 */
+  hint?: string | undefined;
   children?: ReactNode;
   onPointerDown?: ((e: PointerEvent<HTMLDivElement>) => void) | undefined;
   onDragOver?: ((e: DragEvent<HTMLDivElement>) => void) | undefined;
@@ -41,7 +44,7 @@ export function CanvasStage({
 }) {
   return (
     <div
-      className={cx("ui-canvas", mini && "is-mini")}
+      className={cx("ui-canvas", mini && "is-mini", hint && "is-empty")}
       data-canvas-stage=""
       role={mini ? undefined : "region"}
       aria-label={label}
@@ -50,6 +53,11 @@ export function CanvasStage({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
+      {hint && (
+        <div className="ui-canvas-empty" aria-hidden={mini ? "true" : undefined}>
+          <span className="ui-canvas-empty-text">{hint}</span>
+        </div>
+      )}
       {children}
     </div>
   );
