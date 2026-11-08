@@ -91,7 +91,7 @@ function Palette({ onGo, onPrefetch }: { onGo: (href: string) => void; onPrefetc
         }}
       />
       {results.length === 0 ? (
-        <EmptyState title={entries ? "없음" : "불러오는 중"} />
+        <EmptyState title={entries ? "없음" : "불러오는 중"} busy={!entries} />
       ) : (
         <VirtualList
           count={results.length}

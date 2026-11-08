@@ -30,6 +30,8 @@ export const color = {
   // 버건디 — 막힘 표시에만
   alert: "#E39AA4",
   alertBg: "#4A1A22",
+  // 카드 안쪽 기본 먹색 — 글상자·덮개의 기본값(내보내는 그림 안쪽 값이지 UI 색이 아니다. 도메인 deck.ts 기본값과 같다)
+  canvasInk: "#000000",
   // 종이 — 카드 미리보기 틀
   paper: "#EFE9DD",
   paperInk: "#1A1A18",
@@ -175,6 +177,13 @@ export const contrastPairs = [
  * 틀 선(edge)은 두 바탕 모두에서 2 이상, 틀 안쪽 표면(raised)은 한 단계 밝아야 한다. 테스트가 검사한다.
  */
 export const canvasDefaultBackground = "#111111";
+
+/** 플랫폼 공식 글리프 색(Instagram 그라데이션 3점·YouTube 빨강·흰 글리프) — 브랜드 규정색이라 앱 팔레트(color)와 분리해 여기 한 곳에만 둔다 */
+export const platformMark = {
+  instagram: ["#FFDD55", "#FF543E", "#C837AB"],
+  youtube: "#FF0000",
+  glyph: "#FFFFFF",
+} as const;
 export const separationPairs = [
   { a: "edge", b: "bg", min: 2 },
   { a: "raised", b: "bg", min: 1.1 },

@@ -1,14 +1,13 @@
 "use client";
 // 효과 탭 — 전환 · 색감(밝기·대비·채도·색온도·LUT) · 줌/키프레임. 미리보기는 CSS filter 근사(LUT 는 그리지 않는다), 최종 색은 서버 합성기가 낸다.
 import { useEffect, useState } from "react";
-import { Button, EmptyState, Field, Input, List, ListItem, Segmented, SegmentedItem, Select, Stack, Text } from "@yunseo/ui";
-import { ReelsGroup, ReelsGroups, ReelsRange } from "@yunseo/ui/reels";
+import { Button, EmptyState, Field, Input, List, ListItem, Segmented, SegmentedItem, Select, Stack, Text, NumberField, Range } from "@yunseo/ui";
+import { ReelsGroup, ReelsGroups } from "@yunseo/ui/reels";
 import type { PanelProps } from "../_lib/panel";
 import { DIRECTION_LABEL, KEY_LABEL, TRANSITION_LABEL } from "../_lib/presets";
 import { clamp, clipLen, round } from "../_lib/timeline";
 import { zoomOp } from "../_lib/ops";
 import { DEFAULT_COLOR, DEFAULT_TRANSFORM, KEY_PROPS, MIN_CLIP_MS, TRANSITION_KINDS, type Clip, type Color, type Direction, type KeyEase, type KeyProp, type Op, type Transition, type TransitionKind } from "../_lib/types";
-import { Num } from "./Num";
 
 const DEFAULT_DURATION = 500;
 const fmt = (n: number) => (Math.round(n * 100) / 100).toString();
@@ -51,7 +50,7 @@ function TransitionGroup({ clip, locked, commit }: { clip: Clip; locked: boolean
       </Segmented>
       {tr && tr.kind !== "cut" && (
         <>
-          <Num label="길이 (초)" value={tr.durationMs / 1000} min={0.1} max={Math.max(0.1, len / 2000)} step={0.1} disabled={locked} onCommit={(v) => set({ ...tr, durationMs: round(v * 1000) })} />
+          <NumberField label="길이 (초)" value={tr.durationMs / 1000} min={0.1} max={Math.max(0.1, len / 2000)} step={0.1} disabled={locked} onChange={(v) => set({ ...tr, durationMs: round(v * 1000) })} />
           {tr.kind === "slide" && (
             <Field label="방향">
               <Select value={tr.direction ?? "left"} disabled={locked} onChange={(e) => set({ ...tr, direction: e.target.value as Direction })}>
@@ -76,7 +75,7 @@ function ColorGroup({ clip, locked, setDraft, commit }: { clip: Clip; locked: bo
   useEffect(() => setLut(color.lut?.id ?? ""), [color.lut?.id]);
   const strength = color.lut?.strength ?? 1;
   const row = (key: "brightness" | "contrast" | "saturation" | "temperature", label: string) => (
-    <ReelsRange key={key} label={label} value={color[key]} min={-1} max={1} step={0.01} display={fmt(color[key])} disabled={locked} onChange={(v) => live({ [key]: v })} onCommit={(v) => set({ [key]: v })} />
+    <Range key={key} label={label} value={color[key]} min={-1} max={1} step={0.01} display={fmt(color[key])} disabled={locked} onChange={(v) => live({ [key]: v })} onCommit={(v) => set({ [key]: v })} />
   );
   return (
     <ReelsGroup title="색감">
@@ -95,7 +94,7 @@ function ColorGroup({ clip, locked, setDraft, commit }: { clip: Clip; locked: bo
         />
       </Field>
       {color.lut && (
-        <ReelsRange label="LUT 세기" value={strength} min={0} max={1} step={0.05} display={`${Math.round(strength * 100)}%`} disabled={locked} onChange={(v) => live({ lut: { id: color.lut!.id, strength: v } })} onCommit={(v) => set({ lut: { id: color.lut!.id, strength: v } })} />
+        <Range label="LUT 세기" value={strength} min={0} max={1} step={0.05} display={`${Math.round(strength * 100)}%`} disabled={locked} onChange={(v) => live({ lut: { id: color.lut!.id, strength: v } })} onCommit={(v) => set({ lut: { id: color.lut!.id, strength: v } })} />
       )}
       <Button onClick={() => set(DEFAULT_COLOR)} disabled={locked}>색감 되돌리기</Button>
       <Text tone="mute">미리보기는 근사 — LUT 는 내보낼 때 적용</Text>
@@ -123,8 +122,8 @@ function KeyframeGroup({ clip, time, locked, commit }: { clip: Clip; time: numbe
   return (
     <>
       <ReelsGroup title="줌">
-        <Num label="시작 배율" value={from} min={0.1} max={3} step={0.05} disabled={locked} onCommit={setFrom} />
-        <Num label="끝 배율" value={to} min={0.1} max={3} step={0.05} disabled={locked} onCommit={setTo} />
+        <NumberField label="시작 배율" value={from} min={0.1} max={3} step={0.05} disabled={locked} onChange={setFrom} />
+        <NumberField label="끝 배율" value={to} min={0.1} max={3} step={0.05} disabled={locked} onChange={setTo} />
         <Segmented label="줌 곡선">
           {EASES.filter((e) => e.id !== "hold").map((e) => (
             <SegmentedItem key={e.id} current={ease === e.id} onClick={() => setEase(e.id)}>
@@ -153,7 +152,7 @@ function KeyframeGroup({ clip, time, locked, commit }: { clip: Clip; time: numbe
               ))}
             </Select>
           </Field>
-          <Num label="값" value={value} min={-60} max={360} step={0.05} disabled={locked} onCommit={setValue} />
+          <NumberField label="값" value={value} min={-60} max={360} step={0.05} disabled={locked} onChange={setValue} />
         </Stack>
         <Button disabled={locked} onClick={() => commit({ op: "add_keyframe", clipId: clip.id, prop, at, value, ease })}>
           재생 위치에 추가 ({(at / 1000).toFixed(1)}초)

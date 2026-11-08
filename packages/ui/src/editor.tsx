@@ -3,6 +3,7 @@
 // 화면(dashboard)은 style 을 못 쓰므로 계산된 기하 값은 여기서만 style 로 넣는다. 꾸밈(색·간격·선)은 styles.css 토큰만.
 import { Children } from "react";
 import type { ComponentPropsWithoutRef, CSSProperties, DragEvent, KeyboardEvent, PointerEvent, ReactNode } from "react";
+import { color as token, hexToRgba } from "@yunseo/design-tokens";
 import { cx, vars, type Tone } from "./poly";
 
 const pct = (v: number, of: number) => `${(v / of) * 100}%`;
@@ -267,10 +268,8 @@ export function CanvasImage({ src, fit, alt = "", posX = 0.5, posY = 0.5, zoom =
 }
 
 /** 글자 — size 는 원본 픽셀, cw 는 카드 폭. 화면에서는 컨테이너 폭 비율(cqw)로 줄어든다 */
-const rgba = (hex: string, a: number) => `rgba(${parseInt(hex.slice(1, 3), 16)}, ${parseInt(hex.slice(3, 5), 16)}, ${parseInt(hex.slice(5, 7), 16)}, ${a})`;
-
 export function CanvasText({
-  text, family, size, cw, weight, color, align, lineHeight, letterSpacing = 0, vAlign = "top", margin = 0, padding = 0, boxColor = "#000000", boxOpacity = 0,
+  text, family, size, cw, weight, color, align, lineHeight, letterSpacing = 0, vAlign = "top", margin = 0, padding = 0, boxColor = token.canvasInk, boxOpacity = 0,
 }: { text: string; family: string; size: number; cw: number; weight: number; color: string; align: "left" | "center" | "right"; lineHeight: number; letterSpacing?: number; vAlign?: "top" | "middle" | "bottom"; margin?: number; padding?: number; boxColor?: string; boxOpacity?: number }) {
   const u = (v: number) => `${(v / cw) * 100}cqw`;
   return (
@@ -280,7 +279,7 @@ export function CanvasText({
         style={{
           fontFamily: family, fontSize: u(size), fontWeight: weight, color, textAlign: align, lineHeight, letterSpacing: u(letterSpacing), padding: u(padding),
           justifyContent: vAlign === "top" ? "flex-start" : vAlign === "middle" ? "center" : "flex-end",
-          background: boxOpacity > 0 ? rgba(boxColor, boxOpacity) : undefined,
+          background: boxOpacity > 0 ? hexToRgba(boxColor, boxOpacity) : undefined,
         }}
       >
         <span>{text}</span>
@@ -290,9 +289,9 @@ export function CanvasText({
 }
 
 /** 덮개 — gradient 가 none 이 아니면 색 → 투명 그라데이션(from~to 구간, 0~1) */
-export function CanvasOverlay({ opacity, color = "#000000", gradient = "none", from = 0, to = 1 }: { opacity: number; color?: string; gradient?: string; from?: number; to?: number }) {
-  const solid = rgba(color, 1);
-  const clear = rgba(color, 0);
+export function CanvasOverlay({ opacity, color = token.canvasInk, gradient = "none", from = 0, to = 1 }: { opacity: number; color?: string; gradient?: string; from?: number; to?: number }) {
+  const solid = hexToRgba(color, 1);
+  const clear = hexToRgba(color, 0);
   const a = `${Math.round(from * 100)}%`;
   const b = `${Math.round(to * 100)}%`;
   const background =
@@ -397,16 +396,27 @@ export function DeckThumb({ index, current, label, onClick, children, tools, rat
   );
 }
 
+/** 끌어 놓거나 눌러 넣는 칸 하나 — 자산·레퍼런스·스티커 칸이 같은 버튼 틀을 쓴다(모양은 kind 별 클래스, 접근 이름은 aria) */
+type DragTileProps = { label: string; onDragStart: (e: DragEvent<HTMLButtonElement>) => void; onClick: () => void };
+const TILE_CLASS = { asset: "ui-asset", ref: "ui-ref", sticker: "ui-sticker-tile" } as const;
+function DragTile({ kind, label, aria, onDragStart, onClick, children }: DragTileProps & { kind: keyof typeof TILE_CLASS; aria: string; children: ReactNode }) {
+  return (
+    <button type="button" className={TILE_CLASS[kind]} title={label} aria-label={aria} draggable onDragStart={onDragStart} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
 /** 자산 칸 — 끌어서 캔버스에 놓거나(넓은 화면), 눌러서 가운데에 넣는다(터치) */
 export function AssetGrid({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
   return <div className={cx("ui-asset-grid", compact && "is-compact")}>{children}</div>;
 }
 
-export function AssetTile({ src, label, onDragStart, onClick }: { src: string; label: string; onDragStart: (e: DragEvent<HTMLButtonElement>) => void; onClick: () => void }) {
+export function AssetTile({ src, label, onDragStart, onClick }: { src: string } & DragTileProps) {
   return (
-    <button type="button" className="ui-asset" title={label} aria-label={`${label} 넣기`} draggable onDragStart={onDragStart} onClick={onClick}>
+    <DragTile kind="asset" label={label} aria={`${label} 넣기`} onDragStart={onDragStart} onClick={onClick}>
       <img className="ui-asset-img" src={src} alt="" loading="lazy" draggable={false} />
-    </button>
+    </DragTile>
   );
 }
 
@@ -443,44 +453,12 @@ export function RefTile({
   srcSet?: string | undefined;
   /** 첫 화면(LCP)에 보이는 칸이면 true: 즉시·높은 우선순위로 받는다. 아니면 화면에 가까워질 때 받는다 */
   priority?: boolean | undefined;
-  label: string;
   action: string;
-  onDragStart: (e: DragEvent<HTMLButtonElement>) => void;
-  onClick: () => void;
-}) {
+} & DragTileProps) {
   return (
-    <button type="button" className="ui-ref" title={label} aria-label={`${label} ${action}`} draggable onDragStart={onDragStart} onClick={onClick}>
+    <DragTile kind="ref" label={label} aria={`${label} ${action}`} onDragStart={onDragStart} onClick={onClick}>
       <img className="ui-ref-img" src={src} srcSet={srcSet} alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" draggable={false} />
-    </button>
-  );
-}
-
-/** 크게 보기 — 화면 가운데에 그림 하나. 바깥을 누르거나 Esc 로 닫는다(닫기 버튼에 포커스가 가 있다) */
-export function Lightbox({ src, label, meta, actions, onClose }: { src: string; label: string; meta?: ReactNode; actions: ReactNode; onClose: () => void }) {
-  return (
-    <div
-      className="ui-lightbox"
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      onKeyDown={(e) => {
-        if (e.key !== "Escape") return;
-        e.stopPropagation();
-        onClose();
-      }}
-    >
-      <div className="ui-lightbox-panel">
-        <img className="ui-lightbox-img" src={src} alt={label} draggable={false} />
-        <div className="ui-lightbox-foot">
-          <div className="ui-lightbox-text">
-            <span className="ui-truncate">{label}</span>
-            {meta && <span className="ui-t-label ui-tone-mute ui-truncate">{meta}</span>}
-          </div>
-          <div className="ui-lightbox-actions">{actions}</div>
-        </div>
-      </div>
-    </div>
+    </DragTile>
   );
 }
 
@@ -494,19 +472,6 @@ export function LayerRow({ name, kind, selected, hidden, onSelect, actions }: { 
       </button>
       <span className="ui-layer-actions">{actions}</span>
     </div>
-  );
-}
-
-/** 슬라이더(0~1 등) — 값 표시는 옆 글자로 */
-export function Range({ label, value, min, max, step, onChange, display }: { label: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void; display?: string }) {
-  return (
-    <label className="ui-field">
-      <span className="ui-range-head">
-        <span className="ui-t-label ui-tone-mute">{label}</span>
-        <span className="ui-t-label ui-mono">{display ?? value}</span>
-      </span>
-      <input className="ui-range" type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
-    </label>
   );
 }
 
@@ -527,11 +492,11 @@ export function StickerGrid({ children }: { children: ReactNode }) {
   return <div className="ui-sticker-grid">{children}</div>;
 }
 
-export function StickerTile({ src, label, onDragStart, onClick }: { src: string; label: string; onDragStart: (e: DragEvent<HTMLButtonElement>) => void; onClick: () => void }) {
+export function StickerTile({ src, label, onDragStart, onClick }: { src: string } & DragTileProps) {
   return (
-    <button type="button" className="ui-sticker-tile" title={label} aria-label={`스티커 ${label} 넣기`} draggable onDragStart={onDragStart} onClick={onClick}>
+    <DragTile kind="sticker" label={label} aria={`스티커 ${label} 넣기`} onDragStart={onDragStart} onClick={onClick}>
       <img src={src} alt="" draggable={false} />
       <span className="ui-sticker-name">{label}</span>
-    </button>
+    </DragTile>
   );
 }

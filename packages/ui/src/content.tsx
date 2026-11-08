@@ -133,9 +133,10 @@ export function Progress({ items }: { items: { label: string; state: "done" | "n
   );
 }
 
-export function EmptyState({ media, title, action }: { media?: Media | undefined; title: ReactNode; action?: ReactNode }) {
+/** busy: 불러오는 중 자리(스크린리더에 「작업 중」으로 읽힌다). 모양은 빈 상태와 같다 */
+export function EmptyState({ media, title, action, busy = false }: { media?: Media | undefined; title: ReactNode; action?: ReactNode; busy?: boolean }) {
   return (
-    <div className="ui-empty">
+    <div className="ui-empty" role={busy ? "status" : undefined} aria-busy={busy || undefined}>
       {media && <Img media={media} className="ui-empty-image" />}
       <div className="ui-t-title">{title}</div>
       {action}
@@ -184,7 +185,7 @@ export function KeyHint({ keys, label }: { keys: string[]; label?: string }) {
 
 export function Toast({ children }: { children: ReactNode }) {
   return (
-    <div className="ui-toast" role="status">
+    <div className="ui-toast" role="status" aria-live="polite">
       {children}
     </div>
   );

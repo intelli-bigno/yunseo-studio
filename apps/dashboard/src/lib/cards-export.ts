@@ -1,5 +1,6 @@
 // [cards] 카드 한 장 → 캔버스 그리기(PNG 내보내기). 원본 픽셀 크기로 그리고, 줄바꿈은 도메인 wrapText 로 화면과 맞춘다.
 // 캔버스·그림 읽기는 주입받는다 — 테스트는 기록용 가짜 컨텍스트로 순서를 검사한다.
+import { hexToRgba } from "@yunseo/design-tokens";
 import { CARD_PRESETS, imageFilter, stickerDataUrl, watermarkAnchors, wrapText, type CardFont, type CardPresetId, type DeckCard, type ImageLayer, type OverlayLayer, type TextLayer, type Watermark } from "@yunseo/domain";
 
 /** 쓰는 캔버스 2D API 만 */
@@ -66,8 +67,8 @@ export function fitImage(iw: number, ih: number, layer: Pick<ImageLayer, "x" | "
 /** 덮개 채움 — 단색이면 색 그대로, 그라데이션이면 캔버스 그라데이션(지원 안 하면 단색) */
 function overlayFill(ctx: Ctx2D, l: OverlayLayer): string | GradientLike {
   if (l.gradient === "none") return l.color;
-  const solid = rgba(l.color, 1);
-  const clear = rgba(l.color, 0);
+  const solid = hexToRgba(l.color, 1);
+  const clear = hexToRgba(l.color, 0);
   if (l.gradient === "radial") {
     if (!ctx.createRadialGradient) return l.color;
     const cx = l.x + l.w / 2;
@@ -87,8 +88,6 @@ function overlayFill(ctx: Ctx2D, l: OverlayLayer): string | GradientLike {
 }
 
 type Deps = { load: (src: string) => Promise<LoadedImage | null>; family: (f: CardFont) => string };
-
-const rgba = (hex: string, a: number) => `rgba(${parseInt(hex.slice(1, 3), 16)}, ${parseInt(hex.slice(3, 5), 16)}, ${parseInt(hex.slice(5, 7), 16)}, ${a})`;
 
 /** 글자 배치 — 바깥 여백(margin) 안에 배경 상자, 안쪽 여백(padding) 안에 줄들. 세로 정렬은 줄 묶음 전체를 옮긴다 */
 export function textLayout(layer: TextLayer, measure: (s: string) => number) {
@@ -145,7 +144,7 @@ export async function drawCard(ctx: Ctx2D, card: DeckCard, preset: CardPresetId,
       if (layer.letterSpacing && "letterSpacing" in ctx) ctx.letterSpacing = `${layer.letterSpacing}px`;
       const t = textLayout(layer, (s) => ctx.measureText(s).width);
       if (layer.boxOpacity > 0) {
-        ctx.fillStyle = rgba(layer.boxColor, layer.boxOpacity);
+        ctx.fillStyle = hexToRgba(layer.boxColor, layer.boxOpacity);
         ctx.fillRect(t.box.x, t.box.y, t.box.w, t.box.h);
       }
       ctx.fillStyle = layer.color;

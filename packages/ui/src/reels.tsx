@@ -352,68 +352,14 @@ export function ReelsWorkspace({
           <div className="ui-reels-dock-tabs">{tabs}</div>
           <div className="ui-reels-dock-actions">
             {dockActions}
-            <button type="button" className="ui-reels-fold" aria-expanded={!collapsed} aria-label={collapsed ? "패널 펴기" : "패널 접기"} onClick={() => onCollapsed(!collapsed)}>
+            <ReelsToggle label={collapsed ? "패널 펴기" : "패널 접기"} expanded={!collapsed} onClick={() => onCollapsed(!collapsed)}>
               {collapsed ? "▴" : "▾"}
-            </button>
+            </ReelsToggle>
           </div>
         </div>
         {!collapsed && <div className="ui-reels-dock-body">{children}</div>}
       </section>
     </div>
-  );
-}
-
-// ── 슬라이더 — 움직이는 동안은 onChange(미리보기), 놓을 때 한 번 onCommit(op) ─────────────
-export function ReelsRange({
-  label,
-  value,
-  min,
-  max,
-  step,
-  display,
-  disabled,
-  onChange,
-  onCommit,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  display?: string;
-  disabled?: boolean;
-  onChange: (v: number) => void;
-  onCommit: (v: number) => void;
-}) {
-  const dirty = useRef(false);
-  const commit = (v: number) => {
-    if (!dirty.current) return;
-    dirty.current = false;
-    onCommit(v);
-  };
-  return (
-    <label className="ui-field">
-      <span className="ui-range-head">
-        <span className="ui-t-label ui-tone-mute">{label}</span>
-        <span className="ui-t-label ui-mono">{display ?? value}</span>
-      </span>
-      <input
-        className="ui-range"
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => {
-          dirty.current = true;
-          onChange(Number(e.target.value));
-        }}
-        onPointerUp={(e) => commit(Number(e.currentTarget.value))}
-        onKeyUp={(e) => commit(Number(e.currentTarget.value))}
-        onBlur={(e) => commit(Number(e.currentTarget.value))}
-      />
-    </label>
   );
 }
 
@@ -432,8 +378,8 @@ export function ReelsGroup({ title, children }: { title: string; children: React
   );
 }
 
-/** 트랙 머리의 작은 켬/끔 버튼(음소거·숨김·잠금) — 글자는 한 글자 */
-export function ReelsToggle({ label, pressed, disabled, onClick, children }: { label: string; pressed?: boolean; disabled?: boolean; onClick: () => void; children: string }) {
+/** 작은 한 글자 버튼 — 트랙 머리의 켬/끔(음소거·숨김·잠금, pressed)과 패널 접기(expanded)가 같은 부품을 쓴다 */
+export function ReelsToggle({ label, pressed, expanded, disabled, onClick, children }: { label: string; pressed?: boolean; expanded?: boolean; disabled?: boolean; onClick: () => void; children: string }) {
   return (
     <button
       type="button"
@@ -441,6 +387,7 @@ export function ReelsToggle({ label, pressed, disabled, onClick, children }: { l
       aria-label={label}
       title={label}
       aria-pressed={pressed}
+      aria-expanded={expanded}
       disabled={disabled}
       onClick={(e) => {
         e.stopPropagation();
