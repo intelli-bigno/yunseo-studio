@@ -62,7 +62,7 @@ const sleepMs = (ms: number, signal?: AbortSignal) =>
 
 /** JSON 을 돌려주는 API 호출. 실패는 ApiError, 사용자 취소는 AbortError 그대로 */
 export async function apiFetch<T = unknown>(url: string, options: ApiFetchOptions = {}): Promise<T> {
-  const { timeoutMs = 30_000, retries = 2, fetchImpl, signal, sleep = (ms: number) => sleepMs(ms, signal), ...init } = options;
+  const { timeoutMs = 30_000, retries = 2, fetchImpl, signal, sleep = (ms: number) => sleepMs(ms, signal ?? undefined), ...init } = options;
   const doFetch = fetchImpl ?? ((u: string, i?: RequestInit) => fetch(u, i));
   const method = (init.method ?? "GET").toUpperCase();
   const attempts = method === "GET" || method === "HEAD" ? retries + 1 : 1;
