@@ -49,6 +49,7 @@ describe("오른쪽 패널", () => {
     const open = layout({ sheet: "PROPS", sheetTitle: "속성 — 글자", sheetOpen: true, onToggleSheet: () => undefined });
     expect(open).toContain("R-GRID");
     expect(open).toContain("ui-sheet");
+    expect(open).toContain("ui-sheet-body"); // has-sheet 클래스는 #46~#48 에서 시트가 flex 형제로 바뀌며 사라졌다
     expect(open).toContain("PROPS");
     const shut = layout({ sheet: "PROPS", sheetTitle: "속성 — 글자", sheetOpen: false, onToggleSheet: () => undefined });
     expect(shut).toContain("is-collapsed");

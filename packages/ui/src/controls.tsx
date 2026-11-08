@@ -175,34 +175,16 @@ export function Checkbox({ label, lead, ...rest }: NoStyle<"input"> & { label: R
   );
 }
 
+/** 막힘(alert)은 role=alert 로 바로 읽히고, 안내(accent)는 role=status 로 차분히 읽힌다 */
 export function Notice({ tone = "alert", children }: { tone?: "alert" | "accent"; children: ReactNode }) {
-  return <div className={cx("ui-notice", `ui-notice-${tone}`)}>{children}</div>;
-}
-
-/* ── 대화상자 · 빠른 이동 ── */
-export function Dialog({ onClose, label, children }: { onClose: () => void; label: string; children: ReactNode }) {
   return (
-    <div className="ui-overlay" onMouseDown={onClose}>
-      <div className="ui-dialog" role="dialog" aria-modal="true" aria-label={label} onMouseDown={(e) => e.stopPropagation()}>
-        {children}
-      </div>
+    <div className={cx("ui-notice", `ui-notice-${tone}`)} role={tone === "alert" ? "alert" : "status"}>
+      {children}
     </div>
   );
 }
 
-export function DialogHeader({ title, aside }: { title: ReactNode; aside?: ReactNode }) {
-  return (
-    <div className="ui-dialog-head">
-      <span className="ui-t-title">{title}</span>
-      {aside}
-    </div>
-  );
-}
-
-export function DialogBody({ children }: { children: ReactNode }) {
-  return <div className="ui-dialog-body">{children}</div>;
-}
-
+/* ── 빠른 이동(대화상자 틀 Dialog·DialogHeader·DialogBody 는 ./modal) ── */
 export function CommandInput(props: NoStyle<"input">) {
   return <input className="ui-command-input" {...props} />;
 }
