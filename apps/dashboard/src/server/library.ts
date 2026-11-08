@@ -4,6 +4,7 @@ import { createReadStream, existsSync, readdirSync, readFileSync, statSync, type
 import { Readable } from "node:stream";
 import { join, resolve, sep } from "node:path";
 import { notFound, jsonError } from "./api";
+import { stripLoneSurrogates } from "../lib/format";
 import { studio, studioWorkDir } from "./studio";
 
 // ── 쇼츠 ────────────────────────────────────────────────
@@ -110,12 +111,12 @@ function readRefsFile(file: string): RefItem[] {
   if (!Array.isArray(rows)) return [];
   const out: RefItem[] = [];
   for (const r of rows as Record<string, unknown>[]) {
-    const str = (k: string) => (typeof r[k] === "string" ? (r[k] as string) : "");
+    const str = (k: string) => (typeof r[k] === "string" ? stripLoneSurrogates(r[k] as string) : "");
     const thumb = str("thumb");
     const href = str("href") || str("pin");
     if (!str("id") || !/^https:\/\//.test(thumb) || !/^https:\/\//.test(href)) continue;
     const source: RefSource = r.source === "instagram" ? "instagram" : "pinterest";
-    const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [];
+    const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string").map(stripLoneSurrogates) : [];
     out.push({ id: str("id"), set: str("set") || "수집", source, title: str("title"), takeaway: str("takeaway"), tags, thumb, href });
   }
   return out;
