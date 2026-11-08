@@ -2,13 +2,12 @@
 // 인스펙터 탭 — 고른 클립(시간·속도·위치·글자·소리) 또는 고른 트랙(이름·음소거·숨김·잠금·볼륨·순서)의 값을 고친다.
 // 값은 전부 op 로만 보낸다. 슬라이더는 움직이는 동안 미리보기(draft)만 바꾸고 놓을 때 op 한 개를 보낸다.
 import { useEffect, useState } from "react";
-import { Button, Checkbox, EmptyState, Field, Input, Segmented, SegmentedItem, Select, Stack, Text, Textarea } from "@yunseo/ui";
-import { ReelsGroup, ReelsGroups, ReelsRange } from "@yunseo/ui/reels";
+import { Button, Checkbox, EmptyState, Field, Input, Segmented, SegmentedItem, Select, Stack, Text, Textarea, NumberField, Range } from "@yunseo/ui";
+import { ReelsGroup, ReelsGroups } from "@yunseo/ui/reels";
 import type { PanelProps } from "../_lib/panel";
 import { DEFAULT_TEXT_BOX, SPEED_PRESETS, TEXT_STYLES, TRACK_LABEL } from "../_lib/presets";
 import { clampTrim, clipLen, moveTarget, round } from "../_lib/timeline";
 import { DB_RANGE, DEFAULT_AUDIO, DEFAULT_TRANSFORM, SPEED_RANGE, type Clip, type Op, type TextBody, type Track, type Transform } from "../_lib/types";
-import { Num } from "./Num";
 
 const sec = (ms: number) => Math.round(ms) / 1000;
 
@@ -48,11 +47,11 @@ function ClipInspector({ ed, sources, clip, time, setDraft }: PanelProps & { cli
       <Text truncate tone="dim">{TRACK_LABEL[owner?.kind ?? "video"]} · {label}</Text>
       <ReelsGroups>
         <ReelsGroup title="시간">
-          <Num label="시작 (초)" value={sec(clip.start)} min={0} max={180} step={0.1} disabled={locked} onCommit={(v) => moveTo(round(v * 1000))} />
-          <Num label="길이 (초)" value={sec(len)} min={0.1} max={180} step={0.1} disabled={locked} onCommit={(v) => resize(round(v * 1000))} />
+          <NumberField label="시작 (초)" value={sec(clip.start)} min={0} max={180} step={0.1} disabled={locked} onChange={(v) => moveTo(round(v * 1000))} />
+          <NumberField label="길이 (초)" value={sec(len)} min={0.1} max={180} step={0.1} disabled={locked} onChange={(v) => resize(round(v * 1000))} />
           {clip.sourceKind !== undefined && clip.sourceKind !== "image" && (
             <>
-              <Num label="속도 (배)" value={clip.speed} min={SPEED_RANGE[0]} max={SPEED_RANGE[1]} step={0.05} disabled={locked} onCommit={speed} />
+              <NumberField label="속도 (배)" value={clip.speed} min={SPEED_RANGE[0]} max={SPEED_RANGE[1]} step={0.05} disabled={locked} onChange={speed} />
               <Segmented label="속도 빠른 선택">
                 {SPEED_PRESETS.map((v) => (
                   <SegmentedItem key={v} current={clip.speed === v} disabled={locked} onClick={() => speed(v)}>
@@ -70,13 +69,13 @@ function ClipInspector({ ed, sources, clip, time, setDraft }: PanelProps & { cli
           <ReelsGroup title={clip.text ? "투명도" : "위치·크기"}>
             {!clip.text && (
               <>
-                <ReelsRange label="가로" value={tr.cx} min={0} max={1} step={0.01} display={tr.cx.toFixed(2)} disabled={locked} onChange={(v) => live({ cx: v })} onCommit={(v) => setTr({ cx: v })} />
-                <ReelsRange label="세로" value={tr.cy} min={0} max={1} step={0.01} display={tr.cy.toFixed(2)} disabled={locked} onChange={(v) => live({ cy: v })} onCommit={(v) => setTr({ cy: v })} />
-                <ReelsRange label="크기" value={tr.scale} min={0.1} max={3} step={0.01} display={`${tr.scale.toFixed(2)}배`} disabled={locked} onChange={(v) => live({ scale: v })} onCommit={(v) => setTr({ scale: v })} />
-                <ReelsRange label="회전" value={tr.rotation} min={-180} max={180} step={1} display={`${tr.rotation}°`} disabled={locked} onChange={(v) => live({ rotation: v })} onCommit={(v) => setTr({ rotation: v })} />
+                <Range label="가로" value={tr.cx} min={0} max={1} step={0.01} display={tr.cx.toFixed(2)} disabled={locked} onChange={(v) => live({ cx: v })} onCommit={(v) => setTr({ cx: v })} />
+                <Range label="세로" value={tr.cy} min={0} max={1} step={0.01} display={tr.cy.toFixed(2)} disabled={locked} onChange={(v) => live({ cy: v })} onCommit={(v) => setTr({ cy: v })} />
+                <Range label="크기" value={tr.scale} min={0.1} max={3} step={0.01} display={`${tr.scale.toFixed(2)}배`} disabled={locked} onChange={(v) => live({ scale: v })} onCommit={(v) => setTr({ scale: v })} />
+                <Range label="회전" value={tr.rotation} min={-180} max={180} step={1} display={`${tr.rotation}°`} disabled={locked} onChange={(v) => live({ rotation: v })} onCommit={(v) => setTr({ rotation: v })} />
               </>
             )}
-            <ReelsRange label="투명도" value={tr.opacity} min={0} max={1} step={0.01} display={`${Math.round(tr.opacity * 100)}%`} disabled={locked} onChange={(v) => live({ opacity: v })} onCommit={(v) => setTr({ opacity: v })} />
+            <Range label="투명도" value={tr.opacity} min={0} max={1} step={0.01} display={`${Math.round(tr.opacity * 100)}%`} disabled={locked} onChange={(v) => live({ opacity: v })} onCommit={(v) => setTr({ opacity: v })} />
             {!clip.text && (
               <Button onClick={() => commit({ op: "set_transform", clipId: clip.id, transform: DEFAULT_TRANSFORM })} disabled={locked}>
                 자리 되돌리기
@@ -87,7 +86,7 @@ function ClipInspector({ ed, sources, clip, time, setDraft }: PanelProps & { cli
 
         {hasSound && (
           <ReelsGroup title="소리">
-            <ReelsRange
+            <Range
               label="볼륨"
               value={audio.volumeDb}
               min={DB_RANGE[0]}
@@ -98,7 +97,7 @@ function ClipInspector({ ed, sources, clip, time, setDraft }: PanelProps & { cli
               onChange={(v) => setDraft({ ...clip, audio: { ...audio, volumeDb: v } })}
               onCommit={(v) => commit({ op: "set_volume", clipId: clip.id, volumeDb: v })}
             />
-            <ReelsRange
+            <Range
               label="페이드 인"
               value={audio.fadeInMs}
               min={0}
@@ -109,7 +108,7 @@ function ClipInspector({ ed, sources, clip, time, setDraft }: PanelProps & { cli
               onChange={(v) => setDraft({ ...clip, audio: { ...audio, fadeInMs: v } })}
               onCommit={(v) => commit({ op: "set_fade", clipId: clip.id, inMs: v })}
             />
-            <ReelsRange
+            <Range
               label="페이드 아웃"
               value={audio.fadeOutMs}
               min={0}
@@ -169,9 +168,9 @@ function TextGroup({ ed, clip, text, trackKind, locked, setDraft, commit }: { ed
       </Field>
       {box ? (
         <>
-          <ReelsRange label="가로 위치" value={box.cx} min={0} max={1} step={0.01} display={box.cx.toFixed(2)} disabled={locked} onChange={(v) => liveBox({ cx: v })} onCommit={(v) => setBox({ cx: v })} />
-          <ReelsRange label="세로 위치" value={box.cy} min={0} max={1} step={0.01} display={box.cy.toFixed(2)} disabled={locked} onChange={(v) => liveBox({ cy: v })} onCommit={(v) => setBox({ cy: v })} />
-          <ReelsRange label="폭" value={box.w} min={0.2} max={1} step={0.01} display={`${Math.round(box.w * 100)}%`} disabled={locked} onChange={(v) => liveBox({ w: v })} onCommit={(v) => setBox({ w: v })} />
+          <Range label="가로 위치" value={box.cx} min={0} max={1} step={0.01} display={box.cx.toFixed(2)} disabled={locked} onChange={(v) => liveBox({ cx: v })} onCommit={(v) => setBox({ cx: v })} />
+          <Range label="세로 위치" value={box.cy} min={0} max={1} step={0.01} display={box.cy.toFixed(2)} disabled={locked} onChange={(v) => liveBox({ cy: v })} onCommit={(v) => setBox({ cy: v })} />
+          <Range label="폭" value={box.w} min={0.2} max={1} step={0.01} display={`${Math.round(box.w * 100)}%`} disabled={locked} onChange={(v) => liveBox({ w: v })} onCommit={(v) => setBox({ w: v })} />
         </>
       ) : (
         <Button onClick={() => setBox({})} disabled={locked}>자리 직접 정하기</Button>
@@ -211,7 +210,7 @@ function TrackInspector({ ed, track, setDraft }: PanelProps & { track: Track }) 
       </ReelsGroup>
       {hasSound && (
         <ReelsGroup title="소리">
-          <ReelsRange label="트랙 볼륨" value={liveVol ?? vol} min={DB_RANGE[0]} max={DB_RANGE[1]} step={0.5} display={`${liveVol ?? vol} dB`} onChange={setLiveVol} onCommit={(v) => void send({ op: "set_volume", trackId: track.id, volumeDb: v }).finally(() => setLiveVol(null))} />
+          <Range label="트랙 볼륨" value={liveVol ?? vol} min={DB_RANGE[0]} max={DB_RANGE[1]} step={0.5} display={`${liveVol ?? vol} dB`} onChange={setLiveVol} onCommit={(v) => void send({ op: "set_volume", trackId: track.id, volumeDb: v }).finally(() => setLiveVol(null))} />
         </ReelsGroup>
       )}
       <ReelsGroup title="순서">

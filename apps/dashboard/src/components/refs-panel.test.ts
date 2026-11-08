@@ -43,14 +43,13 @@ describe("오른쪽 패널", () => {
     const html = layout();
     expect(html).toContain("R-GRID");
     expect(html).not.toContain("ui-sheet");
-    expect(html).not.toContain("has-sheet");
   });
 
   it("요소를 골랐으면 패널 위에 시트가 뜨고, 접으면 머리 줄만 남는다", () => {
     const open = layout({ sheet: "PROPS", sheetTitle: "속성 — 글자", sheetOpen: true, onToggleSheet: () => undefined });
     expect(open).toContain("R-GRID");
     expect(open).toContain("ui-sheet");
-    expect(open).toContain("has-sheet");
+    expect(open).toContain("ui-sheet-body"); // has-sheet 클래스는 #46~#48 에서 시트가 flex 형제로 바뀌며 사라졌다
     expect(open).toContain("PROPS");
     const shut = layout({ sheet: "PROPS", sheetTitle: "속성 — 글자", sheetOpen: false, onToggleSheet: () => undefined });
     expect(shut).toContain("is-collapsed");

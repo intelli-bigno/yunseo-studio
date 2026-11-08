@@ -21,3 +21,6 @@ export function contrastRatio(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
 }
+
+/** #rrggbb → rgba(r, g, b, a). 캔버스·덮개 그라데이션이 쓴다(화면과 PNG 내보내기가 같은 식). hexToRgb 와 달리 형식이 틀려도 던지지 않는다 — 그리는 중에 죽지 않게 */
+export const hexToRgba = (hex: string, a: number): string => `rgba(${Number.parseInt(hex.slice(1, 3), 16)}, ${Number.parseInt(hex.slice(3, 5), 16)}, ${Number.parseInt(hex.slice(5, 7), 16)}, ${a})`;

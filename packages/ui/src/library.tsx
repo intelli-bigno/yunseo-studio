@@ -1,6 +1,9 @@
 // 보관함 화면 조각 — 레퍼런스 그리드·쇼츠 플레이어·앱 아이콘·자리 표시(스켈레톤).
 import type { ElementType, ReactNode } from "react";
+import { platformMark as MARK } from "@yunseo/design-tokens";
 import { cx, type Poly } from "./poly";
+
+const IG = MARK.instagram;
 
 /** 썸네일 그리드 — 칸 폭은 토큰(--l-tile) 하나, 줄 간격은 그리드 거터. masonry 는 칸마다 그림 비율대로 높이가 달라 쌓인다(자르지 않음) */
 export function TileGrid({ children, wide = false, masonry = false }: { children: ReactNode; wide?: boolean; masonry?: boolean }) {
@@ -83,21 +86,21 @@ export function PlatformIcon({ platform, label = false }: { platform: Platform; 
           <>
             <defs>
               <radialGradient id="ui-ig" cx="0.3" cy="1.07" r="1.3">
-                <stop offset="0" stopColor="#FFDD55" />
-                <stop offset="0.1" stopColor="#FFDD55" />
-                <stop offset="0.5" stopColor="#FF543E" />
-                <stop offset="1" stopColor="#C837AB" />
+                <stop offset="0" stopColor={IG[0]} />
+                <stop offset="0.1" stopColor={IG[0]} />
+                <stop offset="0.5" stopColor={IG[1]} />
+                <stop offset="1" stopColor={IG[2]} />
               </radialGradient>
             </defs>
             <rect x="1" y="1" width="22" height="22" rx="6" fill="url(#ui-ig)" />
-            <rect x="5.5" y="5.5" width="13" height="13" rx="4" fill="none" stroke="#fff" strokeWidth="1.8" />
-            <circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" strokeWidth="1.8" />
-            <circle cx="16.2" cy="7.8" r="1" fill="#fff" />
+            <rect x="5.5" y="5.5" width="13" height="13" rx="4" fill="none" stroke={MARK.glyph} strokeWidth="1.8" />
+            <circle cx="12" cy="12" r="3.2" fill="none" stroke={MARK.glyph} strokeWidth="1.8" />
+            <circle cx="16.2" cy="7.8" r="1" fill={MARK.glyph} />
           </>
         ) : (
           <>
-            <rect x="1" y="4.5" width="22" height="15" rx="4.2" fill="#FF0000" />
-            <path d="M10 8.6v6.8l5.8-3.4z" fill="#fff" />
+            <rect x="1" y="4.5" width="22" height="15" rx="4.2" fill={MARK.youtube} />
+            <path d="M10 8.6v6.8l5.8-3.4z" fill={MARK.glyph} />
           </>
         )}
       </svg>

@@ -70,6 +70,7 @@ import {
   Input,
   LayerRow,
   Lightbox,
+  NumberField,
   PanelBar,
   PanelPad,
   PanelSection,
@@ -87,6 +88,7 @@ import {
   Textarea,
   clampRightRatio,
 } from "@yunseo/ui";
+import { canvasDefaultBackground } from "@yunseo/design-tokens";
 import { drawCard, exportName, type Ctx2D, type LoadedImage } from "@/lib/cards-export";
 import { filterRefs, refSets } from "@/lib/ref-filter";
 import { CardView, cssFamily } from "./CardView";
@@ -192,15 +194,6 @@ function download(blob: Blob, name: string) {
 async function api<T>(path: string, init?: RequestInit): Promise<{ status: number; body: T }> {
   const res = await fetch(`/api/cards-decks${path}`, { ...init, signal: AbortSignal.timeout(30_000), headers: { "content-type": "application/json", ...init?.headers } });
   return { status: res.status, body: res.status === 204 ? (null as T) : ((await res.json().catch(() => null)) as T) };
-}
-
-/** 숫자 칸 — 범위 밖·빈 값은 무시 */
-function Num({ label, value, min, max, step = 1, onChange }: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void }) {
-  return (
-    <Field label={label}>
-      <Input type="number" mono value={Math.round(value * 100) / 100} min={min} max={max} step={step} onChange={(e) => { const v = Number(e.target.value); if (e.target.value !== "" && Number.isFinite(v)) onChange(Math.min(max, Math.max(min, v))); }} />
-    </Field>
-  );
 }
 
 export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: DeckSummary[]; initial: Loaded | null; assets: EditorAsset[] }) {
@@ -538,10 +531,10 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
         <Input value={layer.name} maxLength={40} onChange={(e) => setL({ name: e.target.value })} />
       </Field>
       <FieldRow>
-        <Num label="X" value={layer.x} min={-5000} max={5000} onChange={(v) => setL({ x: v })} />
-        <Num label="Y" value={layer.y} min={-5000} max={5000} onChange={(v) => setL({ y: v })} />
-        <Num label="W" value={layer.w} min={24} max={5000} onChange={(v) => setL({ w: v })} />
-        <Num label="H" value={layer.h} min={24} max={5000} onChange={(v) => setL({ h: v })} />
+        <NumberField live label="X" value={layer.x} min={-5000} max={5000} onChange={(v) => setL({ x: v })} />
+        <NumberField live label="Y" value={layer.y} min={-5000} max={5000} onChange={(v) => setL({ y: v })} />
+        <NumberField live label="W" value={layer.w} min={24} max={5000} onChange={(v) => setL({ w: v })} />
+        <NumberField live label="H" value={layer.h} min={24} max={5000} onChange={(v) => setL({ h: v })} />
       </FieldRow>
       <Range label="회전" value={layer.rotation} min={-180} max={180} step={1} display={`${layer.rotation}°`} onChange={(v) => setL({ rotation: v })} />
       <Stack direction="row" gap={2} wrap>
@@ -591,8 +584,8 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
             </FieldRow>
             <Range label="크기" value={layer.size} min={12} max={400} step={1} display={`${layer.size}px`} onChange={(v) => setL({ size: v })} />
             <FieldRow>
-              <Num label="자간" value={layer.letterSpacing} min={-50} max={200} onChange={(v) => setL({ letterSpacing: v })} />
-              <Num label="행간" value={layer.lineHeight} min={0.8} max={3} step={0.05} onChange={(v) => setL({ lineHeight: v })} />
+              <NumberField live label="자간" value={layer.letterSpacing} min={-50} max={200} onChange={(v) => setL({ letterSpacing: v })} />
+              <NumberField live label="행간" value={layer.lineHeight} min={0.8} max={3} step={0.05} onChange={(v) => setL({ lineHeight: v })} />
             </FieldRow>
             <ColorField label="글자 색" value={layer.color} onChange={(v) => setL({ color: v })} />
             <Segmented label="가로 정렬">
@@ -612,8 +605,8 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
           </PanelSection>
           <PanelSection title="여백·배경 상자" open={isOpen("p-box")} onToggle={() => toggle("p-box")}>
             <FieldRow>
-              <Num label="마진" value={layer.margin} min={0} max={1000} onChange={(v) => setL({ margin: v })} />
-              <Num label="패딩" value={layer.padding} min={0} max={1000} onChange={(v) => setL({ padding: v })} />
+              <NumberField live label="마진" value={layer.margin} min={0} max={1000} onChange={(v) => setL({ margin: v })} />
+              <NumberField live label="패딩" value={layer.padding} min={0} max={1000} onChange={(v) => setL({ padding: v })} />
             </FieldRow>
             <ColorField label="배경 상자 색" value={layer.boxColor} onChange={(v) => setL({ boxColor: v, boxOpacity: layer.boxOpacity || 0.6 })} />
             <Range label="배경 상자 불투명도" value={layer.boxOpacity} min={0} max={1} step={0.01} display={pct(layer.boxOpacity)} onChange={(v) => setL({ boxOpacity: v })} />
@@ -691,7 +684,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
             </Field>
           )}
           <Segmented label="채움">
-            <SegmentedItem current={layer.fill !== "none"} onClick={() => setL({ fill: layer.fill === "none" ? "#111111" : layer.fill })}>
+            <SegmentedItem current={layer.fill !== "none"} onClick={() => setL({ fill: layer.fill === "none" ? canvasDefaultBackground : layer.fill })}>
               색
             </SegmentedItem>
             <SegmentedItem current={layer.fill === "none"} onClick={() => setL({ fill: "none" })}>
