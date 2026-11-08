@@ -45,4 +45,8 @@ describe("레퍼런스 수집 목록(refs.json)", () => {
   it("출처가 instagram 인 줄은 인스타 게시물 주소를 가리킨다", () => {
     for (const r of rows.filter((x) => x.source === "instagram")) expect(r.href, r.id).toMatch(/^https:\/\/www\.instagram\.com\/(p|reel)\//);
   });
+
+  it("글에 짝 없는 서로게이트(잘린 이모지)가 없다", () => {
+    for (const r of rows) for (const v of [r.title, r.takeaway, r.set, ...r.tags]) expect(v, r.id).not.toMatch(/\p{Surrogate}/u);
+  });
 });
