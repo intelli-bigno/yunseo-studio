@@ -1,6 +1,7 @@
 // [cards] 카드 덱 편집 명령(op) — 사람(편집 화면)·AI(에이전트) 가 같은 JSON 명령으로 덱을 고친다. 계약: docs/13-cards-ops-schema.md.
 // 릴스 ops(docs/12) 와 같은 모양 — { op: "<이름>", ... }, 실패는 코드·HTTP·path 를 가진 CardOpError, 성공은 { deck, effects }.
 // 순수 함수. 적용 뒤 parseDeck 으로 덱 전체를 다시 검사해 범위·형식 위반을 INVALID_DECK 로 돌려준다(전부 아니면 전무).
+import { AppError } from "../errors";
 import {
   CARD_PRESETS,
   DECK_LIMITS,
@@ -61,19 +62,10 @@ const STATUS: Record<CardOpCode, number> = {
   TOO_LARGE: 413,
 };
 
-export class CardOpError extends Error {
-  readonly status: number;
-  constructor(
-    readonly code: CardOpCode,
-    message: string,
-    readonly path?: string,
-    readonly details?: Record<string, unknown>,
-  ) {
-    super(message);
-    this.status = STATUS[code];
-  }
-  toBody(): Record<string, unknown> {
-    return { code: this.code, message: this.message, ...(this.path ? { path: this.path } : {}), ...(this.details ? { details: this.details } : {}) };
+export class CardOpError extends AppError<CardOpCode> {
+  override name = "CardOpError";
+  constructor(code: CardOpCode, message: string, path?: string, details?: Record<string, unknown>) {
+    super(code, message, { status: STATUS[code], path, details });
   }
 }
 

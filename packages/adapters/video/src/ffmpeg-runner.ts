@@ -1,5 +1,6 @@
 // ffmpeg·ffprobe 실행 — 프로세스를 띄우는 곳은 여기뿐이다. 셸을 거치지 않는다.
 import { spawn } from "node:child_process";
+import { AppError } from "@yunseo/domain";
 import { parseProbe, type ProbeSummary } from "./ffprobe";
 
 export interface FfmpegBinaries {
@@ -15,6 +16,8 @@ export interface ProcessResult {
   stderr: string;
   /** 실행 파일을 못 찾는 등 시작 자체가 실패했을 때 */
   spawnError: string | null;
+  /** 시간 제한을 넘겨 강제 종료했을 때 */
+  timedOut: boolean;
 }
 
 export function runProcess(command: string, args: readonly string[], options: { cwd?: string; timeoutMs?: number } = {}): Promise<ProcessResult> {
@@ -31,19 +34,35 @@ export function runProcess(command: string, args: readonly string[], options: { 
     };
     const timer = setTimeout(() => {
       child.kill("SIGKILL");
-      finish({ code: null, stdout, stderr: `${stderr}\n[시간 초과 ${options.timeoutMs}ms]`, spawnError: null });
+      finish({ code: null, stdout, stderr: `${stderr}\n[시간 초과 ${options.timeoutMs ?? 600_000}ms]`, spawnError: null, timedOut: true });
     }, options.timeoutMs ?? 600_000);
     child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
     child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
-    child.on("error", (e) => finish({ code: null, stdout, stderr, spawnError: e.message }));
-    child.on("close", (code) => finish({ code, stdout, stderr, spawnError: null }));
+    child.on("error", (e) => finish({ code: null, stdout, stderr, spawnError: e.message, timedOut: false }));
+    child.on("close", (code) => finish({ code, stdout, stderr, spawnError: null, timedOut: false }));
   });
 }
 
 /** ffmpeg 가 없거나 필요한 기능이 빠졌을 때 — 메시지가 곧 해결 방법이다 */
-export class FfmpegUnavailableError extends Error {
+export class FfmpegUnavailableError extends AppError<"FFMPEG_UNAVAILABLE"> {
   override name = "FfmpegUnavailableError";
+  constructor(message: string) {
+    super("FFMPEG_UNAVAILABLE", message);
+  }
 }
+
+export type FfmpegRunCode = "FFMPEG_FAILED" | "FFMPEG_TIMEOUT" | "FFMPEG_UNAVAILABLE";
+
+/** ffmpeg·ffprobe 가 시작은 했으나(또는 못 하고) 실패했다 — 시간 초과·실행 파일 없음·비정상 종료를 코드로 가른다 */
+export class FfmpegRunError extends AppError<FfmpegRunCode> {
+  override name = "FfmpegRunError";
+  constructor(message: string, run: Pick<ProcessResult, "code" | "spawnError" | "timedOut">) {
+    super(run.timedOut ? "FFMPEG_TIMEOUT" : run.spawnError !== null ? "FFMPEG_UNAVAILABLE" : "FFMPEG_FAILED", message, { details: { exitCode: run.code } });
+  }
+}
+
+/** stderr 끝 n 줄 — 오류 메시지에 싣는다(앞쪽은 버전·설정 소음) */
+export const tailOf = (stderr: string, lines: number): string => stderr.trim().split("\n").slice(-lines).join("\n");
 
 export const REQUIRED_FILTERS = ["xfade", "overlay", "gblur", "eq", "anullsrc", "amix"] as const;
 export const REQUIRED_ENCODERS = ["libx264", "aac"] as const;
@@ -78,6 +97,6 @@ export async function assertFfmpegReady(bins: FfmpegBinaries, need: { burnIn: bo
 
 export async function probeMedia(bins: FfmpegBinaries, file: string): Promise<ProbeSummary> {
   const r = await runProcess(bins.ffprobePath, ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", file], { timeoutMs: 60_000 });
-  if (r.spawnError !== null || r.code !== 0) throw new Error(`ffprobe 실패(${file}): ${r.spawnError ?? r.stderr.trim()}`);
+  if (r.spawnError !== null || r.code !== 0) throw new FfmpegRunError(`ffprobe 실패(${file}): ${r.spawnError ?? r.stderr.trim()}`, r);
   return parseProbe(r.stdout);
 }

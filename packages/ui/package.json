@@ -10,6 +10,7 @@
     "./menu": "./src/menu.tsx",
     "./motion": "./src/motion.ts",
     "./reels": "./src/reels.tsx",
+    "./toast": "./src/toast.tsx",
     "./styles.css": "./src/styles.css"
   },
   "scripts": {

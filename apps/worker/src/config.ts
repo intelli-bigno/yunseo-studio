@@ -1,6 +1,7 @@
 // 워커 설정 — 환경변수를 읽는 유일한 곳(순수 함수로 두어 테스트한다). 비밀값은 없다.
 import { isIP } from "node:net";
 import { join } from "node:path";
+import { AppError } from "@yunseo/domain";
 
 export interface WorkerConfig {
   host: string;
@@ -24,21 +25,21 @@ const nonEmpty = (v: string | undefined) => (v && v.trim() ? v.trim() : null);
  */
 export function assertSafeHost(host: string): void {
   if (host === "localhost" || host === "::1") return;
-  if (isIP(host) !== 4) throw new Error(`바인드 주소는 루프백 또는 Tailnet IPv4 여야 한다: ${host}`);
+  if (isIP(host) !== 4) throw new AppError("CONFIG_INVALID", `바인드 주소는 루프백 또는 Tailnet IPv4 여야 한다: ${host}`);
   const [a, b] = host.split(".").map(Number) as [number, number];
   if (a === 127) return;
   if (a === 100 && b >= 64 && b <= 127) return;
-  throw new Error(`바인드 주소가 루프백·Tailnet(100.64.0.0/10) 밖이다: ${host}`);
+  throw new AppError("CONFIG_INVALID", `바인드 주소가 루프백·Tailnet(100.64.0.0/10) 밖이다: ${host}`);
 }
 
 export function loadWorkerConfig(env: Env): WorkerConfig {
   const host = nonEmpty(env.HOST) ?? "127.0.0.1";
   assertSafeHost(host);
   const port = Number(env.PORT ?? 4010);
-  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error(`PORT 가 올바르지 않다: ${env.PORT}`);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new AppError("CONFIG_INVALID", `PORT 가 올바르지 않다: ${env.PORT}`);
   const dataDir = nonEmpty(env.YUNSEO_DATA_DIR);
   const keep = Number(env.YUNSEO_BACKUP_KEEP ?? 14);
-  if (!Number.isInteger(keep) || keep < 1) throw new Error(`YUNSEO_BACKUP_KEEP 는 1 이상 정수: ${env.YUNSEO_BACKUP_KEEP}`);
+  if (!Number.isInteger(keep) || keep < 1) throw new AppError("CONFIG_INVALID", `YUNSEO_BACKUP_KEEP 는 1 이상 정수: ${env.YUNSEO_BACKUP_KEEP}`);
   const dashboard = nonEmpty(env.YUNSEO_DASHBOARD_URL);
   return {
     host,

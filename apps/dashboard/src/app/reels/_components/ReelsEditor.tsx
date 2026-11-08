@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, EmptyState, Notice, Select, Stack, Tab, Tabs, Text } from "@yunseo/ui";
 import { ReelsStage, ReelsWorkspace } from "@yunseo/ui/reels";
+import { useToast } from "@yunseo/ui/toast";
+import { apiFetch, failureText, isRetryable } from "@/lib/api-client";
 import { splitOps } from "../_lib/ops";
 import { buildPreview } from "../_lib/preview";
 import { toV2 } from "../_lib/project";
@@ -43,17 +45,19 @@ export function ReelsEditor({ projects, current, sources }: ReelsEditorProps) {
 
 function ProjectPicker({ projects, problem }: { projects: ReelsEditorProps["projects"]; problem: string | null }) {
   const router = useRouter();
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(problem);
-  const create = async () => {
+  const create = async (): Promise<void> => {
     setBusy(true);
     try {
-      const r = await fetch("/api/reels/projects", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
-      const body = (await r.json()) as { id?: string; error?: string };
-      if (!r.ok || !body.id) throw new Error(body.error);
+      const body = await apiFetch<{ id?: string }>("/api/reels/projects", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+      if (!body?.id) throw new Error("응답에 id 가 없다");
       router.push(`/reels?p=${body.id}`);
-    } catch {
-      setError("만들기 실패");
+    } catch (e) {
+      const text = failureText(e, "만들기 실패");
+      if (isRetryable(e)) toast.error(text, { action: { label: "다시 시도", onAction: () => void create() } });
+      else setError(text);
     } finally {
       setBusy(false);
     }
@@ -164,24 +168,29 @@ function Editor({ projects, id, initial, sources }: { projects: ReelsEditorProps
   const redo = () => void ed.send({ op: "redo" });
   const mark = (side: "in" | "out") => setMarks((m) => ({ ...m, [side]: Math.round(time) }));
 
-  const create = async () => {
+  const toast = useToast();
+  /** 실패 알림 — 서버·연결 쪽 오류는 「다시 시도」 토스트, 그 밖은 편집기 안 안내 */
+  const failed = (e: unknown, fallback: string, retry: () => void) => {
+    const text = failureText(e, fallback);
+    if (isRetryable(e)) toast.error(text, { action: { label: "다시 시도", onAction: retry } });
+    else ed.notify({ tone: "alert", text });
+  };
+  const create = async (): Promise<void> => {
     try {
-      const r = await fetch("/api/reels/projects", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
-      const body = (await r.json()) as { id?: string };
-      if (!r.ok || !body.id) throw new Error();
+      const body = await apiFetch<{ id?: string }>("/api/reels/projects", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+      if (!body?.id) throw new Error("응답에 id 가 없다");
       router.push(`/reels?p=${body.id}`);
-    } catch {
-      ed.notify({ tone: "alert", text: "만들기 실패" });
+    } catch (e) {
+      failed(e, "만들기 실패", () => void create());
     }
   };
-  const destroy = async () => {
+  const destroy = async (): Promise<void> => {
     if (!window.confirm("이 프로젝트를 지울까?")) return;
     try {
-      const r = await fetch(`/api/reels/projects/${id}`, { method: "DELETE" });
-      if (r.ok) router.push("/reels");
-      else ed.notify({ tone: "alert", text: "지우기 실패" });
-    } catch {
-      ed.notify({ tone: "alert", text: "지우기 실패 — 연결을 확인" });
+      await apiFetch(`/api/reels/projects/${id}`, { method: "DELETE" });
+      router.push("/reels");
+    } catch (e) {
+      failed(e, "지우기 실패", () => void destroy());
     }
   };
 

@@ -1,5 +1,6 @@
 // 릴스 타임라인 v2 모델 — docs/12-reels-ops-schema.md §1 이 정본. 순수 타입·상수·검사·v1 변환만 둔다(화면·저장 없음).
 // 시간은 정수 ms, 공간은 캔버스 비율(0~1) + 중심점. 픽셀은 렌더 어댑터만 안다.
+import { AppError } from "../errors";
 import { REEL_TRANSITIONS, REEL_TRANSITION_SEC, type ReelTransitionName } from "./preset";
 
 export type Ms = number;
@@ -154,16 +155,13 @@ export type ReelsOpErrorCode = keyof typeof REELS_OP_ERROR_STATUS;
 
 export interface ReelsOpErrorBody { code: ReelsOpErrorCode; message: string; path?: string; details?: Record<string, unknown> }
 
-export class ReelsOpError extends Error {
+export class ReelsOpError extends AppError<ReelsOpErrorCode> {
   override name = "ReelsOpError";
-  constructor(readonly code: ReelsOpErrorCode, message: string, readonly path?: string, readonly details?: Record<string, unknown>) {
-    super(message);
+  constructor(code: ReelsOpErrorCode, message: string, path?: string, details?: Record<string, unknown>) {
+    super(code, message, { status: REELS_OP_ERROR_STATUS[code], path, details });
   }
-  get status(): number {
-    return REELS_OP_ERROR_STATUS[this.code];
-  }
-  toBody(): ReelsOpErrorBody {
-    return { code: this.code, message: this.message, ...(this.path ? { path: this.path } : {}), ...(this.details ? { details: this.details } : {}) };
+  override toBody(): ReelsOpErrorBody {
+    return super.toBody() as ReelsOpErrorBody;
   }
 }
 

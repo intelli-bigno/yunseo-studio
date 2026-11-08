@@ -23,7 +23,7 @@ import {
   type SpeechSegment,
   type Track,
 } from "@yunseo/domain";
-import { runProcess, probeMedia, type FfmpegBinaries } from "./ffmpeg-runner";
+import { FfmpegRunError, runProcess, probeMedia, tailOf, type FfmpegBinaries } from "./ffmpeg-runner";
 import type { ProbeSummary } from "./ffprobe";
 
 export interface TimelineMedia {
@@ -456,7 +456,7 @@ export async function composeTimeline(o: ComposeTimelineOptions): Promise<Compos
   if (graph.ass) await writeFile(join(outDir, assName), graph.ass, "utf8");
   await writeFile(srtPath, graph.srt, "utf8");
   const r = await runProcess(o.bins.ffmpegPath, graph.args, { cwd: outDir, timeoutMs: o.timeoutMs ?? 600_000 });
-  if (r.spawnError !== null || r.code !== 0) throw new Error(`ffmpeg 타임라인 합성 실패(code ${r.code}): ${r.spawnError ?? r.stderr.trim().split("\n").slice(-15).join("\n")}`);
+  if (r.spawnError !== null || r.code !== 0) throw new FfmpegRunError(`ffmpeg 타임라인 합성 실패(code ${r.code}): ${r.spawnError ?? tailOf(r.stderr, 15)}`, r);
   return { videoPath, srtPath, probe: await probeMedia(o.bins, videoPath), durationMs: graph.durationMs, warnings: graph.warnings };
 }
 
@@ -487,6 +487,6 @@ export function speechFromSilencedetect(stderr: string, durationMs: number, minM
 
 export async function detectSpeech(bins: FfmpegBinaries, file: string, opt: { noiseDb: number; minMs: number }, durationMs: number): Promise<SpeechSegment[]> {
   const r = await runProcess(bins.ffmpegPath, ["-hide_banner", "-nostats", "-threads", "2", "-i", file, "-af", `silencedetect=noise=${opt.noiseDb}dB:d=${n(opt.minMs / 1000)}`, "-f", "null", "-"], { timeoutMs: 120_000 });
-  if (r.spawnError !== null || r.code !== 0) throw new Error(`silencedetect 실패(${file}): ${r.spawnError ?? r.stderr.trim().split("\n").slice(-5).join("\n")}`);
+  if (r.spawnError !== null || r.code !== 0) throw new FfmpegRunError(`silencedetect 실패(${file}): ${r.spawnError ?? tailOf(r.stderr, 5)}`, r);
   return speechFromSilencedetect(r.stderr, durationMs, opt.minMs);
 }

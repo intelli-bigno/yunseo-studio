@@ -4,6 +4,7 @@ import { copyFile, mkdir, mkdtemp, readdir, readFile, rename, rm, stat, writeFil
 import { basename, join, resolve } from "node:path";
 import type { CardRenderResult, RenderedFile, ReelComposer, ReelResult } from "@yunseo/application";
 import {
+  AppError,
   DEFAULT_REEL_PRESET,
   buildSrt,
   computeReelLayout,
@@ -16,7 +17,7 @@ import {
 import { buildAss } from "./ass";
 import { DEFAULT_ENCODER, buildFfmpegArgs, type AudioSlot, type EncoderOptions } from "./ffmpeg-args";
 import { reelSpecIssues } from "./ffprobe";
-import { DEFAULT_BINARIES, assertFfmpegReady, probeMedia, runProcess, type FfmpegBinaries } from "./ffmpeg-runner";
+import { DEFAULT_BINARIES, FfmpegRunError, assertFfmpegReady, probeMedia, runProcess, tailOf, type FfmpegBinaries } from "./ffmpeg-runner";
 import { readPngSize } from "./png";
 import { isWoff1, sfntExtension, woffToSfnt } from "./woff";
 
@@ -33,13 +34,13 @@ export interface FfmpegReelComposerOptions extends Partial<FfmpegBinaries> {
 }
 
 /** 규칙 위반으로 합성을 시작하지 않았을 때 */
-export class ReelComposeError extends Error {
+export class ReelComposeError extends AppError<"REEL_RULE_VIOLATION"> {
   override name = "ReelComposeError";
   constructor(
     message: string,
     readonly problems: readonly string[],
   ) {
-    super(`${message}\n${problems.map((p) => `  - ${p}`).join("\n")}`);
+    super("REEL_RULE_VIOLATION", `${message}\n${problems.map((p) => `  - ${p}`).join("\n")}`, { status: 422, details: { problems } });
   }
 }
 
@@ -131,7 +132,7 @@ export function createFfmpegReelComposer(options: FfmpegReelComposerOptions = {}
         // 필터가 상대 경로(subtitles.ass)를 쓰므로 작업 폴더에서 실행한다 — 카드·음원·서체 폴더·출력은 절대 경로
         const run = await runProcess(bins.ffmpegPath, args, { cwd: work });
         if (run.spawnError !== null || run.code !== 0) {
-          throw new Error(`ffmpeg 실패(종료 코드 ${run.code ?? "없음"}): ${run.spawnError ?? run.stderr.trim().split("\n").slice(-12).join("\n")}`);
+          throw new FfmpegRunError(`ffmpeg 실패(종료 코드 ${run.code ?? "없음"}): ${run.spawnError ?? tailOf(run.stderr, 12)}`, run);
         }
         if (run.stderr.trim()) warnings.push(`reel/ffmpeg-warning: ${run.stderr.trim().split("\n").slice(-3).join(" | ")}`);
 

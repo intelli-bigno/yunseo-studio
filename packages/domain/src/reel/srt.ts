@@ -1,4 +1,5 @@
 // SRT 자막 파일 만들기(순수 함수).
+import { AppError } from "../errors";
 
 export interface SrtCue {
   startMs: number;
@@ -21,10 +22,10 @@ export function buildSrt(cues: readonly SrtCue[]): string {
 }
 
 /** SRT 읽기 실패 — line 은 1부터 */
-export class SrtParseError extends Error {
+export class SrtParseError extends AppError<"SRT_PARSE_ERROR"> {
   override name = "SrtParseError";
   constructor(message: string, readonly line: number) {
-    super(message);
+    super("SRT_PARSE_ERROR", message, { status: 422, path: `line ${line}` });
   }
 }
 
