@@ -1,9 +1,9 @@
 // [W3 릴스] 릴스 편집기 조립 — 프로젝트 저장소(reels_projects)와 편집 소스(만든 쇼츠 영상·렌더 카드 그림) 목록.
-// 저장 파일은 원고 저장소와 같은 STUDIO_DB(없으면 메모리). 쓰기 전 모양 검사는 lib/reels-timeline 이 한다.
+// 저장 파일은 원고 저장소와 같은 STUDIO_DB(없으면 메모리). 쓰기 전 모양 검사는 @yunseo/application/reels-timeline 이 한다.
 import { randomBytes } from "node:crypto";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { overlaps, projectIssues, type ReelsProject, type ReelsSource } from "@/lib/reels-timeline";
+import { overlaps, projectIssues, type ReelsProject, type ReelsSource } from "@yunseo/application/reels-timeline";
 import { toProjectV1, type ReelsProjectV2 } from "@yunseo/domain";
 import { listReels } from "./library";
 import { reelsStore, reelsTimelineTools, studioWorkDir } from "./studio";

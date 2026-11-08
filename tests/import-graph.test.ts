@@ -115,7 +115,13 @@ describe("import 그래프 — 대시보드 (apps 는 조립만, 화면은 유�
 
 describe("import 그래프 — 선언한 의존만 쓴다", () => {
   it("각 패키지가 import 하는 @yunseo/* 는 모두 package.json 에 선언돼 있다", () => {
-    const roots = ["apps/cli", "apps/dashboard", "apps/worker", "packages/domain", "packages/application", "packages/design-tokens", "packages/ui", "packages/presets-schema", "packages/adapters/storage", "packages/adapters/render-html", "packages/adapters/publisher-manual"];
+    // 워크스페이스의 모든 패키지(pnpm-workspace.yaml 의 apps/*·packages/*·packages/adapters/*)를 빠짐없이 본다.
+    const roots = ["apps", "packages", "packages/adapters"].flatMap((top) =>
+      readdirSync(join(root, top), { withFileTypes: true })
+        .filter((e) => e.isDirectory() && existsSync(join(root, top, e.name, "package.json")))
+        .map((e) => `${top}/${e.name}`),
+    );
+    expect(roots.length).toBeGreaterThanOrEqual(18);
     for (const dir of roots) {
       const file = join(root, dir, "package.json");
       if (!existsSync(file)) continue;
@@ -128,5 +134,64 @@ describe("import 그래프 — 선언한 의존만 쓴다", () => {
         }
       }
     }
+  });
+});
+
+describe("import 그래프 — 순환 없음", () => {
+  const resolveRel = (from: string, spec: string): string | undefined => {
+    const base = resolve(dirname(from), spec);
+    return [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")].find((c) => existsSync(c) && !readdirSafe(c));
+  };
+  const readdirSafe = (p: string) => {
+    try {
+      readdirSync(p);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  it("파일 사이 상대 import 에 순환이 없다", () => {
+    const graph = new Map(sources.map((s) => [s.abs, s.imports.filter(isRelative).map((i) => resolveRel(s.abs, i)).filter((x): x is string => !!x)]));
+    const state = new Map<string, 1 | 2>();
+    const cycles: string[] = [];
+    const visit = (n: string, path: string[]) => {
+      state.set(n, 1);
+      path.push(n);
+      for (const m of graph.get(n) ?? []) {
+        if (state.get(m) === 1) cycles.push(path.slice(path.indexOf(m)).map((x) => relative(root, x)).join(" → "));
+        else if (!state.has(m)) visit(m, path);
+      }
+      path.pop();
+      state.set(n, 2);
+    };
+    for (const n of graph.keys()) if (!state.has(n)) visit(n, []);
+    expect(cycles).toEqual([]);
+  });
+
+  it("패키지 사이 선언 의존(package.json)에 순환이 없다", () => {
+    const pkgs = new Map<string, string[]>();
+    for (const top of ["apps", "packages", "packages/adapters"]) {
+      for (const e of readdirSync(join(root, top), { withFileTypes: true })) {
+        const file = join(root, top, e.name, "package.json");
+        if (!e.isDirectory() || !existsSync(file)) continue;
+        const json = JSON.parse(readFileSync(file, "utf8")) as { name: string; dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+        pkgs.set(json.name, Object.keys({ ...json.dependencies, ...json.devDependencies }).filter((d) => d.startsWith("@yunseo/")));
+      }
+    }
+    const state = new Map<string, 1 | 2>();
+    const cycles: string[] = [];
+    const visit = (n: string, path: string[]) => {
+      state.set(n, 1);
+      path.push(n);
+      for (const m of pkgs.get(n) ?? []) {
+        if (state.get(m) === 1) cycles.push([...path.slice(path.indexOf(m)), m].join(" → "));
+        else if (!state.has(m)) visit(m, path);
+      }
+      path.pop();
+      state.set(n, 2);
+    };
+    for (const n of pkgs.keys()) if (!state.has(n)) visit(n, []);
+    expect(cycles).toEqual([]);
   });
 });

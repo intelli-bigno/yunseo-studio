@@ -1,6 +1,6 @@
 // [W3 릴스] 프로젝트 하나 — 불러오기(GET) · 저장(PUT {project, revision}) · 지우기(DELETE)
 import { REELS_OPS_MAX_BYTES } from "@yunseo/application";
-import type { ReelsProject } from "@/lib/reels-timeline";
+import type { ReelsProject } from "@yunseo/application/reels-timeline";
 import { readJsonObject } from "@/server/http";
 import { isReelsProjectId, loadReelsProject, reelsProjectProblems, reelsStore } from "@/server/reels";
 import { reelsOps } from "@/server/reels-ops";

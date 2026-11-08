@@ -3,7 +3,7 @@
 // 정본 변환(document.ts)이 이 칸을 읽어 post-issue-4/v1·research-5/v1·pre-issue-5/v1 본문을 만든다.
 import { EVENT_KINDS } from "../content/pre-issue";
 import { RESEARCH_STAGES } from "../content/research";
-import type { AuthoringKind } from "./authoring";
+import type { AuthoringKind } from "./piece-content";
 
 export interface FieldSpec {
   /** Piece.fields 의 키 */

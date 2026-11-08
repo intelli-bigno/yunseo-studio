@@ -20,7 +20,7 @@ import {
   timelineSpan,
   trimClip,
   type ReelsProject,
-} from "./reels-timeline";
+} from "./index";
 
 const video = (id: string, duration = 4000, extra = {}) => ({ id, duration, sourceId: "s1", sourceKind: "video" as const, sourceMs: 10_000, ...extra });
 const base = (): ReelsProject => addClip(addClip(emptyProject(), "t-video", video("a")), "t-video", video("b", 2000));

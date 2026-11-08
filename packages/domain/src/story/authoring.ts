@@ -1,6 +1,6 @@
 // [L2] 작성·검수 규칙 — 상태 기계(02 SOP)·사람 게이트 G1~G3·출처/기준 시점 검증·승인 무효화(04 Approval)·수정 이력(01 §6).
 // 전부 순수 함수다. 화면·저장소는 이 규칙을 부르기만 하고 우회할 수 없다(04 규칙 5): 허용 안 된 전이·조건 미충족은 예외.
-import { sha256Hex } from "./sha256";
+import { AUTHORING_KINDS, canonical, claimContent, contentHash, contentOf, isAuthoringKind, pieceAsOf, type AuthoringKind } from "./piece-content";
 import { normalizeFields } from "./fields";
 import { documentGateIssues, type GateDocumentContext } from "./document";
 import {
@@ -38,9 +38,9 @@ export class AuthoringRuleError extends Error {
 
 // ───────────────────────────── 종류별 단 틀 ─────────────────────────────
 
-export const AUTHORING_KINDS = ["pre", "post", "research"] as const;
-export type AuthoringKind = (typeof AUTHORING_KINDS)[number];
-export const isAuthoringKind = (k: PieceKind): k is AuthoringKind => (AUTHORING_KINDS as readonly string[]).includes(k);
+// 종류·내용 해시·기준 시점은 piece-content.ts 에 둔다(fields·document 와의 순환을 끊으려고, 2026-11-08). 공개 이름은 여기서 그대로 다시 내보낸다.
+export { AUTHORING_KINDS, contentHash, contentOf, isAuthoringKind, pieceAsOf, type AuthoringKind };
+
 
 /** 01 §4.2~4.4 의 단 순서 = 정본. 새 편은 이 틀로 시작하고 저장해도 단 구성은 바뀌지 않는다 */
 export const STAGE_TEMPLATES: Record<AuthoringKind, readonly Omit<Stage, "body">[]> = {
@@ -167,46 +167,6 @@ export function claimBlockers(c: PieceClaim, all: readonly PieceClaim[] = []): s
   return out;
 }
 
-// ───────────────────────────── 승인 대상 내용 해시 ─────────────────────────────
-
-/** 정렬된 키로 직렬화 — 같은 내용이면 같은 문자열 */
-function canonical(v: unknown): string {
-  if (v === undefined) return "null";
-  if (v === null || typeof v !== "object") return JSON.stringify(v);
-  if (Array.isArray(v)) return `[${v.map(canonical).join(",")}]`;
-  const o = v as Record<string, unknown>;
-  return `{${Object.keys(o)
-    .filter((k) => o[k] !== undefined)
-    .sort()
-    .map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`)
-    .join(",")}}`;
-}
-
-/** 문장의 내용 칸(확인 표시 제외) */
-// [L7] tier·condition 은 값이 있을 때만 들어간다(undefined 는 canonical 이 뺀다) — 예전 편의 해시·승인이 그대로 유지된다
-const claimContent = (c: PieceClaim) => ({ id: c.id, mark: c.mark, basis: c.basis, text: c.text, publisher: c.publisher ?? null, url: c.url ?? null, quote: c.quote ?? null, accessedAt: c.accessedAt ?? null, asOf: c.asOf ?? null, basedOn: c.basedOn ?? [], tier: c.tier || undefined, condition: c.condition?.trim() || undefined, experience: c.experience ?? undefined });
-
-/** 승인 대상 = 독자에게 나가는 내용. 상태·게이트·확인 표시·게시 예정 시각·자료 확보 체크는 빼고 본다 */
-export function contentOf(p: Piece): unknown {
-  return {
-    kind: p.kind,
-    title: p.title,
-    viewpoint: p.viewpoint,
-    preIssueId: p.preIssueId ?? null,
-    stages: p.stages.map((s) => ({ key: s.key, body: s.body })),
-    claims: p.claims.map(claimContent),
-    scenarios: p.scenarios ?? [],
-    checks: p.checks ?? [],
-    scenarioOutcomes: p.scenarioOutcomes ?? [],
-    checkResults: p.checkResults ?? [],
-    // [L7] 구조 칸 — 비었으면 빼서 예전 편의 해시가 바뀌지 않게 한다
-    fields: p.fields && Object.keys(p.fields).length ? p.fields : undefined,
-  };
-}
-
-export function contentHash(p: Piece): string {
-  return sha256Hex(canonical(contentOf(p)));
-}
 
 /** 해당 게이트의 마지막 기록 */
 export function lastApproval(p: Piece, gate: GateId): Approval | null {
@@ -719,8 +679,3 @@ export function diff(a: Piece, b: Piece): FieldChange[] {
   return out;
 }
 
-/** 편 전체 기준 시점 = 문장들의 가장 늦은 as_of(01 §5 규칙 5) */
-export function pieceAsOf(p: Piece): string | null {
-  const xs = p.claims.map((c) => c.asOf).filter((x): x is string => !!x).sort();
-  return xs[xs.length - 1] ?? null;
-}
