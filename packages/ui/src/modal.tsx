@@ -1,22 +1,23 @@
 "use client";
 // 모달 — 대화상자(Dialog)와 크게 보기(Lightbox)가 같은 동작을 쓴다: Esc 로 닫기 · 열리면 안으로 포커스 · Tab 이 밖으로 새지 않기 · 닫히면 열기 전 자리로 포커스 복귀.
 // 바깥 클릭·모양은 각 부품이 따로 둔다(모양이 다르다).
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function useModal<E extends HTMLElement>(onClose: () => void) {
   const ref = useRef<E>(null);
+  // 연 쪽(포커스 가 있던 요소)은 그리기 전에 잡는다 — 안쪽 autoFocus 가 먼저 포커스를 가져가므로 effect 에서는 이미 늦다
+  const [opener] = useState(() => (typeof document !== "undefined" && document.activeElement instanceof HTMLElement ? document.activeElement : null));
   useEffect(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const node = ref.current;
     // 이미 안에 포커스가 있으면(autoFocus 한 입력·닫기 버튼) 뺏지 않는다
     if (node && !node.contains(document.activeElement)) (node.querySelector<HTMLElement>(FOCUSABLE) ?? node).focus({ preventScroll: true });
     return () => {
       if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
-  }, []);
+  }, [opener]);
   const onKeyDown = (e: KeyboardEvent<E>) => {
     if (e.key === "Escape") {
       e.stopPropagation();
