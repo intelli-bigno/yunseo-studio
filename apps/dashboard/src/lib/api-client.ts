@@ -48,11 +48,21 @@ export interface ApiFetchOptions extends RequestInit {
   sleep?: (ms: number) => Promise<void>;
 }
 
-const sleepMs = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+/** 다시 시도 사이 대기 — 사용자가 취소하면 타이머를 거두고 바로 깨어난다(다음 fetch 가 취소 오류를 던진다) */
+const sleepMs = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    const wake = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", wake);
+      resolve();
+    };
+    const timer = setTimeout(wake, ms);
+    signal?.addEventListener("abort", wake, { once: true });
+  });
 
 /** JSON 을 돌려주는 API 호출. 실패는 ApiError, 사용자 취소는 AbortError 그대로 */
 export async function apiFetch<T = unknown>(url: string, options: ApiFetchOptions = {}): Promise<T> {
-  const { timeoutMs = 30_000, retries = 2, fetchImpl, sleep = sleepMs, signal, ...init } = options;
+  const { timeoutMs = 30_000, retries = 2, fetchImpl, signal, sleep = (ms: number) => sleepMs(ms, signal), ...init } = options;
   const doFetch = fetchImpl ?? ((u: string, i?: RequestInit) => fetch(u, i));
   const method = (init.method ?? "GET").toUpperCase();
   const attempts = method === "GET" || method === "HEAD" ? retries + 1 : 1;
