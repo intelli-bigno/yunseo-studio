@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { parse } from "yaml";
-import type { ValidationResult } from "@yunseo/domain";
+import { AppError, type ValidationResult } from "@yunseo/domain";
 import type { PresetBundle } from "./types";
 import {
   validateActive,
@@ -14,10 +14,11 @@ import {
   validateTone,
 } from "./validate";
 
-export class PresetError extends Error {
+export class PresetError extends AppError<"PRESET_INVALID"> {
   readonly errors: string[];
   constructor(errors: string[]) {
-    super(`프리셋 오류 ${errors.length}건\n${errors.join("\n")}`);
+    super("PRESET_INVALID", `프리셋 오류 ${errors.length}건\n${errors.join("\n")}`, { status: 500, details: { errors } });
+    this.name = "PresetError";
     this.errors = errors;
   }
 }

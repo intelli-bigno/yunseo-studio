@@ -1,6 +1,9 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // 대시보드의 `@/…` 별칭(tsconfig paths) — 라우트(`@/server/api`)를 직접 부르는 테스트가 풀 수 있게 한다
+  resolve: { alias: [{ find: /^@\//, replacement: fileURLToPath(new URL("apps/dashboard/src/", import.meta.url)) }] },
   test: {
     environment: "node",
     // Windows 실행기 개발 등급은 작업당 프로세스·스레드 상한이 낮다 — 테스트 파일이 40개를 넘으면 기본(코어 수 - 1)만큼 포크를 한꺼번에 띄우다

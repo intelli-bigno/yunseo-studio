@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { IBM_Plex_Mono, IBM_Plex_Sans_KR } from "next/font/google";
 import { cssText } from "@yunseo/design-tokens";
 import { Brand, Html, KeyHint, Shell, Sidebar, Text, TopBar } from "@yunseo/ui";
+import { ToastProvider } from "@yunseo/ui/toast";
 import { KeyNav, TopTools } from "@/components/KeyNav";
 import { Nav, type NavEntry } from "@/components/Nav";
 import { fmtDay } from "@/lib/format";
@@ -38,22 +39,24 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <Html fonts={[sans.variable, mono.variable]} head={<style>{cssText()}</style>}>
-      <Shell
-        sidebar={
-          <Sidebar brand={<Brand logo="/icon.png" name="YS-Studio" />} foot={<KeyHint keys={["?"]} label="단축키" />}>
-            <Nav items={nav} />
-          </Sidebar>
-        }
-        top={
-          <TopBar>
-            <Text size="title">{fmtDay(summary.today)}</Text>
-            <TopTools />
-          </TopBar>
-        }
-      >
-        {children}
-      </Shell>
-      <KeyNav />
+      <ToastProvider>
+        <Shell
+          sidebar={
+            <Sidebar brand={<Brand logo="/icon.png" name="YS-Studio" />} foot={<KeyHint keys={["?"]} label="단축키" />}>
+              <Nav items={nav} />
+            </Sidebar>
+          }
+          top={
+            <TopBar>
+              <Text size="title">{fmtDay(summary.today)}</Text>
+              <TopTools />
+            </TopBar>
+          }
+        >
+          {children}
+        </Shell>
+        <KeyNav />
+      </ToastProvider>
     </Html>
   );
 }

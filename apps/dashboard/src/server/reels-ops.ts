@@ -3,7 +3,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { createReelsOpsUseCases, type ReelsOpsUseCases } from "@yunseo/application";
-import { toProjectV2, type OpContext, type SourceInfo } from "@yunseo/domain";
+import { AppError, toProjectV2, type OpContext, type SourceInfo } from "@yunseo/domain";
 import { reelAsset } from "./library";
 import { isReelsProjectId, reelsAudioAsset, reelsCardAsset } from "./reels";
 import { reelsOpsStore, reelsTimelineTools, studioWorkDir } from "./studio";
@@ -111,7 +111,7 @@ export async function exportReelsProject(id: string) {
     }
   }
   const missing = project.clips.filter((c) => c.sourceId && !resolved.has(c.sourceId)).map((c) => c.id);
-  if (missing.length) throw new Error(`원본 파일이 없는 클립: ${missing.join(", ")}`);
+  if (missing.length) throw new AppError("SOURCE_NOT_FOUND", `원본 파일이 없는 클립: ${missing.join(", ")}`, { status: 422, details: { clipIds: missing } });
   const outDir = exportDir(id, rec.revision);
   const out = await reelsTimelineTools().compose({
     project,

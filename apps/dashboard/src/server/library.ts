@@ -3,6 +3,7 @@
 import { createReadStream, existsSync, readdirSync, readFileSync, statSync, type Stats } from "node:fs";
 import { Readable } from "node:stream";
 import { join, resolve, sep } from "node:path";
+import { notFound, jsonError } from "./api";
 import { studio, studioWorkDir } from "./studio";
 
 // ── 쇼츠 ────────────────────────────────────────────────
@@ -150,13 +151,14 @@ export interface FileResponseOptions {
 const etagOf = (st: { size: number; mtimeMs: number }) => `W/"${st.size.toString(16)}-${Math.floor(st.mtimeMs).toString(16)}"`;
 const matches = (header: string | null, etag: string) => !!header && header.split(",").some((t) => t.trim() === etag || t.trim() === "*");
 
+/** 파일 응답 — 경로가 없거나 읽을 수 없으면 404 오류를 던진다(route() 래퍼 안에서 부른다) */
 export function fileResponse(req: Request, path: string | null, opts: FileResponseOptions = {}): Response {
-  if (!path) return new Response("not found", { status: 404 });
+  if (!path) throw notFound("FILE_NOT_FOUND", "파일이 없다");
   let st: Stats;
   try {
     st = statSync(path);
   } catch {
-    return new Response("not found", { status: 404 });
+    throw notFound("FILE_NOT_FOUND", "파일이 없다");
   }
   const size = st.size;
   const type = TYPES[path.slice(path.lastIndexOf(".") + 1).toLowerCase()] ?? "application/octet-stream";
@@ -169,7 +171,7 @@ export function fileResponse(req: Request, path: string | null, opts: FileRespon
   if (range && (range[1] || range[2])) {
     const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
     const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
-    if (start >= size || start > end) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
+    if (start >= size || start > end) return jsonError("RANGE_NOT_SATISFIABLE", "요청한 구간이 파일 밖이다", { status: 416, headers: { "content-range": `bytes */${size}` } });
     return new Response(body(start, end), { status: 206, headers: { ...headers, "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(end - start + 1) } });
   }
   if (size === 0) return new Response(new Uint8Array(0), { headers: { ...headers, "content-length": "0" } });

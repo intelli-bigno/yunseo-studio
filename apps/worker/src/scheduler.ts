@@ -2,6 +2,7 @@
 // 타이머는 최대 pollMaxMs(기본 60초)만 기다리고 매번 벽시계를 다시 본다: PC 가 잠들었다 깨거나 시계가 바뀌어도
 // 예정 시각을 지나친 작업을 다음 확인 때 바로 돈다(긴 setTimeout 하나에 기대지 않는다).
 import type { OpsJobRun, OpsJobState } from "@yunseo/application";
+import { AppError, describeFailure } from "@yunseo/domain";
 import type { JobDefinition, JobRegistry } from "./registry";
 import { describeSchedule, nextRun, previousRun } from "./schedule";
 
@@ -72,16 +73,16 @@ export function createScheduler({
     const limit = def.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const done = (async (): Promise<OpsJobRun> => {
       const aborted = new Promise<never>((_, reject) => {
-        ctrl.signal.addEventListener("abort", () => reject(new Error(String(ctrl.signal.reason ?? "중단됨"))), { once: true });
+        ctrl.signal.addEventListener("abort", () => reject(ctrl.signal.reason instanceof Error ? ctrl.signal.reason : new AppError("JOB_ABORTED", String(ctrl.signal.reason ?? "중단됨"))), { once: true });
       });
-      const handle = timers.setTimeout(() => ctrl.abort(`시간 제한 ${Math.round(limit / 1000)}초 초과`), limit);
+      const handle = timers.setTimeout(() => ctrl.abort(new AppError("JOB_TIMEOUT", `시간 제한 ${Math.round(limit / 1000)}초 초과`)), limit);
       let status: "ok" | "failed" = "ok";
       let message: string | null;
       try {
         message = (await Promise.race([def.run({ now, log: (m) => log(`[${def.name}] ${m}`), signal: ctrl.signal }), aborted])) ?? null;
       } catch (e) {
         status = "failed";
-        message = e instanceof Error ? e.message : String(e);
+        message = describeFailure(e); // AppError 면 `[CODE] 메시지` — 상태 화면의 실행 기록이 실패 종류를 보여 준다
         log(`[${def.name}] 실패: ${message}`);
       } finally {
         timers.clearTimeout(handle);
@@ -135,7 +136,7 @@ export function createScheduler({
     tick,
     runNow(name) {
       const def = registry.get(name);
-      if (!def) return Promise.reject(new Error(`등록되지 않은 작업: ${name}`));
+      if (!def) return Promise.reject(new AppError("JOB_NOT_FOUND", `등록되지 않은 작업: ${name}`));
       const active = running.get(name);
       return active ? active.done : execute(def);
     },
@@ -156,7 +157,7 @@ export function createScheduler({
       if (timer !== null) timers.clearTimeout(timer);
       timer = null;
       const active = [...running.values()];
-      for (const r of active) r.ctrl.abort("워커 종료");
+      for (const r of active) r.ctrl.abort(new AppError("JOB_ABORTED", "워커 종료"));
       await Promise.allSettled(active.map((r) => r.done));
     },
   };

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { SqliteOpsJournal } from "@yunseo/adapters-ops";
+import { AppError } from "@yunseo/domain";
 import { describe, expect, it } from "vitest";
 import { registerJobs } from "./jobs";
 import { JobRegistry, type JobDefinition } from "./registry";
@@ -77,7 +78,7 @@ describe("스케줄러", () => {
     const p = s.runNow("slow");
     expect(s.state()[0]?.running).toBe(true);
     h.armed.find((a) => a.ms === 1000)?.fn(); // 제한 타이머 발화
-    expect(await p).toMatchObject({ status: "failed", message: "시간 제한 1초 초과" });
+    expect(await p).toMatchObject({ status: "failed", message: "[JOB_TIMEOUT] 시간 제한 1초 초과" });
   });
 
   it("같은 작업은 겹쳐 돌지 않는다", async () => {
@@ -119,7 +120,26 @@ describe("스케줄러", () => {
     const p = s.runNow("long");
     await s.stop();
     expect((seen as AbortSignal | null)?.aborted).toBe(true);
-    expect((await p).status).toBe("failed");
+    expect(await p).toMatchObject({ status: "failed", message: "[JOB_ABORTED] 워커 종료" });
+  });
+
+  it("없는 작업을 지금 돌리라고 하면 JOB_NOT_FOUND", async () => {
+    const h = harness("2026-11-05T00:00:00Z");
+    const s = createScheduler({ registry: new JobRegistry(), journal: new SqliteOpsJournal(), now: h.now, timers: h.timers, log: () => {} });
+    await expect(s.runNow("nope")).rejects.toMatchObject({ code: "JOB_NOT_FOUND", status: 404, message: "등록되지 않은 작업: nope" });
+  });
+
+  it("AppError 로 실패한 작업은 실행 기록과 로그에 [코드] 가 붙고, 평범한 오류는 메시지만 남는다", async () => {
+    const h = harness("2026-11-05T00:00:00Z");
+    const logs: string[] = [];
+    const bad = job("coded", { run: async () => { throw new AppError("FFMPEG_TIMEOUT", "ffmpeg 가 시간 안에 끝나지 않았다"); } });
+    const plain = job("plain", { run: async () => { throw new Error("그냥 실패"); } });
+    const journal = new SqliteOpsJournal();
+    const s = createScheduler({ registry: new JobRegistry().register(bad).register(plain), journal, now: h.now, timers: h.timers, log: (m) => logs.push(m) });
+    expect(await s.runNow("coded")).toMatchObject({ status: "failed", message: "[FFMPEG_TIMEOUT] ffmpeg 가 시간 안에 끝나지 않았다" });
+    expect(await s.runNow("plain")).toMatchObject({ status: "failed", message: "그냥 실패" });
+    expect(journal.lastRun("coded")?.message).toBe("[FFMPEG_TIMEOUT] ffmpeg 가 시간 안에 끝나지 않았다");
+    expect(logs).toContain("[coded] 실패: [FFMPEG_TIMEOUT] ffmpeg 가 시간 안에 끝나지 않았다");
   });
 });
 
@@ -160,6 +180,6 @@ describe("작업 등록부", () => {
     const h = harness("2026-11-05T00:00:00Z");
     const reg = registerJobs(new JobRegistry(), { backup: null, health: { dashboardHealthUrl: "http://d/api/health", prune: () => 2, fetch: async () => ({ status: 503 }) }, log: () => {} });
     const s = createScheduler({ registry: reg, journal: new SqliteOpsJournal(), now: h.now, timers: h.timers, log: () => {} });
-    expect(await s.runNow("health")).toMatchObject({ status: "failed", message: "대시보드 HTTP 503" });
+    expect(await s.runNow("health")).toMatchObject({ status: "failed", message: "[UPSTREAM_FAILED] 대시보드 HTTP 503" });
   });
 });

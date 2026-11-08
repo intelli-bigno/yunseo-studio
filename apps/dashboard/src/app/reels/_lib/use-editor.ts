@@ -1,10 +1,14 @@
 "use client";
 // [릴스 편집기] 편집 상태 훅 — 프로젝트·revision 을 들고, 모든 편집을 op 로 순서대로(직렬) 보낸다.
 // 규칙(문서 §5): 보낸 revision 이 낡으면 409 → 서버 값을 다시 읽어 화면을 맞춘다(자동 병합 없음). 같은 클릭의 재전송은 requestId 로 멱등.
+import { apiFetch, failureText } from "@/lib/api-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorText, newClientId, postOp } from "./ops";
 import { toV2 } from "./project";
 import type { Clip, Op, OpSuccess, ReelsProjectV2, Track } from "./types";
+
+/** GET /api/reels/:id/ops 의 성공 본문 중 화면이 쓰는 칸 */
+type OpsState = { project?: unknown; revision?: number; undo?: { available: boolean; redo: boolean } };
 
 export interface EditorMessage {
   tone: "alert" | "accent";
@@ -65,10 +69,16 @@ export function useEditor(projectId: string, initial: { project: ReelsProjectV2;
 
   // 다시 읽기는 엔진 GET /api/reels/:id/ops — v2 그대로 온다(/projects/:id 는 v1 투영이라 v2 편집이 빠진다)
   const reload = useCallback(async () => {
-    const r = await fetch(`/api/reels/${encodeURIComponent(projectId)}/ops`, { signal: abort.current?.signal ?? null });
-    const body = (await r.json()) as { project?: unknown; revision?: number; undo?: { available: boolean; redo: boolean } };
-    const p = toV2(body.project);
-    if (r.ok && p && typeof body.revision === "number") {
+    let body: OpsState | null;
+    try {
+      body = await apiFetch<OpsState | null>(`/api/reels/${encodeURIComponent(projectId)}/ops`, { signal: abort.current?.signal ?? null });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setMessage({ tone: "alert", text: failureText(e, "최신 판을 불러오지 못했다") });
+      return;
+    }
+    const p = toV2(body?.project);
+    if (body && p && typeof body.revision === "number") {
       apply(p, body.revision);
       if (body.undo) setUndo(body.undo);
     }

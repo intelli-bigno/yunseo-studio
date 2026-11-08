@@ -4,5 +4,5 @@
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@yunseo/application": "workspace:*" }
+  "dependencies": { "@yunseo/application": "workspace:*", "@yunseo/domain": "workspace:*" }
 }

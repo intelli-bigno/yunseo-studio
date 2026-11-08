@@ -12,6 +12,14 @@ const file = join(dir, "a.mp4");
 writeFileSync(file, body);
 const req = (headers: Record<string, string> = {}) => new Request("http://x/f", { headers });
 const bytes = async (r: Response) => Buffer.from(await r.arrayBuffer());
+const thrown = (fn: () => unknown): unknown => {
+  try {
+    fn();
+  } catch (e) {
+    return e;
+  }
+  return undefined;
+};
 
 describe("fileResponse", () => {
   it("전체: 200 · 크기·종류·ETag·Last-Modified·캐시 정책 · 본문 그대로", async () => {
@@ -64,12 +72,13 @@ describe("fileResponse", () => {
     expect(fileResponse(req(), f).headers.get("etag")).not.toBe(e1);
   });
 
-  it("cacheControl·download 옵션, 경로 없음·사라진 파일은 404, 빈 파일은 200", async () => {
+  it("cacheControl·download 옵션, 경로 없음·사라진 파일은 404 오류, 빈 파일은 200", async () => {
     const r = fileResponse(req(), file, { cacheControl: "public, max-age=86400", download: "x.mp4" });
     expect(r.headers.get("cache-control")).toBe("public, max-age=86400");
     expect(r.headers.get("content-disposition")).toBe('attachment; filename="x.mp4"');
-    expect(fileResponse(req(), null).status).toBe(404);
-    expect(fileResponse(req(), join(dir, "nope.png")).status).toBe(404);
+    // 없는 파일은 던진다 — route() 래퍼가 { error: { code, message } } 404 로 바꾼다
+    expect(thrown(() => fileResponse(req(), null))).toMatchObject({ code: "FILE_NOT_FOUND", status: 404 });
+    expect(thrown(() => fileResponse(req(), join(dir, "nope.png")))).toMatchObject({ code: "FILE_NOT_FOUND", status: 404 });
     const empty = join(dir, "e.png");
     writeFileSync(empty, "");
     const e = fileResponse(req(), empty);

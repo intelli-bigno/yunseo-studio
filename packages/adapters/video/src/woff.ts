@@ -1,10 +1,11 @@
 // [L9] WOFF(1) → SFNT(OTF/TTF) 무손실 변환. libass(ffmpeg 자막 필터)는 WOFF 를 못 읽는다(Windows 실측: 「Error opening memory font Pretendard-*.woff」).
 // WOFF1 은 SFNT 표마다 zlib 압축만 씌운 것이라 표를 풀어 SFNT 로 다시 쌓으면 원본과 같은 글꼴이 된다(서체 자체는 고치지 않는다 — OFL 그대로).
 import { inflateSync } from "node:zlib";
+import { AppError } from "@yunseo/domain";
 
-export class WoffError extends Error {
+export class WoffError extends AppError<"FONT_INVALID"> {
   constructor(message: string) {
-    super(message);
+    super("FONT_INVALID", message, { status: 422 });
     this.name = "WoffError";
   }
 }
