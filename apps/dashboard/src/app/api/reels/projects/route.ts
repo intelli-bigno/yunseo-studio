@@ -1,6 +1,6 @@
 // [W3 릴스] 프로젝트 목록(GET) · 새로 만들기(POST {project})
 import { REELS_OPS_MAX_BYTES } from "@yunseo/application";
-import { emptyProject } from "@/lib/reels-timeline";
+import { emptyProject } from "@yunseo/application/reels-timeline";
 import { readJsonObject } from "@/server/http";
 import { newReelsProjectId, reelsProjectProblems, reelsStore } from "@/server/reels";
 

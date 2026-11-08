@@ -1,5 +1,5 @@
 // [W3 릴스] 릴스 편집 프로젝트 저장 — 레인 전용 테이블 reels_projects(CREATE TABLE IF NOT EXISTS, migrations.ts 목록에 넣지 않는다).
-// 프로젝트 내용(트랙·클립)은 JSON 한 칸으로 둔다 — 모양 검사는 화면 쪽 모델(apps/dashboard/src/lib/reels-timeline.ts)이 저장 전에 한다.
+// 프로젝트 내용(트랙·클립)은 JSON 한 칸으로 둔다 — 모양 검사는 유스케이스 계층 모델(@yunseo/application/reels-timeline)이 저장 전에 한다.
 // 같은 파일(STUDIO_DB)을 쓰되 연결은 따로 연다(WAL + busy_timeout 이라 원고 저장소 연결과 함께 써도 된다).
 import { DatabaseSync } from "node:sqlite";
 

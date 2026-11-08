@@ -53,6 +53,23 @@
 4. `apps/*` 만 어댑터를 생성·주입한다. 유스케이스 안에서 `new SomeAdapter()` 금지.
 5. 사람 승인 게이트는 **도메인 규칙**이다(`Publish` 는 유효한 `Approval` 없이는 실패). UI·워커가 우회할 수 없다.
 
+6. 패키지 사이·파일 사이 import 에 순환이 없다(`tests/import-graph.test.ts` 「순환 없음」).
+7. 업무 규칙(모델·검사·편집 연산)은 `packages/*` 에 둔다. `apps/*` 에는 조립(`server/`)·라우트·화면과 화면 전용 상태(편집기 미리보기·드래그 계산 등)만 남는다.
+
+### 경계를 지키는 세 겹 (2026-11-08 실측)
+
+| 겹 | 파일 | 보는 것 |
+| --- | --- | --- |
+| lint | `eslint.config.mjs` (`no-restricted-imports`) | 파일마다 허용 import — domain·design-tokens 상대 경로만, application 은 domain 만, 어댑터·presets-schema 는 다른 어댑터·apps·화면 계층 금지, ui 는 react·design-tokens 만, apps 끼리 금지, 대시보드 어댑터·`node:` 는 `src/server/` 만, 클라이언트 섬은 유스케이스·서버 금지 |
+| 그래프 | `tests/import-graph.test.ts` | 계층 전체 모양 + 모든 워크스페이스 패키지의 `@yunseo/*` import 가 package.json 에 선언됐는지 + 파일·패키지 순환 0 |
+| 선언 | `tests/boundaries.test.ts` | package.json 의존 방향 |
+
+실측 의존(package.json): `domain`·`design-tokens` → 없음 / `application` → domain / `presets-schema`·`adapters/*` → application·domain / `ui` → design-tokens / `apps/*` → 필요한 것 전부. 순환 0.
+
+TS 프로젝트 참조(project references)는 쓰지 않는다 — 모든 패키지가 `exports` 로 `.ts` 원본을 바로 내보내고(빌드 산출물 없음) 루트 `tsconfig.json` 한 번으로 전부 검사하므로(`apps/dashboard`·`packages/ui` 만 JSX 설정 때문에 자기 tsconfig), 참조를 더하면 `composite`·선언 파일 생성만 늘고 검사 범위는 같다.
+
+릴스 v1 타임라인 모델(`emptyProject`·`projectIssues`·`overlaps` 등 저장 전 검사)은 `apps/dashboard/src/lib/reels-timeline.ts` 에서 `packages/application/src/reels-timeline`(`@yunseo/application/reels-timeline`)로 옮겼다(2026-11-08). v2 편집기의 화면 전용 계산(`app/reels/_lib`)은 화면 상태라 앱에 남긴다.
+
 ## 테스트 전략
 
 - 도메인·유스케이스: 가짜 포트로 단위 테스트 (빠르고 외부 없음). 상태 전이·승인 무효화·출처 누락 차단이 핵심 케이스.
