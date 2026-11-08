@@ -13,10 +13,12 @@ export function TileGrid({ children, wide = false, masonry = false }: { children
 /** 칸 틀 — portrait·square·story 는 고정 비율로 채워 자르고, natural 은 그림 비율 그대로, fit 은 화면 안에 통째로 들어오게 맞춘다 */
 export type TileAspect = "portrait" | "square" | "story" | "natural" | "fit";
 
-/** 썸네일 한 칸 — 그림(외부 주소는 그대로, 받지 않는다) + 제목 + 보조 한 줄 */
+/** 썸네일 한 칸 — 그림 + 제목 + 보조 한 줄. srcSet 은 앱이 만든 크기별 파일(없으면 src 하나), priority 는 첫 화면(LCP) 칸만 */
 export function Tile<E extends ElementType = "a">({
   as,
   src,
+  srcSet,
+  priority = false,
   alt,
   title,
   meta,
@@ -24,12 +26,12 @@ export function Tile<E extends ElementType = "a">({
   current = false,
   children,
   ...rest
-}: Poly<E, { src: string; alt: string; title: ReactNode; meta?: ReactNode; aspect?: TileAspect; current?: boolean; children?: ReactNode }>) {
+}: Poly<E, { src: string; srcSet?: string | undefined; priority?: boolean | undefined; alt: string; title: ReactNode; meta?: ReactNode; aspect?: TileAspect; current?: boolean; children?: ReactNode }>) {
   const C = (as ?? "a") as ElementType;
   return (
     <C className={cx("ui-tile", current && "is-current")} {...rest}>
       <span className={cx("ui-tile-frame", `is-${aspect}`)}>
-        <img className="ui-tile-img" src={src} alt={alt} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+        <img className="ui-tile-img" src={src} srcSet={srcSet} alt={alt} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" referrerPolicy="no-referrer" />
       </span>
       <span className="ui-tile-body">
         <span className="ui-t-body ui-tile-title">{title}</span>

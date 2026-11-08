@@ -39,7 +39,8 @@ export const REELS_PROJECTS_DDL = `CREATE TABLE IF NOT EXISTS reels_projects (
   revision INTEGER NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
-)`;
+);
+CREATE INDEX IF NOT EXISTS reels_projects_list ON reels_projects (updated_at DESC, id, title, revision, created_at)`;
 
 type Row = Record<string, unknown>;
 const summary = (r: Row): ReelsProjectSummary => ({ id: String(r.id), title: String(r.title), revision: Number(r.revision), createdAt: String(r.created_at), updatedAt: String(r.updated_at) });

@@ -1,0 +1,783 @@
+{
+  "before": {
+    "cards": [
+      {
+        "run": 1,
+        "win": 222122579,
+        "url": "/cards",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 48,
+        "fcpMs": 332,
+        "lcpMs": 532,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "ttps://i.pinimg.com/736x/06/ca/8a/06ca8afe244bfbdddd3d7fc9c79f5902.jpg",
+          "size": 26417
+        },
+        "cls": 0,
+        "dclMs": 327,
+        "loadMs": 585,
+        "htmlKb": 32.8,
+        "requests": 82,
+        "js": {
+          "n": 9,
+          "transferKb": 166.7,
+          "encodedKb": 164,
+          "sizeUnknown": 0,
+          "maxDurMs": 136
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 83
+        },
+        "font": {
+          "n": 26,
+          "transferKb": 215.7,
+          "encodedKb": 208.1,
+          "sizeUnknown": 0,
+          "maxDurMs": 258
+        },
+        "img": {
+          "n": 36,
+          "transferKb": 1510.7,
+          "encodedKb": 1510.6,
+          "sizeUnknown": 24,
+          "maxDurMs": 285
+        },
+        "imgExternal": {
+          "n": 24,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 24,
+          "maxDurMs": 190
+        },
+        "imgLocal": {
+          "n": 12,
+          "transferKb": 1510.7,
+          "encodedKb": 1510.6,
+          "sizeUnknown": 0,
+          "maxDurMs": 285
+        }
+      },
+      {
+        "run": 2,
+        "win": 222122579,
+        "url": "/cards",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 48,
+        "fcpMs": 312,
+        "lcpMs": 728,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "ttps://i.pinimg.com/736x/06/ca/8a/06ca8afe244bfbdddd3d7fc9c79f5902.jpg",
+          "size": 26421
+        },
+        "cls": 0,
+        "dclMs": 313,
+        "loadMs": 1255,
+        "htmlKb": 33,
+        "requests": 82,
+        "js": {
+          "n": 9,
+          "transferKb": 166.7,
+          "encodedKb": 164,
+          "sizeUnknown": 0,
+          "maxDurMs": 112
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 75
+        },
+        "font": {
+          "n": 26,
+          "transferKb": 215.7,
+          "encodedKb": 208.1,
+          "sizeUnknown": 0,
+          "maxDurMs": 406
+        },
+        "img": {
+          "n": 36,
+          "transferKb": 1510.7,
+          "encodedKb": 1510.6,
+          "sizeUnknown": 24,
+          "maxDurMs": 423
+        },
+        "imgExternal": {
+          "n": 24,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 24,
+          "maxDurMs": 268
+        },
+        "imgLocal": {
+          "n": 12,
+          "transferKb": 1510.7,
+          "encodedKb": 1510.6,
+          "sizeUnknown": 0,
+          "maxDurMs": 423
+        }
+      },
+      {
+        "run": 3,
+        "win": 222122579,
+        "url": "/cards",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 49,
+        "fcpMs": 196,
+        "lcpMs": 596,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "ttps://i.pinimg.com/736x/a6/86/0c/a6860cef0b9e2108d463242aa575cb77.jpg",
+          "size": 35148
+        },
+        "cls": 0,
+        "dclMs": 280,
+        "loadMs": 678,
+        "htmlKb": 32.8,
+        "requests": 82,
+        "js": {
+          "n": 9,
+          "transferKb": 166.7,
+          "encodedKb": 164,
+          "sizeUnknown": 0,
+          "maxDurMs": 128
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 74
+        },
+        "font": {
+          "n": 26,
+          "transferKb": 215.7,
+          "encodedKb": 208.1,
+          "sizeUnknown": 0,
+          "maxDurMs": 132
+        },
+        "img": {
+          "n": 36,
+          "transferKb": 1510.7,
+          "encodedKb": 1510.6,
+          "sizeUnknown": 24,
+          "maxDurMs": 722
+        },
+        "imgExternal": {
+          "n": 24,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 24,
+          "maxDurMs": 722
+        },
+        "imgLocal": {
+          "n": 12,
+          "transferKb": 1510.7,
+          "encodedKb": 1510.6,
+          "sizeUnknown": 0,
+          "maxDurMs": 131
+        }
+      }
+    ],
+    "references": [
+      {
+        "run": 1,
+        "win": 222122579,
+        "url": "/references",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 82,
+        "fcpMs": 236,
+        "lcpMs": 636,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "http://bfb1.localhost:3918/api/refs/card-reference/capture/ref-01.jpg",
+          "size": 94338
+        },
+        "cls": 0,
+        "dclMs": 247,
+        "loadMs": 444,
+        "htmlKb": 29,
+        "requests": 106,
+        "js": {
+          "n": 9,
+          "transferKb": 142.3,
+          "encodedKb": 139.6,
+          "sizeUnknown": 0,
+          "maxDurMs": 142
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 83
+        },
+        "font": {
+          "n": 33,
+          "transferKb": 256.9,
+          "encodedKb": 247.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 211
+        },
+        "img": {
+          "n": 23,
+          "transferKb": 953,
+          "encodedKb": 954.2,
+          "sizeUnknown": 15,
+          "maxDurMs": 710
+        },
+        "imgExternal": {
+          "n": 15,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 15,
+          "maxDurMs": 710
+        },
+        "imgLocal": {
+          "n": 8,
+          "transferKb": 953,
+          "encodedKb": 954.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 106
+        }
+      },
+      {
+        "run": 2,
+        "win": 222122579,
+        "url": "/references",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 56,
+        "fcpMs": 184,
+        "lcpMs": 668,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "http://bfb2.localhost:3918/api/refs/card-reference/capture/ref-01.jpg",
+          "size": 94338
+        },
+        "cls": 0,
+        "dclMs": 200,
+        "loadMs": 313,
+        "htmlKb": 29,
+        "requests": 106,
+        "js": {
+          "n": 9,
+          "transferKb": 142.3,
+          "encodedKb": 139.6,
+          "sizeUnknown": 0,
+          "maxDurMs": 95
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 65
+        },
+        "font": {
+          "n": 33,
+          "transferKb": 256.9,
+          "encodedKb": 247.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 117
+        },
+        "img": {
+          "n": 23,
+          "transferKb": 953,
+          "encodedKb": 954.2,
+          "sizeUnknown": 15,
+          "maxDurMs": 94
+        },
+        "imgExternal": {
+          "n": 15,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 15,
+          "maxDurMs": 94
+        },
+        "imgLocal": {
+          "n": 8,
+          "transferKb": 953,
+          "encodedKb": 954.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 56
+        }
+      },
+      {
+        "run": 3,
+        "win": 222122579,
+        "url": "/references",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 46,
+        "fcpMs": 176,
+        "lcpMs": 832,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "http://bfb3.localhost:3918/api/refs/card-reference/capture/ref-01.jpg",
+          "size": 94338
+        },
+        "cls": 0,
+        "dclMs": 191,
+        "loadMs": 362,
+        "htmlKb": 29,
+        "requests": 106,
+        "js": {
+          "n": 9,
+          "transferKb": 142.3,
+          "encodedKb": 139.6,
+          "sizeUnknown": 0,
+          "maxDurMs": 90
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 68
+        },
+        "font": {
+          "n": 33,
+          "transferKb": 256.9,
+          "encodedKb": 247.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 282
+        },
+        "img": {
+          "n": 23,
+          "transferKb": 953,
+          "encodedKb": 954.2,
+          "sizeUnknown": 15,
+          "maxDurMs": 141
+        },
+        "imgExternal": {
+          "n": 15,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 15,
+          "maxDurMs": 141
+        },
+        "imgLocal": {
+          "n": 8,
+          "transferKb": 953,
+          "encodedKb": 954.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 67
+        }
+      }
+    ]
+  },
+  "after": {
+    "cards": [
+      {
+        "run": 1,
+        "win": 222122579,
+        "url": "/cards",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 38,
+        "fcpMs": 344,
+        "lcpMs": 452,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "F736x%2Fa6%2F86%2F0c%2Fa6860cef0b9e2108d463242aa575cb77.jpg&w=256&q=70",
+          "size": 35148
+        },
+        "cls": 0,
+        "dclMs": 318,
+        "loadMs": 512,
+        "htmlKb": 33.8,
+        "requests": 88,
+        "js": {
+          "n": 9,
+          "transferKb": 166.1,
+          "encodedKb": 163.5,
+          "sizeUnknown": 0,
+          "maxDurMs": 185
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 87
+        },
+        "font": {
+          "n": 26,
+          "transferKb": 215.7,
+          "encodedKb": 208.1,
+          "sizeUnknown": 0,
+          "maxDurMs": 128
+        },
+        "img": {
+          "n": 42,
+          "transferKb": 619.9,
+          "encodedKb": 611.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 532
+        },
+        "imgExternal": {
+          "n": 0,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 0,
+          "maxDurMs": 0
+        },
+        "imgLocal": {
+          "n": 42,
+          "transferKb": 619.9,
+          "encodedKb": 611.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 532
+        }
+      },
+      {
+        "run": 2,
+        "win": 222122579,
+        "url": "/cards",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 46,
+        "fcpMs": 244,
+        "lcpMs": 692,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "F736x%2Fa6%2F86%2F0c%2Fa6860cef0b9e2108d463242aa575cb77.jpg&w=256&q=70",
+          "size": 35148
+        },
+        "cls": 0,
+        "dclMs": 304,
+        "loadMs": 339,
+        "htmlKb": 34,
+        "requests": 88,
+        "js": {
+          "n": 9,
+          "transferKb": 166.1,
+          "encodedKb": 163.5,
+          "sizeUnknown": 0,
+          "maxDurMs": 213
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 101
+        },
+        "font": {
+          "n": 26,
+          "transferKb": 215.7,
+          "encodedKb": 208.1,
+          "sizeUnknown": 0,
+          "maxDurMs": 118
+        },
+        "img": {
+          "n": 42,
+          "transferKb": 619.9,
+          "encodedKb": 611.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 151
+        },
+        "imgExternal": {
+          "n": 0,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 0,
+          "maxDurMs": 0
+        },
+        "imgLocal": {
+          "n": 42,
+          "transferKb": 619.9,
+          "encodedKb": 611.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 151
+        }
+      },
+      {
+        "run": 3,
+        "win": 222122579,
+        "url": "/cards",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 39,
+        "fcpMs": 212,
+        "lcpMs": 636,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "F736x%2Fa6%2F86%2F0c%2Fa6860cef0b9e2108d463242aa575cb77.jpg&w=256&q=70",
+          "size": 35148
+        },
+        "cls": 0,
+        "dclMs": 275,
+        "loadMs": 312,
+        "htmlKb": 33.8,
+        "requests": 88,
+        "js": {
+          "n": 9,
+          "transferKb": 166.1,
+          "encodedKb": 163.5,
+          "sizeUnknown": 0,
+          "maxDurMs": 184
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 85
+        },
+        "font": {
+          "n": 26,
+          "transferKb": 215.7,
+          "encodedKb": 208.1,
+          "sizeUnknown": 0,
+          "maxDurMs": 120
+        },
+        "img": {
+          "n": 42,
+          "transferKb": 619.9,
+          "encodedKb": 611.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 127
+        },
+        "imgExternal": {
+          "n": 0,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 0,
+          "maxDurMs": 0
+        },
+        "imgLocal": {
+          "n": 42,
+          "transferKb": 619.9,
+          "encodedKb": 611.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 127
+        }
+      }
+    ],
+    "references": [
+      {
+        "run": 1,
+        "win": 222122579,
+        "url": "/references",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 32,
+        "fcpMs": 288,
+        "lcpMs": 288,
+        "lcpEl": {
+          "tag": null,
+          "url": "e?url=%2Fapi%2Frefs%2Fcard-reference%2Fcapture%2Fref-01.jpg&w=448&q=70",
+          "size": 94164
+        },
+        "cls": 0,
+        "dclMs": 243,
+        "loadMs": 509,
+        "htmlKb": 31,
+        "requests": 113,
+        "js": {
+          "n": 9,
+          "transferKb": 142.3,
+          "encodedKb": 139.7,
+          "sizeUnknown": 0,
+          "maxDurMs": 150
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 88
+        },
+        "font": {
+          "n": 33,
+          "transferKb": 256.9,
+          "encodedKb": 247.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 219
+        },
+        "img": {
+          "n": 30,
+          "transferKb": 458.2,
+          "encodedKb": 453.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 445
+        },
+        "imgExternal": {
+          "n": 0,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 0,
+          "maxDurMs": 0
+        },
+        "imgLocal": {
+          "n": 30,
+          "transferKb": 458.2,
+          "encodedKb": 453.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 445
+        }
+      },
+      {
+        "run": 2,
+        "win": 222122579,
+        "url": "/references",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 41,
+        "fcpMs": 220,
+        "lcpMs": 744,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "e?url=%2Fapi%2Frefs%2Fcard-reference%2Fcapture%2Fref-01.jpg&w=448&q=70",
+          "size": 94164
+        },
+        "cls": 0,
+        "dclMs": 201,
+        "loadMs": 713,
+        "htmlKb": 31,
+        "requests": 113,
+        "js": {
+          "n": 9,
+          "transferKb": 142.3,
+          "encodedKb": 139.7,
+          "sizeUnknown": 0,
+          "maxDurMs": 204
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 92
+        },
+        "font": {
+          "n": 33,
+          "transferKb": 256.9,
+          "encodedKb": 247.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 117
+        },
+        "img": {
+          "n": 30,
+          "transferKb": 458.2,
+          "encodedKb": 453.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 136
+        },
+        "imgExternal": {
+          "n": 0,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 0,
+          "maxDurMs": 0
+        },
+        "imgLocal": {
+          "n": 30,
+          "transferKb": 458.2,
+          "encodedKb": 453.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 136
+        }
+      },
+      {
+        "run": 3,
+        "win": 222122579,
+        "url": "/references",
+        "viewport": [
+          1440,
+          900
+        ],
+        "ttfbMs": 41,
+        "fcpMs": 216,
+        "lcpMs": 564,
+        "lcpEl": {
+          "tag": "IMG",
+          "url": "e?url=%2Fapi%2Frefs%2Fcard-reference%2Fcapture%2Fref-01.jpg&w=448&q=70",
+          "size": 94164
+        },
+        "cls": 0,
+        "dclMs": 206,
+        "loadMs": 424,
+        "htmlKb": 31,
+        "requests": 113,
+        "js": {
+          "n": 9,
+          "transferKb": 142.3,
+          "encodedKb": 139.7,
+          "sizeUnknown": 0,
+          "maxDurMs": 151
+        },
+        "css": {
+          "n": 2,
+          "transferKb": 38.4,
+          "encodedKb": 37.8,
+          "sizeUnknown": 0,
+          "maxDurMs": 82
+        },
+        "font": {
+          "n": 33,
+          "transferKb": 256.9,
+          "encodedKb": 247.3,
+          "sizeUnknown": 0,
+          "maxDurMs": 113
+        },
+        "img": {
+          "n": 30,
+          "transferKb": 458.2,
+          "encodedKb": 453.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 149
+        },
+        "imgExternal": {
+          "n": 0,
+          "transferKb": 0,
+          "encodedKb": 0,
+          "sizeUnknown": 0,
+          "maxDurMs": 0
+        },
+        "imgLocal": {
+          "n": 30,
+          "transferKb": 458.2,
+          "encodedKb": 453.2,
+          "sizeUnknown": 0,
+          "maxDurMs": 149
+        }
+      }
+    ]
+  },
+  "note": "Aside(Mac Studio, 창 222122579 새 탭, 뷰포트 1440x900, 실행마다 다른 *.localhost 호스트=브라우저 캐시 분리), 서버=Windows WSL2 next start + win tunnel. imgExternal 은 교차 출처라 전송 크기를 못 읽어 HEAD content-length 합으로 보정(전: /cards 2325KB·24장, /references 1044KB·15장)"
+}

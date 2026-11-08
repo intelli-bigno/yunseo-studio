@@ -2,7 +2,7 @@
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { EditorLayout, Lightbox, RefGrid, RefTile } from "@yunseo/ui";
+import { EditorLayout, Lightbox, RefGrid, RefTile, Tile } from "@yunseo/ui";
 
 const layout = (over: Partial<Parameters<typeof EditorLayout>[0]> = {}) =>
   renderToStaticMarkup(
@@ -74,6 +74,20 @@ describe("레퍼런스 칸·크게 보기", () => {
     expect(html).toContain('loading="lazy"');
     expect(html).toContain('draggable="true"');
     expect(html).toContain('aria-label="표지 크게 보기"');
+  });
+
+  it("크기별 파일(srcSet)을 받고, 첫 화면 칸(priority)만 즉시·높은 우선순위로 받는다", () => {
+    const mk = (props: object) => renderToStaticMarkup(createElement(RefTile, { src: "/a.webp", label: "표지", action: "크게 보기", onDragStart: noop, onClick: noop, ...props }));
+    const lazy = mk({ srcSet: "/a1.webp 1x, /a2.webp 2x" });
+    expect(lazy).toContain('srcSet="/a1.webp 1x, /a2.webp 2x"');
+    expect(lazy).toContain('loading="lazy"');
+    expect(lazy).not.toContain('fetchPriority="high"');
+    const first = mk({ priority: true });
+    expect(first).toContain('loading="eager"');
+    expect(first).toContain('fetchPriority="high"');
+    const tile = (props: object) => renderToStaticMarkup(createElement(Tile, { src: "/a.webp", alt: "표지", title: "표지", aspect: "natural", ...props }));
+    expect(tile({ srcSet: "/a1.webp 1x, /a2.webp 2x", priority: true })).toMatch(/srcSet="\/a1\.webp 1x, \/a2\.webp 2x"[^>]*loading="eager"[^>]*fetchPriority="high"/);
+    expect(tile({})).toContain('loading="lazy"');
   });
 
   it("크게 보기는 대화상자이고 동작 버튼을 받는다", () => {

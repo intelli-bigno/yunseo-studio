@@ -5,7 +5,7 @@
 // 요소를 고르면 그 속성이 오른쪽 패널 위에 뜨는 접이식 시트로 나온다(레퍼런스를 가리지 않게 접을 수 있다).
 // 같은 편집을 JSON 명령으로도 할 수 있다 — POST /api/cards/:id/ops (docs/13-cards-ops-schema.md).
 // 실행취소/다시실행은 덱 스냅숏 스택(같은 칸 연속 입력·한 번의 끌기는 한 단계로 묶는다). 옮길 때 카드 가장자리·가운데·다른 레이어에 붙는다(Alt 로 끔).
-import { useCallback, useEffect, useRef, useState, type DragEvent, type PointerEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type PointerEvent } from "react";
 import {
   CARD_FONTS,
   BLEND_MODES,
@@ -89,7 +89,9 @@ import {
   clampRightRatio,
 } from "@yunseo/ui";
 import { canvasDefaultBackground } from "@yunseo/design-tokens";
-import { drawCard, exportName, type Ctx2D, type LoadedImage } from "@/lib/cards-export";
+// 내보내기 코드(캔버스 그리기)는 「내려받기」를 누를 때 받는다 — 편집기를 여는 데 필요 없다
+import type { Ctx2D, LoadedImage } from "@/lib/cards-export";
+import { REF_PRIORITY_COUNT, refThumb } from "@/lib/media";
 import { filterRefs, refSets } from "@/lib/ref-filter";
 import { CardView, cssFamily } from "./CardView";
 import { CardsToolbar } from "./CardsToolbar";
@@ -147,6 +149,32 @@ let seq = 0;
 const newId = () => `l${Date.now().toString(36)}${(seq++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const draft = (preset: CardPresetId = "4:5"): Loaded => ({ deck: createDeck(newId(), "새 카드뉴스", preset, newId()), revision: 0 });
 
+/**
+ * 자산 칸 목록 — memo: 덱을 고칠 때(끌기·글 입력) 편집기가 다시 그려져도 128칸은 입력(items·onPick)이 같으면 건너뛴다.
+ * thumbs 면 작은 WebP(1x 256·2x 448)로 받는다(레퍼런스). 위 몇 칸만 즉시, 나머지는 화면에 가까워질 때(지연 로딩).
+ */
+const AssetTiles = memo(function AssetTiles({ items, action, onPick, thumbs = false }: { items: EditorAsset[]; action: string; onPick: (a: EditorAsset) => void; thumbs?: boolean }) {
+  return (
+    <RefGrid>
+      {items.map((a, i) => {
+        const m = thumbs ? refThumb(a.view ?? a.src, i < REF_PRIORITY_COUNT) : null;
+        return (
+          <RefTile
+            key={a.id}
+            src={m?.src ?? a.view ?? a.src}
+            srcSet={m?.srcSet}
+            priority={m?.priority}
+            label={a.label}
+            action={action}
+            onDragStart={(e) => (e.dataTransfer.setData(DND_ASSET, a.id), (e.dataTransfer.effectAllowed = "copy"))}
+            onClick={() => onPick(a)}
+          />
+        );
+      })}
+    </RefGrid>
+  );
+});
+
 function loadImage(src: string): Promise<LoadedImage | null> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -164,6 +192,7 @@ async function cardPng(card: DeckCard, deck: CardDeck): Promise<Blob | null> {
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
   await document.fonts.ready;
+  const { drawCard } = await import("@/lib/cards-export");
   // drawImage 겹침 선언(overload) 때문에 구조 대입이 안 된다 — 쓰는 부분만 같은 Ctx2D 로 본다
   await drawCard(ctx as unknown as Ctx2D, card, deck.preset, { load: loadImage, family: canvasFamily }, deck.watermark);
   return new Promise((r) => canvas.toBlob(r, "image/png"));
@@ -465,7 +494,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
       for (const i of which) {
         const blob = await cardPng(deck.cards[i]!, deck);
         if (!blob) throw new Error("캔버스");
-        download(blob, exportName(deck.title, i));
+        download(blob, (await import("@/lib/cards-export")).exportName(deck.title, i));
         await later(250); // 브라우저가 연속 내려받기를 막지 않게
       }
       setMsg({ tone: "accent", text: `PNG ${which.length}장을 내려받았습니다` });
@@ -479,10 +508,14 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
   const { width: cw, height: ch } = CARD_PRESETS[deck.preset];
   const at = Math.min(index, deck.cards.length - 1);
   const layersTop = [...card.layers].reverse();
-  const refs = assets.filter((a) => a.group === "reference");
-  const gens = assets.filter((a) => a.group === "generated");
-  const sets = refSets(refs);
-  const shownRefs = filterRefs(refs, query, refSet);
+  // 덱을 고칠 때마다(끌기 한 번에 수십 번) 이 계산과 아래 128칸 그리드가 다시 돌지 않게 입력이 바뀔 때만 만든다
+  const refs = useMemo(() => assets.filter((a) => a.group === "reference"), [assets]);
+  const gens = useMemo(() => assets.filter((a) => a.group === "generated"), [assets]);
+  const sets = useMemo(() => refSets(refs), [refs]);
+  const shownRefs = useMemo(() => filterRefs(refs, query, refSet), [refs, query, refSet]);
+  const addAssetRef = useRef(addAsset);
+  addAssetRef.current = addAsset;
+  const pickGen = useCallback((a: EditorAsset) => void addAssetRef.current(a), []);
   const setL = (patch: Partial<CardLayer>, key?: string) => layer && editCard((c) => updateLayer(c, layer.id, patch), key ?? `layer:${layer.id}:${Object.keys(patch).join(",")}`);
   const wm = deck.watermark;
   const setWm = (patch: Partial<Watermark>) => edit((d) => ({ ...d, watermark: d.watermark ? { ...d.watermark, ...patch } : null }), `wm:${Object.keys(patch).join(",")}`);
@@ -706,10 +739,6 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     </>
   );
 
-  const tile = (a: EditorAsset, action: string, onClick: () => void) => (
-    <RefTile key={a.id} src={a.view ?? a.src} label={a.label} action={action} onDragStart={(e) => (e.dataTransfer.setData(DND_ASSET, a.id), (e.dataTransfer.effectAllowed = "copy"))} onClick={onClick} />
-  );
-
   const rightBar = (
     <PanelBar>
       <Segmented label="오른쪽 패널">
@@ -751,12 +780,12 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
           {shownRefs.length === 0 ? (
             <EmptyState title="조건에 맞는 레퍼런스가 없습니다" action={<Button variant="secondary" onClick={() => (setQuery(""), setRefSet(""))}>필터 지우기</Button>} />
           ) : (
-            <RefGrid>{shownRefs.map((a) => tile(a, "크게 보기", () => setPreview(a)))}</RefGrid>
+            <AssetTiles items={shownRefs} action="크게 보기" onPick={setPreview} thumbs />
           )}
         </PanelPad>
       )}
       {tab === "gen" && (
-        <PanelPad>{gens.length === 0 ? <EmptyState title="생성 이미지가 없습니다" /> : <RefGrid>{gens.map((a) => tile(a, "넣기", () => void addAsset(a)))}</RefGrid>}</PanelPad>
+        <PanelPad>{gens.length === 0 ? <EmptyState title="생성 이미지가 없습니다" /> : <AssetTiles items={gens} action="넣기" onPick={pickGen} />}</PanelPad>
       )}
       {tab === "layers" && (
         <>

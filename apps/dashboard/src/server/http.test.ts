@@ -1,6 +1,6 @@
 // 쓰기 API 본문 읽기 — 상한(Content-Length·실제 스트림)·JSON·최상위 객체 검사
 import { describe, expect, it } from "vitest";
-import { readJsonObject } from "./http";
+import { contentEtag, readJsonObject } from "./http";
 
 const req = (body: BodyInit | null, headers: Record<string, string> = {}) => new Request("http://x/api", { method: "POST", body, headers, ...(body instanceof ReadableStream ? { duplex: "half" } : {}) } as RequestInit);
 const errorOf = async (r: Awaited<ReturnType<typeof readJsonObject>>) => (r.ok ? null : { status: r.response.status, ...((await r.response.json()) as { error: { code: string } }).error });
@@ -34,5 +34,14 @@ describe("readJsonObject", () => {
     expect(await readJsonObject(req(null), 100, { emptyAs: {} })).toEqual({ ok: true, value: {}, bytes: 0 });
     expect(await errorOf(await readJsonObject(req(""), 100))).toMatchObject({ status: 400, code: "BAD_JSON" });
     expect(await errorOf(await readJsonObject(req("[]"), 100, { badCode: "BAD_REQUEST" }))).toMatchObject({ status: 400, code: "BAD_REQUEST" });
+  });
+});
+
+describe("contentEtag", () => {
+  it("같은 바이트는 같은 값, 다른 바이트는 다른 값 — 따옴표로 감싼 22자", () => {
+    const a = contentEtag(new Uint8Array([1, 2, 3]));
+    expect(a).toMatch(/^"[A-Za-z0-9_-]{22}"$/);
+    expect(contentEtag(new Uint8Array([1, 2, 3]).buffer)).toBe(a);
+    expect(contentEtag(new Uint8Array([1, 2, 4]))).not.toBe(a);
   });
 });

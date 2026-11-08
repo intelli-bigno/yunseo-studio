@@ -439,10 +439,25 @@ export function RefGrid({ children }: { children: ReactNode }) {
  * 레퍼런스 한 칸 — 자르지 않는다(원본 비율). 그림 크기를 모르는 동안은 4:5 자리만 잡아 화면 밖 그림은 받지 않는다(지연 로딩).
  * 누르면 onClick(크게 보기), 끌면 캔버스로.
  */
-export function RefTile({ src, label, action, onDragStart, onClick }: { src: string; action: string } & DragTileProps) {
+export function RefTile({
+  src,
+  srcSet,
+  priority = false,
+  label,
+  action,
+  onDragStart,
+  onClick,
+}: {
+  src: string;
+  /** 크기별 파일(1x·2x) — 앱이 만든 값이다. 없으면 src 하나 */
+  srcSet?: string | undefined;
+  /** 첫 화면(LCP)에 보이는 칸이면 true: 즉시·높은 우선순위로 받는다. 아니면 화면에 가까워질 때 받는다 */
+  priority?: boolean | undefined;
+  action: string;
+} & DragTileProps) {
   return (
     <DragTile kind="ref" label={label} aria={`${label} ${action}`} onDragStart={onDragStart} onClick={onClick}>
-      <img className="ui-ref-img" src={src} alt="" loading="lazy" decoding="async" draggable={false} />
+      <img className="ui-ref-img" src={src} srcSet={srcSet} alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" draggable={false} />
     </DragTile>
   );
 }

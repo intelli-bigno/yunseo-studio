@@ -3,6 +3,7 @@
 // 필터: ?source·?set·?tag(값이 둘 이상일 때만 보인다), 비교: ?pick=id,id(최대 3) — 칸을 누르면 비교에 넣고 뺀다.
 import Link from "next/link";
 import { Card, CardHeader, EmptyState, Grid, Cell, Page, PageHeader, SegmentedItem, Segmented, Stack, Text, TextLink, Tile, TileGrid } from "@yunseo/ui";
+import { REF_PRIORITY_COUNT, refLarge, refThumb } from "@/lib/media";
 import { listReferences, type RefItem } from "@/server/library";
 
 export const dynamic = "force-dynamic";
@@ -82,14 +83,17 @@ export default async function ReferencesPage({ searchParams }: { searchParams: P
         <Card>
           <CardHeader title={`비교 ${picked.length}`} action={<Link href={href({ ...q, pick: undefined })}>비우기</Link>} />
           <Grid>
-            {picked.map((r) => (
-              <Cell key={r.id} span={picked.length === 1 ? 6 : picked.length === 2 ? 6 : 4}>
-                <Stack gap={3}>
-                  <Tile as="a" href={r.href} target="_blank" rel="noreferrer noopener" src={r.thumb} alt={r.title} title={r.title} meta={`${SOURCE_LABEL[r.source]} · ${r.set}`} aspect="fit" />
-                  <Text tone="dim">{r.takeaway}</Text>
-                </Stack>
-              </Cell>
-            ))}
+            {picked.map((r) => {
+              const m = refLarge(r.thumb, true); // 비교 칸은 화면 맨 위 — LCP 후보
+              return (
+                <Cell key={r.id} span={picked.length === 1 ? 6 : picked.length === 2 ? 6 : 4}>
+                  <Stack gap={3}>
+                    <Tile as="a" href={r.href} target="_blank" rel="noreferrer noopener" src={m.src} srcSet={m.srcSet} priority={m.priority} alt={r.title} title={r.title} meta={`${SOURCE_LABEL[r.source]} · ${r.set}`} aspect="fit" />
+                    <Text tone="dim">{r.takeaway}</Text>
+                  </Stack>
+                </Cell>
+              );
+            })}
           </Grid>
         </Card>
       )}
@@ -100,9 +104,10 @@ export default async function ReferencesPage({ searchParams }: { searchParams: P
         </Card>
       ) : (
         <TileGrid masonry>
-          {shown.map((r) => (
-            <Tile key={r.id} as={Link} href={href({ ...q, pick: toggle(r.id) })} scroll={false} current={pick.includes(r.id)} src={r.thumb} alt={r.title} title={r.title || r.takeaway} aspect="natural" meta={`${SOURCE_LABEL[r.source]} · ${r.set}`} />
-          ))}
+          {shown.map((r, i) => {
+            const m = refThumb(r.thumb, i < REF_PRIORITY_COUNT && picked.length === 0);
+            return <Tile key={r.id} as={Link} href={href({ ...q, pick: toggle(r.id) })} scroll={false} current={pick.includes(r.id)} src={m.src} srcSet={m.srcSet} priority={m.priority} alt={r.title} title={r.title || r.takeaway} aspect="natural" meta={`${SOURCE_LABEL[r.source]} · ${r.set}`} />;
+          })}
         </TileGrid>
       )}
     </Page>
