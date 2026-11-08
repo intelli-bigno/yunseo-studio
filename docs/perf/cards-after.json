@@ -1,0 +1,990 @@
+{
+  "label": "after",
+  "at": "2026-11-08T04:52:34.009Z",
+  "node": "v22.23.3",
+  "staticBuild": {
+    "js": 1131703,
+    "css": 153682,
+    "jsFiles": 50
+  },
+  "rssKb": {
+    "idle": 157316,
+    "after": 327228
+  },
+  "staticHeaders": {
+    "/_next/static/*.js": {
+      "status": 200,
+      "cacheControl": "public, max-age=31536000, immutable",
+      "etag": true
+    },
+    "/img/empty.jpg": {
+      "status": 200,
+      "cacheControl": "public, max-age=86400, stale-while-revalidate=604800",
+      "etag": true
+    },
+    "/icon-192.png": {
+      "status": 200,
+      "cacheControl": "public, max-age=86400, stale-while-revalidate=604800",
+      "etag": true
+    }
+  },
+  "pages": {
+    "/cards": {
+      "status": 200,
+      "htmlRaw": 184526,
+      "htmlGzip": 34678,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "rscInline": 76598,
+      "js": {
+        "n": 8,
+        "rawKb": 533.3,
+        "gzipKb": 160.7,
+        "files": [
+          {
+            "file": "106-601ab51c78297659.js",
+            "gzipKb": 64.8
+          },
+          {
+            "file": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzipKb": 62.6
+          },
+          {
+            "file": "page-7fb8debcfcc4cb50.js",
+            "gzipKb": 24
+          },
+          {
+            "file": "350-45d9550490291108.js",
+            "gzipKb": 3.2
+          },
+          {
+            "file": "822-38b921a8235e7a1d.js",
+            "gzipKb": 2.3
+          },
+          {
+            "file": "layout-ba490ee244613c98.js",
+            "gzipKb": 1.9
+          },
+          {
+            "file": "webpack-024a923241e6c233.js",
+            "gzipKb": 1.7
+          },
+          {
+            "file": "main-app-e4c3d30b4c3eef5c.js",
+            "gzipKb": 0.2
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "gzipKb": 37.8
+      },
+      "images": {
+        "tags": 129,
+        "lazy": 122,
+        "sized": 0,
+        "priority": 6,
+        "kinds": {
+          "other": 1,
+          "optimized": 128
+        }
+      },
+      "sample12": {
+        "ok": 12,
+        "bytes": 133286,
+        "coldMsSum": 326,
+        "warmMsSum": 20.5,
+        "items": [
+          {
+            "kind": "other",
+            "status": 200,
+            "type": "image/png",
+            "bytes": 3578,
+            "coldMs": 1.1,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 12980,
+            "coldMs": 55.6,
+            "warmMs": 1.9
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 21034,
+            "coldMs": 22.1,
+            "warmMs": 1.8
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 14110,
+            "coldMs": 21.5,
+            "warmMs": 1.9
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11310,
+            "coldMs": 18.5,
+            "warmMs": 1.8
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 10344,
+            "coldMs": 18.9,
+            "warmMs": 1.6
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 7896,
+            "coldMs": 16.6,
+            "warmMs": 2.1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11208,
+            "coldMs": 18.7,
+            "warmMs": 1.6
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 13680,
+            "coldMs": 20.4,
+            "warmMs": 1.7
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11418,
+            "coldMs": 19.1,
+            "warmMs": 1.5
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 9764,
+            "coldMs": 71.8,
+            "warmMs": 1.7
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 5964,
+            "coldMs": 41.7,
+            "warmMs": 1.9
+          }
+        ]
+      },
+      "latencyMs": {
+        "p50": 10.95,
+        "p95": 13.95
+      }
+    },
+    "/cards?deck=d2c78b8d418d072b": {
+      "status": 200,
+      "htmlRaw": 184754,
+      "htmlGzip": 34498,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "rscInline": 76839,
+      "js": {
+        "n": 8,
+        "rawKb": 533.3,
+        "gzipKb": 160.7,
+        "files": [
+          {
+            "file": "106-601ab51c78297659.js",
+            "gzipKb": 64.8
+          },
+          {
+            "file": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzipKb": 62.6
+          },
+          {
+            "file": "page-7fb8debcfcc4cb50.js",
+            "gzipKb": 24
+          },
+          {
+            "file": "350-45d9550490291108.js",
+            "gzipKb": 3.2
+          },
+          {
+            "file": "822-38b921a8235e7a1d.js",
+            "gzipKb": 2.3
+          },
+          {
+            "file": "layout-ba490ee244613c98.js",
+            "gzipKb": 1.9
+          },
+          {
+            "file": "webpack-024a923241e6c233.js",
+            "gzipKb": 1.7
+          },
+          {
+            "file": "main-app-e4c3d30b4c3eef5c.js",
+            "gzipKb": 0.2
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "gzipKb": 37.8
+      },
+      "images": {
+        "tags": 129,
+        "lazy": 122,
+        "sized": 0,
+        "priority": 6,
+        "kinds": {
+          "other": 1,
+          "optimized": 128
+        }
+      },
+      "sample12": {
+        "ok": 12,
+        "bytes": 133286,
+        "coldMsSum": 12.9,
+        "warmMsSum": 12.3,
+        "items": [
+          {
+            "kind": "other",
+            "status": 200,
+            "type": "image/png",
+            "bytes": 3578,
+            "coldMs": 0.8,
+            "warmMs": 0.8
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 12980,
+            "coldMs": 1.4,
+            "warmMs": 1.1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 21034,
+            "coldMs": 1.1,
+            "warmMs": 1.1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 14110,
+            "coldMs": 1.2,
+            "warmMs": 1.1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11310,
+            "coldMs": 1,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 10344,
+            "coldMs": 1,
+            "warmMs": 0.9
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 7896,
+            "coldMs": 1,
+            "warmMs": 0.9
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11208,
+            "coldMs": 1.1,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 13680,
+            "coldMs": 1.1,
+            "warmMs": 1.1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11418,
+            "coldMs": 1.1,
+            "warmMs": 1.2
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 9764,
+            "coldMs": 1.1,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 5964,
+            "coldMs": 1,
+            "warmMs": 1.1
+          }
+        ]
+      },
+      "latencyMs": {
+        "p50": 10.09,
+        "p95": 12.82
+      }
+    },
+    "/references": {
+      "status": 200,
+      "htmlRaw": 266235,
+      "htmlGzip": 31516,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "rscInline": 157562,
+      "js": {
+        "n": 8,
+        "rawKb": 459.2,
+        "gzipKb": 136.9,
+        "files": [
+          {
+            "file": "106-601ab51c78297659.js",
+            "gzipKb": 64.8
+          },
+          {
+            "file": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzipKb": 62.6
+          },
+          {
+            "file": "350-45d9550490291108.js",
+            "gzipKb": 3.2
+          },
+          {
+            "file": "822-38b921a8235e7a1d.js",
+            "gzipKb": 2.3
+          },
+          {
+            "file": "layout-ba490ee244613c98.js",
+            "gzipKb": 1.9
+          },
+          {
+            "file": "webpack-024a923241e6c233.js",
+            "gzipKb": 1.7
+          },
+          {
+            "file": "main-app-e4c3d30b4c3eef5c.js",
+            "gzipKb": 0.2
+          },
+          {
+            "file": "page-cb2a76c14e9b1207.js",
+            "gzipKb": 0.2
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "gzipKb": 37.8
+      },
+      "images": {
+        "tags": 129,
+        "lazy": 122,
+        "sized": 0,
+        "priority": 6,
+        "kinds": {
+          "other": 1,
+          "optimized": 128
+        }
+      },
+      "sample12": {
+        "ok": 12,
+        "bytes": 133286,
+        "coldMsSum": 12.2,
+        "warmMsSum": 13.1,
+        "items": [
+          {
+            "kind": "other",
+            "status": 200,
+            "type": "image/png",
+            "bytes": 3578,
+            "coldMs": 0.8,
+            "warmMs": 0.7
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 12980,
+            "coldMs": 1.3,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 21034,
+            "coldMs": 1.1,
+            "warmMs": 1.1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 14110,
+            "coldMs": 1,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11310,
+            "coldMs": 1,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 10344,
+            "coldMs": 1,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 7896,
+            "coldMs": 0.9,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11208,
+            "coldMs": 1,
+            "warmMs": 1.2
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 13680,
+            "coldMs": 1,
+            "warmMs": 0.9
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11418,
+            "coldMs": 0.9,
+            "warmMs": 1.3
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 9764,
+            "coldMs": 1.1,
+            "warmMs": 1.9
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 5964,
+            "coldMs": 1.1,
+            "warmMs": 1
+          }
+        ]
+      },
+      "latencyMs": {
+        "p50": 12.57,
+        "p95": 13.92
+      }
+    },
+    "/references?source=pinterest": {
+      "status": 200,
+      "htmlRaw": 153013,
+      "htmlGzip": 18472,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "rscInline": 91316,
+      "js": {
+        "n": 8,
+        "rawKb": 459.2,
+        "gzipKb": 136.9,
+        "files": [
+          {
+            "file": "106-601ab51c78297659.js",
+            "gzipKb": 64.8
+          },
+          {
+            "file": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzipKb": 62.6
+          },
+          {
+            "file": "350-45d9550490291108.js",
+            "gzipKb": 3.2
+          },
+          {
+            "file": "822-38b921a8235e7a1d.js",
+            "gzipKb": 2.3
+          },
+          {
+            "file": "layout-ba490ee244613c98.js",
+            "gzipKb": 1.9
+          },
+          {
+            "file": "webpack-024a923241e6c233.js",
+            "gzipKb": 1.7
+          },
+          {
+            "file": "main-app-e4c3d30b4c3eef5c.js",
+            "gzipKb": 0.2
+          },
+          {
+            "file": "page-cb2a76c14e9b1207.js",
+            "gzipKb": 0.2
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "gzipKb": 37.8
+      },
+      "images": {
+        "tags": 68,
+        "lazy": 61,
+        "sized": 0,
+        "priority": 6,
+        "kinds": {
+          "other": 1,
+          "optimized": 67
+        }
+      },
+      "sample12": {
+        "ok": 12,
+        "bytes": 128468,
+        "coldMsSum": 707.3,
+        "warmMsSum": 19.2,
+        "items": [
+          {
+            "kind": "other",
+            "status": 200,
+            "type": "image/png",
+            "bytes": 3578,
+            "coldMs": 0.8,
+            "warmMs": 0.8
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 8864,
+            "coldMs": 35.4,
+            "warmMs": 1.6
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 5930,
+            "coldMs": 47.8,
+            "warmMs": 1.7
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 13488,
+            "coldMs": 112.5,
+            "warmMs": 1.5
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 18268,
+            "coldMs": 53.7,
+            "warmMs": 1.7
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 12246,
+            "coldMs": 36.9,
+            "warmMs": 1.6
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 9172,
+            "coldMs": 32,
+            "warmMs": 1.6
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 10454,
+            "coldMs": 27.6,
+            "warmMs": 1.6
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11054,
+            "coldMs": 32.5,
+            "warmMs": 2.2
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 14054,
+            "coldMs": 29,
+            "warmMs": 2.1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 8854,
+            "coldMs": 262.2,
+            "warmMs": 1.4
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 12506,
+            "coldMs": 36.9,
+            "warmMs": 1.4
+          }
+        ]
+      },
+      "latencyMs": {
+        "p50": 9,
+        "p95": 9.94
+      }
+    },
+    "/references?pick=ref-001,ref-002,ref-003": {
+      "status": 200,
+      "htmlRaw": 280165,
+      "htmlGzip": 32380,
+      "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+      "rscInline": 165215,
+      "js": {
+        "n": 8,
+        "rawKb": 459.2,
+        "gzipKb": 136.9,
+        "files": [
+          {
+            "file": "106-601ab51c78297659.js",
+            "gzipKb": 64.8
+          },
+          {
+            "file": "1e2ef4e9-421ec4196486fc4d.js",
+            "gzipKb": 62.6
+          },
+          {
+            "file": "350-45d9550490291108.js",
+            "gzipKb": 3.2
+          },
+          {
+            "file": "822-38b921a8235e7a1d.js",
+            "gzipKb": 2.3
+          },
+          {
+            "file": "layout-ba490ee244613c98.js",
+            "gzipKb": 1.9
+          },
+          {
+            "file": "webpack-024a923241e6c233.js",
+            "gzipKb": 1.7
+          },
+          {
+            "file": "main-app-e4c3d30b4c3eef5c.js",
+            "gzipKb": 0.2
+          },
+          {
+            "file": "page-cb2a76c14e9b1207.js",
+            "gzipKb": 0.2
+          }
+        ]
+      },
+      "css": {
+        "n": 2,
+        "gzipKb": 37.8
+      },
+      "images": {
+        "tags": 132,
+        "lazy": 128,
+        "sized": 0,
+        "priority": 3,
+        "kinds": {
+          "other": 1,
+          "optimized": 131
+        }
+      },
+      "sample12": {
+        "ok": 12,
+        "bytes": 157530,
+        "coldMsSum": 125.1,
+        "warmMsSum": 14,
+        "items": [
+          {
+            "kind": "other",
+            "status": 200,
+            "type": "image/png",
+            "bytes": 3578,
+            "coldMs": 0.8,
+            "warmMs": 0.7
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 19514,
+            "coldMs": 32.9,
+            "warmMs": 1.3
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 12064,
+            "coldMs": 33.5,
+            "warmMs": 1.5
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 19812,
+            "coldMs": 48.2,
+            "warmMs": 1.5
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 12980,
+            "coldMs": 1.3,
+            "warmMs": 1.2
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 21034,
+            "coldMs": 1.2,
+            "warmMs": 1.4
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 14110,
+            "coldMs": 1,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11310,
+            "coldMs": 0.9,
+            "warmMs": 0.9
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 10344,
+            "coldMs": 0.9,
+            "warmMs": 1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 7896,
+            "coldMs": 2.2,
+            "warmMs": 1.1
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 11208,
+            "coldMs": 1.2,
+            "warmMs": 1.2
+          },
+          {
+            "kind": "optimized",
+            "status": 200,
+            "type": "image/webp",
+            "bytes": 13680,
+            "coldMs": 1,
+            "warmMs": 1.2
+          }
+        ]
+      },
+      "latencyMs": {
+        "p50": 12.36,
+        "p95": 13.17
+      }
+    }
+  },
+  "api": {
+    "GET /api/cards-decks (30덱)": {
+      "status": 200,
+      "bytes": 3861,
+      "type": "application/json",
+      "cacheControl": null,
+      "etag": false,
+      "latencyMs": {
+        "p50": 1.22,
+        "p95": 1.49
+      }
+    },
+    "GET /api/cards-decks/:id": {
+      "status": 200,
+      "bytes": 249,
+      "type": "application/json",
+      "cacheControl": null,
+      "etag": false,
+      "latencyMs": {
+        "p50": 1.22,
+        "p95": 1.85
+      }
+    },
+    "GET /api/palette": {
+      "status": 200,
+      "bytes": 353,
+      "type": "application/json",
+      "cacheControl": "private, max-age=60, stale-while-revalidate=600",
+      "etag": false,
+      "latencyMs": {
+        "p50": 1.2,
+        "p95": 1.55
+      }
+    },
+    "GET /api/cards": {
+      "status": 200,
+      "bytes": 159,
+      "type": "application/json",
+      "cacheControl": null,
+      "etag": false,
+      "latencyMs": {
+        "p50": 1.05,
+        "p95": 1.7
+      }
+    },
+    "GET /api/reels/projects": {
+      "status": 200,
+      "bytes": 15,
+      "type": "application/json",
+      "cacheControl": null,
+      "etag": false,
+      "latencyMs": {
+        "p50": 1.06,
+        "p95": 1.66
+      }
+    },
+    "GET /api/refs/…/ref-01.jpg": {
+      "status": 200,
+      "bytes": 181115,
+      "type": "image/jpeg",
+      "cacheControl": "public, max-age=86400, stale-while-revalidate=604800",
+      "etag": true,
+      "conditional": 304,
+      "latencyMs": {
+        "p50": 1.61,
+        "p95": 2.56
+      }
+    },
+    "GET /api/reels/…/cover (110KB)": {
+      "status": 200,
+      "bytes": 112640,
+      "type": "image/png",
+      "cacheControl": "private, max-age=300",
+      "etag": true,
+      "conditional": 304,
+      "latencyMs": {
+        "p50": 1.55,
+        "p95": 2.82
+      }
+    },
+    "GET video 40MB 전체 아님: Range 0-1023": {
+      "status": 206,
+      "bytes": 1024,
+      "type": "video/mp4",
+      "cacheControl": "private, max-age=300",
+      "etag": true,
+      "conditional": 304,
+      "latencyMs": {
+        "p50": 1.36,
+        "p95": 1.71
+      }
+    },
+    "GET video 40MB Range 끝 1KB": {
+      "status": 206,
+      "bytes": 1024,
+      "type": "video/mp4",
+      "cacheControl": "private, max-age=300",
+      "etag": true,
+      "conditional": 304,
+      "latencyMs": {
+        "p50": 1.35,
+        "p95": 1.47
+      }
+    },
+    "GET /api/ref-image/:id (외부 중계)": {
+      "status": 200,
+      "bytes": 72627,
+      "cacheControl": "private, max-age=31536000, immutable",
+      "etag": true,
+      "coldMs": 31.9,
+      "secondMs": 1.9,
+      "conditional": 304
+    },
+    "GET /api/ref-image/:id ×5 동시(같은 id)": {
+      "totalMs": 13.8
+    }
+  }
+}

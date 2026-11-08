@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS cards_decks (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS cards_decks_updated ON cards_decks (updated_at);
+-- 덱 목록(GET /api/cards-decks·/cards 첫 화면)이 문서(doc, 최대 수 MB)를 읽지 않고 인덱스만으로 최근순을 읽게 한다(covering·정렬 포함)
+CREATE INDEX IF NOT EXISTS cards_decks_list ON cards_decks (updated_at DESC, id, title, preset, card_count, revision);
+DROP INDEX IF EXISTS cards_decks_updated;
 `;
 
 type Row = Record<string, unknown>;

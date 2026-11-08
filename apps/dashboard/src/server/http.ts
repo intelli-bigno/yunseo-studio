@@ -1,6 +1,8 @@
 // 쓰기 API 공통 — JSON 본문을 상한 안에서만 읽고, 최상위가 객체인지 확인한다.
 // 상한은 Content-Length 로 먼저 거르고(거짓·생략 대비) 실제 스트림도 상한에서 끊는다 — 큰 본문을 메모리에 다 올리지 않는다.
 // 응답 모양: 413 {error:{code:"TOO_LARGE"}} · 400 {error:{code:"BAD_JSON"|"NOT_OBJECT"}}
+import { createHash } from "node:crypto";
+
 export const KB = 1024;
 
 export type JsonObjectBody = { ok: true; value: Record<string, unknown>; bytes: number } | { ok: false; response: Response };
@@ -53,4 +55,9 @@ export async function readJsonObject(req: Request, max: number, opts: { emptyAs?
   }
   if (!value || typeof value !== "object" || Array.isArray(value)) return fail(400, opts.badCode ?? "NOT_OBJECT", "본문 최상위는 JSON 객체여야 한다");
   return { ok: true, value: value as Record<string, unknown>, bytes: bytes.byteLength };
+}
+
+/** 내용으로 만든 강한 ETag — 같은 바이트면 같은 값(sha1 앞 22자, base64url). 304 판정에 쓴다 */
+export function contentEtag(bytes: ArrayBuffer | Uint8Array): string {
+  return `"${createHash("sha1").update(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)).digest("base64url").slice(0, 22)}"`;
 }

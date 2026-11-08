@@ -1,6 +1,7 @@
 // 보관함 — 만든 쇼츠(렌더 산출물 폴더)·카드뉴스 레퍼런스(docs/design/card-reference 수집분)를 읽는다.
 // 파일 이름·경로는 정해진 모양만 받는다(경로 탈출 금지). 쓰기는 하지 않는다.
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readdirSync, readFileSync, statSync, type Stats } from "node:fs";
+import { Readable } from "node:stream";
 import { join, resolve, sep } from "node:path";
 import { studio, studioWorkDir } from "./studio";
 
@@ -135,21 +136,42 @@ export function referenceAsset(parts: string[]): string | null {
 }
 
 // ── 파일 응답(영상은 구간 요청 지원 — 탐색·이어보기) ─────────────────
+// 파일 전체를 메모리에 올리지 않는다 — stat 한 번으로 크기·ETag 를 알고, 본문은 읽기 스트림(구간 요청이면 그 구간만)으로 내보낸다.
+// 같은 ETag 로 다시 물으면 304(본문 없음) — 영상 40MB 의 앞 1KB 를 읽는 데 전체를 읽던 비용(20ms)과 되풀이 전송이 사라진다.
 const TYPES: Record<string, string> = { mp4: "video/mp4", png: "image/png", jpg: "image/jpeg", mp3: "audio/mpeg", wav: "audio/wav", m4a: "audio/mp4", ogg: "audio/ogg", flac: "audio/flac" };
 
-export function fileResponse(req: Request, path: string | null, opts: { download?: string } = {}): Response {
+export interface FileResponseOptions {
+  download?: string;
+  /** 기본 `private, max-age=300` — 내용이 바뀌지 않는 정적 파일은 더 길게 */
+  cacheControl?: string;
+}
+
+/** 약한 ETag — 크기와 수정 시각(ms)이 같으면 같은 파일로 본다 */
+const etagOf = (st: { size: number; mtimeMs: number }) => `W/"${st.size.toString(16)}-${Math.floor(st.mtimeMs).toString(16)}"`;
+const matches = (header: string | null, etag: string) => !!header && header.split(",").some((t) => t.trim() === etag || t.trim() === "*");
+
+export function fileResponse(req: Request, path: string | null, opts: FileResponseOptions = {}): Response {
   if (!path) return new Response("not found", { status: 404 });
-  const size = statSync(path).size;
+  let st: Stats;
+  try {
+    st = statSync(path);
+  } catch {
+    return new Response("not found", { status: 404 });
+  }
+  const size = st.size;
   const type = TYPES[path.slice(path.lastIndexOf(".") + 1).toLowerCase()] ?? "application/octet-stream";
-  const headers: Record<string, string> = { "content-type": type, "accept-ranges": "bytes", "cache-control": "private, max-age=300" };
+  const etag = etagOf(st);
+  const headers: Record<string, string> = { "content-type": type, "accept-ranges": "bytes", "cache-control": opts.cacheControl ?? "private, max-age=300", etag, "last-modified": st.mtime.toUTCString() };
   if (opts.download) headers["content-disposition"] = `attachment; filename="${opts.download}"`;
+  if (matches(req.headers.get("if-none-match"), etag)) return new Response(null, { status: 304, headers: { "cache-control": headers["cache-control"]!, etag, "last-modified": headers["last-modified"]! } });
   const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.get("range") ?? "");
-  const buf = readFileSync(path);
+  const body = (start: number, end: number) => Readable.toWeb(createReadStream(path, { start, end })) as unknown as ReadableStream<Uint8Array>;
   if (range && (range[1] || range[2])) {
     const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
     const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
     if (start >= size || start > end) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
-    return new Response(new Uint8Array(buf.subarray(start, end + 1)), { status: 206, headers: { ...headers, "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(end - start + 1) } });
+    return new Response(body(start, end), { status: 206, headers: { ...headers, "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(end - start + 1) } });
   }
-  return new Response(new Uint8Array(buf), { headers: { ...headers, "content-length": String(size) } });
+  if (size === 0) return new Response(new Uint8Array(0), { headers: { ...headers, "content-length": "0" } });
+  return new Response(body(0, size - 1), { headers: { ...headers, "content-length": String(size) } });
 }

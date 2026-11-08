@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 import { DEVICE_SIZES, IMAGE_QUALITY, IMAGE_SIZES } from "./src/lib/image-config";
 
 // 운영 웹 화면 (docs/06-dashboard.md). 데이터는 유스케이스 → SQLite 어댑터(시안 데이터)에서 온다.
+// 고정 이름 정적 파일(public/) — Next 기본은 max-age=0(매번 재검증)이다. 이름에 해시가 없어 immutable 은 못 쓰고, 하루 신선 + 일주일 stale-while-revalidate 로 둔다.
+// 해시가 붙은 /_next/static/** 는 Next 가 이미 immutable 로 낸다(scripts/perf/measure-cards.mjs 가 확인).
+const PUBLIC_CACHE = "public, max-age=86400, stale-while-revalidate=604800";
+
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -21,7 +25,15 @@ const config: NextConfig = {
     imageSizes: IMAGE_SIZES,
     qualities: [IMAGE_QUALITY],
     minimumCacheTTL: 60 * 60 * 24 * 30,
-    localPatterns: [{ pathname: "/img/**" }, { pathname: "/api/cards/**" }],
+    // 레퍼런스 썸네일: 수집 목록의 그림(핀터레스트 CDN 736x 원본)과 저장소 캡처(/api/refs)도 같은 최적화기(WebP·작은 폭·디스크 캐시)를 거친다
+    localPatterns: [{ pathname: "/img/**" }, { pathname: "/api/cards/**" }, { pathname: "/api/refs/**" }],
+    remotePatterns: [{ protocol: "https", hostname: "i.pinimg.com", pathname: "/736x/**" }],
+  },
+  async headers() {
+    return [
+      { source: "/img/:path*", headers: [{ key: "Cache-Control", value: PUBLIC_CACHE }] },
+      { source: "/:file(icon.png|icon-192.png|icon-512.png|apple-icon.png|manifest.webmanifest)", headers: [{ key: "Cache-Control", value: PUBLIC_CACHE }] },
+    ];
   },
 };
 
