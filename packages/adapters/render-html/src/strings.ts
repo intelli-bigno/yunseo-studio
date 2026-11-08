@@ -1,6 +1,6 @@
 // 카드 안의 고정 문구(템플릿이 쓰는 말) — 발행 언어별. 질문 말풍선(Q)은 여기가 아니라 포맷 프리셋의 pages 에 있다.
 // 지원하는 언어는 en · ko. 그 밖의 언어는 영어 문구를 쓰고 렌더 결과 경고에 남긴다.
-import type { Marker } from "./plan/types";
+import type { Marker } from "./plan/marker";
 
 export type Lang = "en" | "ko";
 

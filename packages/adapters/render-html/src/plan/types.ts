@@ -1,9 +1,10 @@
 // 카드 계획 — 콘텐츠 정본(종마다 다른 모양)을 「카드 몇 장, 장마다 무엇」이라는 하나의 모양으로 바꾼다.
 // 레이아웃(layout/)은 이 모양만 안다. 종이 늘어도 레이아웃은 그대로다.
 import type { Strings } from "../strings";
+import type { Marker } from "./marker";
 
 /** ■ 보도된 사실 · ▲ 시장 반응 · ◆ 운영자 해석 · ○ 시나리오 (docs/01 §5) */
-export type Marker = "fact" | "market" | "view" | "scenario";
+export type { Marker } from "./marker";
 
 export interface Para {
   t: "para";

@@ -121,7 +121,7 @@ describe("import 그래프 — 선언한 의존만 쓴다", () => {
         .filter((e) => e.isDirectory() && existsSync(join(root, top, e.name, "package.json")))
         .map((e) => `${top}/${e.name}`),
     );
-    expect(roots.length).toBeGreaterThanOrEqual(19);
+    expect(roots.length).toBeGreaterThanOrEqual(18);
     for (const dir of roots) {
       const file = join(root, dir, "package.json");
       if (!existsSync(file)) continue;

@@ -3,7 +3,7 @@
 // 단 본문(글)은 「첫 줄 = 카드 제목, 다음 줄부터 점」으로 읽고, 글로 못 채우는 필드는 구조 칸(fields.ts)에서 읽는다.
 import type { Claim } from "../content/claims";
 import { contentBlockers, contentVerificationFindings, validateContentDoc, type ContentBody, type ContentRules } from "../content/document";
-import { contentHash, isAuthoringKind, pieceAsOf, type AuthoringKind } from "./authoring";
+import { contentHash, isAuthoringKind, pieceAsOf, type AuthoringKind } from "./piece-content";
 import { listColumns, listLines } from "./fields";
 import type { Piece, PieceClaim } from "./model";
 
