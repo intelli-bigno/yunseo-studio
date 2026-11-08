@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 카드뉴스 덱 도우미 — 대시보드의 HTTP API(docs/13-cards-ops-schema.md)만 쓴다. 의존성 없음(Node 22 의 fetch).
-// 서버가 떠 있어야 한다(bash scripts/start.sh). 주소는 STUDIO_URL, 없으면 http://127.0.0.1:<PORT 또는 8930>.
+// 서버가 떠 있어야 한다(bash scripts/start.sh). 주소는 STUDIO_URL, 없으면 http://127.0.0.1:<PORT 또는 8930> (환경 변수 → 저장소 루트 .env 순으로 읽는다).
 //
 //   node scripts/studio-cards.mjs list                          덱 목록
 //   node scripts/studio-cards.mjs create [제목] [--preset 4:5]   빈 덱 만들기 → id 출력
@@ -14,7 +14,22 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const BASE = (process.env.STUDIO_URL || `http://127.0.0.1:${process.env.PORT || 8930}`).replace(/\/$/, "");
+/** 환경 변수에 없으면 저장소 루트 .env 의 값을 쓴다 — .env 에서 PORT 를 바꿔도 start.sh 와 같은 서버를 보게 한다. 빈 값·없음 = undefined */
+function setting(key) {
+  if (process.env[key]) return process.env[key];
+  try {
+    const text = readFileSync(fileURLToPath(new URL("../.env", import.meta.url)), "utf8");
+    for (const line of text.split(/\r?\n/)) {
+      const m = line.match(new RegExp(`^\\s*${key}\\s*=\\s*("[^"]*"|'[^']*'|[^#\\s]*)`));
+      if (m) return m[1].replace(/^["']|["']$/g, "") || undefined;
+    }
+  } catch {
+    // .env 가 없으면 기본값
+  }
+  return undefined;
+}
+
+const BASE = (setting("STUDIO_URL") || `http://127.0.0.1:${setting("PORT") || 8930}`).replace(/\/$/, "");
 const SAMPLE_FILE = fileURLToPath(new URL("../docs/handoff/sample-deck.json", import.meta.url));
 const CLIENT_ID = "agent:claude";
 

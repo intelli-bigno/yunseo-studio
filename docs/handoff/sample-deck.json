@@ -4,21 +4,21 @@
   "ops": [
     { "op": "add_layer", "card": 0, "id": "s1-bg", "layer": { "kind": "image", "name": "배경 사진", "src": "/api/refs/card-reference/v2/bg/v2-1-cover.jpg", "x": 0, "y": 0, "w": 1080, "h": 1350, "fit": "cover" } },
     { "op": "add_layer", "card": 0, "id": "s1-dim", "layer": { "kind": "overlay", "name": "아래 어둡게", "color": "#000000", "opacity": 0.85, "gradient": "to-top", "gradFrom": 0, "gradTo": 0.65 } },
-    { "op": "add_layer", "card": 0, "id": "s1-kicker", "layer": { "kind": "sticker", "name": "SAMPLE 태그", "sticker": "tag-kicker", "label": "SAMPLE", "cx": 230, "cy": 780 } },
+    { "op": "add_layer", "card": 0, "id": "s1-kicker", "layer": { "kind": "sticker", "name": "SAMPLE 태그", "sticker": "tag-kicker", "label": "SAMPLE", "labelColor": "#ffffff", "cx": 230, "cy": 780 } },
     { "op": "add_layer", "card": 0, "id": "s1-title", "layer": { "kind": "text", "name": "제목", "text": "발표 전에\n시장이 먼저 묻는 것", "font": "serif", "size": 92, "weight": 800, "color": "#ffffff", "x": 96, "y": 840, "w": 888, "h": 280 } },
     { "op": "add_layer", "card": 0, "id": "s1-sub", "layer": { "kind": "text", "name": "부제", "text": "구조 예시 · 사실 수치 없음 · 발행 불가", "font": "sans", "size": 32, "weight": 500, "color": "#ede6d8", "x": 96, "y": 1160, "w": 888, "h": 60 } },
 
     { "op": "add_card", "id": "s2" },
     { "op": "add_layer", "card": "s2", "id": "s2-bg", "layer": { "kind": "image", "name": "배경 사진", "src": "/api/refs/card-reference/v2/bg/v2-2-why.jpg", "x": 0, "y": 0, "w": 1080, "h": 1350, "fit": "cover" } },
     { "op": "add_layer", "card": "s2", "id": "s2-dim", "layer": { "kind": "overlay", "name": "아래 어둡게", "color": "#000000", "opacity": 0.88, "gradient": "to-top", "gradFrom": 0, "gradTo": 0.7 } },
-    { "op": "add_layer", "card": "s2", "id": "s2-tag", "layer": { "kind": "sticker", "name": "질문 태그", "sticker": "tag-kicker", "label": "Q1", "cx": 160, "cy": 740 } },
+    { "op": "add_layer", "card": "s2", "id": "s2-tag", "layer": { "kind": "sticker", "name": "질문 태그", "sticker": "tag-kicker", "label": "Q1", "labelColor": "#ffffff", "cx": 160, "cy": 726 } },
     { "op": "add_layer", "card": "s2", "id": "s2-q", "layer": { "kind": "text", "name": "질문", "text": "왜 발표 하나에\n가격이 움직일까?", "font": "serif", "size": 70, "weight": 800, "color": "#ffffff", "x": 96, "y": 790, "w": 888, "h": 220 } },
     { "op": "add_layer", "card": "s2", "id": "s2-a", "layer": { "kind": "text", "name": "한 줄 답", "text": "결과 자체보다, 예상과 얼마나\n달랐는지가 반영되기 때문입니다.", "font": "sans", "size": 42, "weight": 500, "color": "#ede6d8", "lineHeight": 1.45, "x": 96, "y": 1040, "w": 888, "h": 200 } },
 
     { "op": "add_card", "id": "s3" },
     { "op": "add_layer", "card": "s3", "id": "s3-bg", "layer": { "kind": "image", "name": "배경 사진", "src": "/api/refs/card-reference/v2/bg/v2-4-doors.jpg", "x": 0, "y": 0, "w": 1080, "h": 1350, "fit": "cover" } },
     { "op": "add_layer", "card": "s3", "id": "s3-dim", "layer": { "kind": "overlay", "name": "아래 어둡게", "color": "#000000", "opacity": 0.9, "gradient": "to-top", "gradFrom": 0, "gradTo": 0.75 } },
-    { "op": "add_layer", "card": "s3", "id": "s3-tag", "layer": { "kind": "sticker", "name": "질문 태그", "sticker": "tag-kicker", "label": "Q2", "cx": 160, "cy": 640 } },
+    { "op": "add_layer", "card": "s3", "id": "s3-tag", "layer": { "kind": "sticker", "name": "질문 태그", "sticker": "tag-kicker", "label": "Q2", "labelColor": "#ffffff", "cx": 160, "cy": 626 } },
     { "op": "add_layer", "card": "s3", "id": "s3-q", "layer": { "kind": "text", "name": "질문", "text": "결과가 달라지면?", "font": "serif", "size": 70, "weight": 800, "color": "#ffffff", "x": 96, "y": 690, "w": 888, "h": 110 } },
     { "op": "add_layer", "card": "s3", "id": "s3-body", "layer": { "kind": "text", "name": "시나리오 셋", "text": "① 예상대로 — 이미 가격에 있던 이야기\n② 예상보다 강하게 — 놀람이 한 번 더 반영\n③ 예상보다 약하게 — 반대 방향의 놀람\n\n숫자 예측이 아니라 읽는 순서입니다.", "font": "sans", "size": 40, "weight": 500, "color": "#ede6d8", "lineHeight": 1.5, "x": 96, "y": 830, "w": 888, "h": 420 } },
 

@@ -45,7 +45,7 @@ node scripts/studio-cards.mjs create "덱 제목" --preset 4:5     # → id 가 
 | 좌우 여백 | x 96, 폭 888 |
 | 사진 배경 | 이미지 `x0 y0 w1080 h1350 fit cover` + 아래 덮개(`gradient to-top`, `opacity 0.85~0.9`, `gradFrom 0`, `gradTo 0.65~0.75`) |
 | 글 자리 | 아래 40% (y 780~1250). 제목·질문 serif 70~92 · weight 800 / 답·본문 sans 40~44 · lineHeight 1.45 |
-| 태그 | 스티커 `tag-kicker` (`label` 에 SAMPLE·Q1 등) |
+| 태그 | 스티커 `tag-kicker` (`label` 에 SAMPLE·Q1 등). 어두운 사진 위에서는 `"labelColor": "#ffffff"` 를 준다 — 기본 글자색이 검정이라 안 보인다 |
 | 텍스트 박스 높이 | 글자 크기 × 줄 수 × 1.3 보다 크게. 넘치면 화면에서 잘린다 |
 
 ## 4. 글 규칙

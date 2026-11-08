@@ -101,7 +101,8 @@ docker compose down              # 끄기 (데이터는 볼륨 yunseo-studio-dat
 | `setup.sh` 가 「node 22.13 이상이 필요하다」 | Node 가 낮다 | LTS 를 새로 설치하고 터미널을 다시 연다 |
 | `pnpm: command not found` | pnpm 미설치 | `npm install -g pnpm@11.13.1` |
 | `start.sh` 가 「의존성이 없다」 | `setup.sh` 를 안 돌렸다 | `bash scripts/setup.sh` |
-| 포트 8930 이 이미 쓰인다 / 켜지지 않는다 | 다른 프로그램, 또는 이미 켜 둔 대시보드 | `bash scripts/start.sh --stop` 후 다시. 계속되면 `.env` 의 `PORT=8931` 로 바꾸고 주소도 바꾼다 |
+| 포트 8930 이 이미 쓰인다 / 켜지지 않는다 / 내가 켠 적 없는데 `start.sh` 가 「이미 켜져 있다」 | 다른 프로그램, 또는 이미 켜 둔 대시보드. 같은 포트에 다른 대시보드가 떠 있으면 `start.sh` 가 그것을 내 것으로 보고 샘플 덱을 그쪽에 만든다 | `bash scripts/start.sh --stop` 후 다시. 계속되면 `.env` 의 `PORT=8931` 로 바꾸고 주소도 바꾼다 (`studio-cards.mjs` 도 `.env` 의 PORT 를 따라간다) |
+| 화면 왼쪽 아래에 빨간 「1 Issue」 배지 | 개발 모드의 알림. 레퍼런스 제목 한 건의 이모지가 잘려서 서버·브라우저의 글자가 어긋난다는 경고다 (2026-11-08 확인) | 닫아도 된다. 확인한 범위(덱 열기·장 넘기기)에서 화면은 정상이었다. 없애려면 코드를 고쳐야 한다 |
 | 브라우저가 안 열린다 (연결 거부) | 서버가 아직 컴파일 중이거나 꺼짐 | `.data/dashboard.log` 마지막 줄 확인 (`--detach` 로 켰을 때). 180초 넘게 안 켜지면 로그를 Claude 에게 보여 준다 |
 | 화면 저장이 `409` | Claude 가 같은 덱을 ops 로 고쳤다 | 덱을 다시 불러온다 (화면의 변경은 저장 전이면 사라진다 — 먼저 PNG 로 내보내 두면 안전하다) |
 | 덱에 넣은 배경 이미지가 안 보인다 | 파일 이름에 밑줄·대문자·점이 있거나, `src` 가 `/api/` 로 시작하지 않는다 | 파일명을 `s1-cover.jpg` 처럼 소문자·숫자·하이픈으로. `src` 는 `/api/refs/backgrounds/<폴더>/<파일>` |
@@ -127,4 +128,7 @@ docker compose down              # 끄기 (데이터는 볼륨 yunseo-studio-dat
 
 | 항목 | 값 |
 | --- | --- |
-| 확인한 환경 | (아래 PR 본문의 검증 표 참고) |
+| 확인한 환경 | Windows PC 의 WSL2 Ubuntu (커널 6.6.87.1-microsoft-standard-WSL2) · Node 22.23.3 · pnpm 11.13.1 · Git 2.43.0 · ffmpeg·Docker 있음 · codex 없음 |
+| 확인한 날짜·방식 | 2026-11-08 · 저장소 커밋 `acd34f0` 을 빈 폴더로 새로 받은 클론(node_modules·.env·.data 없음). WSL 에 GitHub 인증이 없어 같은 커밋을 로컬 저장소에서 받았다 |
+| 통과한 것 | `setup.sh --check` → `setup.sh` → `start.sh --detach` → 샘플 덱 만들기 → `/api/health`·`/api/cards-decks`·`/api/cards/<덱>/ops`·`/cards?deck=<덱>` 모두 HTTP 200 → 브라우저로 4장 렌더 눈 확인 → `start.sh --stop`(pid 파일 삭제·포트 닫힘). `tests/handoff-docs.test.ts` 13개·eslint 통과 |
+| 확인 못 한 것 | macOS·Linux 네이티브, PowerShell·cmd 직접 실행, codex 로그인과 배경 생성, 릴스 내보내기(ffmpeg 합성), Docker(§5), 인터넷에서 처음 받는 `pnpm install`(이 확인에서는 이미 받아 둔 저장소를 써서 1초 만에 끝났다), 윤서 컴퓨터에서의 실제 실행 |
