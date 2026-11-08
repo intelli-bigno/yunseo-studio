@@ -1,7 +1,7 @@
 // [L2] 렌더 → 미리보기 → 업로드 묶음 — 계약 포트(CardRenderer·ReelComposer·UploadPackager)로만 부른다.
 // 포트가 주입되지 않은 단계는 가짜로 채우지 않고 비활성 + 이유를 돌려준다(L1 렌더·L3 릴스는 통합 Worker 가 배선).
 // 산출물은 「어떤 내용 해시로 만들었나」와 함께 기록한다 — 내용이 바뀌면 낡은 산출물로 묶음을 만들지 않는다.
-import { contentHash, toContentBody, validApproval, type Piece } from "@yunseo/domain";
+import { AppError, contentHash, toContentBody, validApproval, type Piece } from "@yunseo/domain";
 import type { CardRenderer, CardRenderResult, ContentDocument, ReelComposer, ReelResult, UploadBundle, UploadPackager } from "../pipeline/contracts";
 import { previewOf, type PiecePreview } from "./preview";
 import { PieceNotFoundError, type AuthoringClock, type AuthoringStore, type BundleFiles, type PipelineRecord } from "./ports";
@@ -50,12 +50,12 @@ export interface PipelineView {
 }
 
 /** 파이프라인 단계를 실행할 수 없음 */
-export class PipelineStepError extends Error {
+export class PipelineStepError extends AppError<"PIPELINE_STEP_BLOCKED"> {
   constructor(
     readonly step: PipelineStepKey,
     readonly reason: string,
   ) {
-    super(reason);
+    super("PIPELINE_STEP_BLOCKED", reason, { status: 409, details: { step } });
     this.name = "PipelineStepError";
   }
 }

@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CommandInput, CommandItem, Dialog, DialogBody, DialogHeader, EmptyState, Kbd, KeyHint, List, ListItem } from "@yunseo/ui";
 import { VirtualList } from "@yunseo/ui/virtual";
+import { apiFetch } from "@/lib/api-client";
 import type { PaletteEntry } from "@/lib/palette";
 import { SHORTCUTS } from "@/lib/shortcuts";
 
@@ -14,8 +15,8 @@ let memo: { at: number; entries: PaletteEntry[] } | null = null; // 모듈 하�
 
 async function loadEntries(signal: AbortSignal): Promise<PaletteEntry[]> {
   if (memo && Date.now() - memo.at < FRESH_MS) return memo.entries;
-  const res = await fetch("/api/palette", { signal });
-  const entries = (await res.json()) as PaletteEntry[];
+  // 실패(오류 응답·연결)는 던진다 — 오류 본문을 색인으로 저장해 목록 계산이 깨지지 않게
+  const entries = await apiFetch<PaletteEntry[]>("/api/palette", { signal, timeoutMs: 10_000 });
   memo = { at: Date.now(), entries };
   return entries;
 }

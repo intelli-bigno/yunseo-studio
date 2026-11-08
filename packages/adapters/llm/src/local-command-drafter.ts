@@ -4,6 +4,17 @@
 //  · 출력 계약: stdout 에 JSON 한 덩어리 `{ "stages": [{ "key": "...", "body": "..." }] }`.
 import { execFile } from "node:child_process";
 import type { ScriptDraft, ScriptDraftRequest, ScriptDrafter } from "@yunseo/application";
+import { AppError } from "@yunseo/domain";
+
+export type DrafterErrorCode = "DRAFTER_DISABLED" | "DRAFTER_FAILED" | "DRAFTER_TIMEOUT" | "DRAFTER_BAD_OUTPUT";
+
+/** 초안 명령(로컬 CLI — codex 등) 실패 — 꺼짐·실행 실패·시간 초과·출력 계약 위반을 코드로 가른다 */
+export class DrafterError extends AppError<DrafterErrorCode> {
+  override name = "DrafterError";
+  constructor(code: DrafterErrorCode, message: string, cause?: unknown) {
+    super(code, message, cause === undefined ? {} : { cause });
+  }
+}
 
 export interface LocalCommandDrafterOptions {
   /** 실행 파일과 인자. 비었거나 생략하면 꺼짐 */
@@ -31,14 +42,14 @@ function parseOutput(stdout: string, maxBodyChars: number): ScriptDraft {
   try {
     json = JSON.parse(stdout);
   } catch {
-    throw new Error("초안 명령의 출력이 JSON 이 아니다");
+    throw new DrafterError("DRAFTER_BAD_OUTPUT", "초안 명령의 출력이 JSON 이 아니다");
   }
   const stages = (json as { stages?: unknown }).stages;
-  if (!Array.isArray(stages)) throw new Error("초안 명령의 출력에 stages 배열이 없다");
+  if (!Array.isArray(stages)) throw new DrafterError("DRAFTER_BAD_OUTPUT", "초안 명령의 출력에 stages 배열이 없다");
   const out = stages.map((s: unknown) => {
     const row = s as { key?: unknown; body?: unknown };
-    if (typeof row.key !== "string" || typeof row.body !== "string") throw new Error("초안 단은 문자열 key·body 를 가져야 한다");
-    if (row.body.length > maxBodyChars) throw new Error(`초안 단 ${row.key} 가 ${maxBodyChars}자를 넘는다`);
+    if (typeof row.key !== "string" || typeof row.body !== "string") throw new DrafterError("DRAFTER_BAD_OUTPUT", "초안 단은 문자열 key·body 를 가져야 한다");
+    if (row.body.length > maxBodyChars) throw new DrafterError("DRAFTER_BAD_OUTPUT", `초안 단 ${row.key} 가 ${maxBodyChars}자를 넘는다`);
     return { key: row.key, body: row.body };
   });
   return { stages: out, draftedBy: "assistant" };
@@ -53,17 +64,17 @@ export function createLocalCommandDrafter(options: LocalCommandDrafterOptions = 
   return {
     enabled: command !== null,
     draft(request: ScriptDraftRequest): Promise<ScriptDraft> {
-      if (!command) return Promise.reject(new Error("원고 초안 명령이 설정되지 않았다 (기본 꺼짐)"));
+      if (!command) return Promise.reject(new DrafterError("DRAFTER_DISABLED", "원고 초안 명령이 설정되지 않았다 (기본 꺼짐)"));
       const [file, ...args] = command as [string, ...string[]];
       return new Promise<ScriptDraft>((resolve, reject) => {
         const child = execFile(file, args, { timeout: timeoutMs, maxBuffer: maxOutputChars * 4, encoding: "utf8", shell: false, windowsHide: true }, (error, stdout) => {
           if (error) {
             const killed = (error as { killed?: boolean }).killed;
-            reject(new Error(killed ? `초안 명령이 ${timeoutMs}ms 안에 끝나지 않았다` : `초안 명령 실패: ${error.message.split("\n")[0]}`));
+            reject(killed ? new DrafterError("DRAFTER_TIMEOUT", `초안 명령이 ${timeoutMs}ms 안에 끝나지 않았다`, error) : new DrafterError("DRAFTER_FAILED", `초안 명령 실패: ${error.message.split("\n")[0]}`, error));
             return;
           }
           if (stdout.length > maxOutputChars) {
-            reject(new Error("초안 명령의 출력이 너무 크다"));
+            reject(new DrafterError("DRAFTER_BAD_OUTPUT", "초안 명령의 출력이 너무 크다"));
             return;
           }
           try {

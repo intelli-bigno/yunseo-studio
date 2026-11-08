@@ -7,6 +7,7 @@ import { lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { RENDER_MANIFEST, toRenderManifest, type CardRenderResult, type CardRenderer, type ContentDocument, type RenderedFile } from "@yunseo/application";
 import {
+  AppError,
   buildPublishText,
   contentBlockers,
   contentKindOf,
@@ -41,20 +42,20 @@ export interface HtmlCardRendererOptions {
 }
 
 /** 렌더 전 검사에서 block 이 나와 렌더를 거부했다 */
-export class ContentBlockedError extends Error {
+export class ContentBlockedError extends AppError<"CONTENT_BLOCKED"> {
   readonly findings: ContentFinding[];
   constructor(pieceId: string, findings: ContentFinding[]) {
-    super(`렌더 거부 ${pieceId}: block ${findings.length}건\n${findings.map((f) => `- [${f.code}] ${f.path}: ${f.message}`).join("\n")}`);
+    super("CONTENT_BLOCKED", `렌더 거부 ${pieceId}: block ${findings.length}건\n${findings.map((f) => `- [${f.code}] ${f.path}: ${f.message}`).join("\n")}`, { status: 422, details: { pieceId, findings } });
     this.name = "ContentBlockedError";
     this.findings = findings;
   }
 }
 
 /** 정본이 스키마를 통과하지 못했다 */
-export class InvalidContentError extends Error {
+export class InvalidContentError extends AppError<"INVALID_CONTENT"> {
   readonly errors: string[];
   constructor(pieceId: string, errors: string[]) {
-    super(`정본 오류 ${pieceId}: ${errors.length}건\n${errors.map((m) => `- ${m}`).join("\n")}`);
+    super("INVALID_CONTENT", `정본 오류 ${pieceId}: ${errors.length}건\n${errors.map((m) => `- ${m}`).join("\n")}`, { status: 422, details: { pieceId, errors } });
     this.name = "InvalidContentError";
     this.errors = errors;
   }

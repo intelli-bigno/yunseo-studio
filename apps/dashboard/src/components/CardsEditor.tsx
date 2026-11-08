@@ -87,6 +87,8 @@ import {
   Textarea,
   clampRightRatio,
 } from "@yunseo/ui";
+import { useToast } from "@yunseo/ui/toast";
+import { type ApiError, detailList, failureText, networkError, parseErrorBody, timeoutError } from "@/lib/api-client";
 import { drawCard, exportName, type Ctx2D, type LoadedImage } from "@/lib/cards-export";
 import { filterRefs, refSets } from "@/lib/ref-filter";
 import { CardView, cssFamily } from "./CardView";
@@ -188,10 +190,19 @@ function download(blob: Blob, name: string) {
   void later(1000, () => URL.revokeObjectURL(url));
 }
 
-/** 같은 출처 덱 API 만 부른다(path 는 "" 또는 "/<id>") — 30초 넘으면 끊는다 */
-async function api<T>(path: string, init?: RequestInit): Promise<{ status: number; body: T }> {
-  const res = await fetch(`/api/cards-decks${path}`, { ...init, signal: AbortSignal.timeout(30_000), headers: { "content-type": "application/json", ...init?.headers } });
-  return { status: res.status, body: res.status === 204 ? (null as T) : ((await res.json().catch(() => null)) as T) };
+/**
+ * 같은 출처 덱 API 만 부른다(path 는 "" 또는 "/<id>") — 30초 넘으면 끊는다.
+ * 던지지 않는다: 연결 실패·시간 초과는 status 0, 오류 응답은 error(서버의 { error: { code, message } })에 담아 돌려준다.
+ */
+async function api<T>(path: string, init?: RequestInit): Promise<{ status: number; body: T; error: ApiError | null }> {
+  try {
+    const res = await fetch(`/api/cards-decks${path}`, { ...init, signal: AbortSignal.timeout(30_000), headers: { "content-type": "application/json", ...init?.headers } });
+    const body = res.status === 204 ? null : await res.json().catch(() => null);
+    return { status: res.status, body: body as T, error: res.ok ? null : parseErrorBody(res.status, body) };
+  } catch (e) {
+    const timedOut = typeof e === "object" && e !== null && (e as { name?: unknown }).name === "TimeoutError";
+    return { status: 0, body: null as T, error: timedOut ? timeoutError(30_000) : networkError() };
+  }
 }
 
 /** 숫자 칸 — 범위 밖·빈 값은 무시 */
@@ -211,6 +222,14 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ tone: "alert" | "accent"; text: string } | null>(null);
+  const toast = useToast();
+  /** 실패 알림 — 연결·서버 쪽 오류(다시 보내면 될 수 있는 것)는 「다시 시도」 토스트, 입력·충돌 오류는 화면 안 안내 */
+  const fail = (text: string, error: ApiError | null, retry?: () => void) => {
+    if (error?.retryable && retry) toast.error(failureText(error, text), { action: { label: "다시 시도", onAction: retry } });
+    else setMsg({ tone: "alert", text });
+  };
+  // 「다시 시도」 는 눌렀을 때의 최신 함수를 부른다 — 실패 시점의 낡은 상태로 덱을 또 만들지 않게
+  const latest = useRef<{ open: (id: string) => Promise<void>; save: () => Promise<void>; remove: () => Promise<void> } | null>(null);
   const [tab, setTab] = useState<RightTab>("ref");
   const [query, setQuery] = useState("");
   const [refSet, setRefSet] = useState("");
@@ -426,7 +445,7 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     setBusy(true);
     const r = await api<Loaded>(`/${id}`);
     setBusy(false);
-    if (r.status !== 200) return setMsg({ tone: "alert", text: "덱을 불러오지 못했습니다" });
+    if (r.error) return fail("덱을 불러오지 못했습니다", r.error, () => void latest.current?.open(id));
     reset({ deck: r.body.deck, revision: r.body.revision });
     setMsg(null);
   };
@@ -437,12 +456,12 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
       if (revision === 0) {
         // 첫 저장 — 서버가 덱 id 를 정한다
         const c = await api<Loaded>("", { method: "POST", body: JSON.stringify({ title: d.title, preset: d.preset }) });
-        if (c.status !== 201) return setMsg({ tone: "alert", text: "새 덱을 만들지 못했습니다" });
+        if (c.error) return fail("새 덱을 만들지 못했습니다", c.error, () => void latest.current?.save());
         d = { ...d, id: c.body.deck.id };
         revision = c.body.revision;
         setCur({ deck: d, revision });
       }
-      const r = await api<Loaded & { errors?: string[] }>(`/${d.id}`, { method: "PUT", body: JSON.stringify({ deck: d, revision }) });
+      const r = await api<Loaded>(`/${d.id}`, { method: "PUT", body: JSON.stringify({ deck: d, revision }) });
       if (r.status === 200) {
         setCur({ deck: r.body.deck, revision: r.body.revision });
         deckRef.current = r.body.deck;
@@ -451,7 +470,8 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
         return setMsg({ tone: "accent", text: "저장했습니다 — 콘텐츠 탭 맨 앞에 보입니다" });
       }
       if (r.status === 409) return setMsg({ tone: "alert", text: "다른 곳에서 먼저 저장했습니다 — 덱을 다시 불러온 뒤 고쳐 주세요" });
-      setMsg({ tone: "alert", text: `저장하지 못했습니다${r.body?.errors ? ` — ${r.body.errors.slice(0, 3).join(", ")}` : ""}` });
+      const problems = detailList(r.error, "errors");
+      fail(`저장하지 못했습니다${problems.length ? ` — ${problems.slice(0, 3).join(", ")}` : ""}`, r.error, () => void latest.current?.save());
     } finally {
       setBusy(false);
     }
@@ -460,10 +480,12 @@ export function CardsEditor({ initialDecks, initial, assets }: { initialDecks: D
     if (cur.revision === 0) return fresh();
     if (!confirm(`「${deck.title}」 덱을 지울까요? 되돌릴 수 없습니다.`)) return;
     const r = await api(`/${deck.id}`, { method: "DELETE" });
-    if (r.status !== 204) return setMsg({ tone: "alert", text: "지우지 못했습니다" });
+    if (r.error) return fail("지우지 못했습니다", r.error, () => void latest.current?.remove());
     setDecks((ds) => ds.filter((d) => d.id !== deck.id));
     reset(draft(deck.preset));
   };
+
+  latest.current = { open, save, remove };
 
   // ── PNG ──
   const exportCards = async (which: number[]) => {

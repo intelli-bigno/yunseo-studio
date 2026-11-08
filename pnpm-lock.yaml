@@ -135,6 +135,9 @@ importers:
       '@yunseo/application':
         specifier: workspace:*
         version: link:../../application
+      '@yunseo/domain':
+        specifier: workspace:*
+        version: link:../../domain
 
   packages/adapters/metrics:
     dependencies:

@@ -1,6 +1,6 @@
 // [L2] 작성·검수 쓰기 포트 — 저장(낙관적 동시성·수정 이력·게이트 기록)과 업로드 묶음 파일 읽기.
 // 어댑터(storage·publisher-manual)가 구현하고 apps 가 조립한다(04 규칙 3·4).
-import type { Approval, FieldChange, Piece, PieceStatus } from "@yunseo/domain";
+import { AppError, type Approval, type FieldChange, type Piece, type PieceStatus } from "@yunseo/domain";
 import type { CardRenderResult, ReelResult, UploadBundle } from "../pipeline/contracts";
 
 /** 수정 이력 한 줄 — 누가·언제·무엇이·이유(01 §6). 저장·게이트 행동·문장 확인마다 하나 */
@@ -44,20 +44,20 @@ export interface PipelineRecord {
 }
 
 /** 누군가 먼저 저장했다 — 화면은 새로 읽고 다시 고쳐야 한다 */
-export class RevisionConflictError extends Error {
+export class RevisionConflictError extends AppError<"REVISION_CONFLICT"> {
   constructor(
     readonly pieceId: string,
     readonly expected: number,
     readonly actual: number,
   ) {
-    super(`${pieceId}: 다른 곳에서 먼저 저장됨 (읽은 버전 ${expected}, 지금 ${actual})`);
+    super("REVISION_CONFLICT", `${pieceId}: 다른 곳에서 먼저 저장됨 (읽은 버전 ${expected}, 지금 ${actual})`, { details: { pieceId, expected, actual } });
     this.name = "RevisionConflictError";
   }
 }
 
-export class PieceNotFoundError extends Error {
+export class PieceNotFoundError extends AppError<"PIECE_NOT_FOUND"> {
   constructor(readonly pieceId: string) {
-    super(`편 ${pieceId} 없음`);
+    super("PIECE_NOT_FOUND", `편 ${pieceId} 없음`, { status: 404, details: { pieceId } });
     this.name = "PieceNotFoundError";
   }
 }

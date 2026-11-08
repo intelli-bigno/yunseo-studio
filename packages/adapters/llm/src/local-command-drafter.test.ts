@@ -2,7 +2,7 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ScriptDraftRequest } from "@yunseo/application";
-import { createLocalCommandDrafter, parseDrafterCommand } from "./local-command-drafter";
+import { DrafterError, createLocalCommandDrafter, parseDrafterCommand } from "./local-command-drafter";
 
 const script = fileURLToPath(new URL("../fixtures/fake-drafter.mjs", import.meta.url));
 const via = (mode: string, extra: Record<string, number> = {}) => createLocalCommandDrafter({ command: [process.execPath, script, mode], ...extra });
@@ -12,7 +12,7 @@ describe("로컬 명령 초안 어댑터", () => {
   it("명령이 없으면 꺼져 있고 아무것도 실행하지 않는다", async () => {
     for (const drafter of [createLocalCommandDrafter(), createLocalCommandDrafter({ command: [] }), createLocalCommandDrafter({ command: null })]) {
       expect(drafter.enabled).toBe(false);
-      await expect(drafter.draft(request)).rejects.toThrow(/꺼짐/);
+      await expect(drafter.draft(request)).rejects.toMatchObject({ code: "DRAFTER_DISABLED", status: 503, message: expect.stringMatching(/꺼짐/) });
     }
   });
 
@@ -23,23 +23,29 @@ describe("로컬 명령 초안 어댑터", () => {
   });
 
   it("출력이 JSON 이 아니면 오류", async () => {
-    await expect(via("bad-json").draft(request)).rejects.toThrow(/JSON/);
+    await expect(via("bad-json").draft(request)).rejects.toMatchObject({ code: "DRAFTER_BAD_OUTPUT", message: expect.stringMatching(/JSON/) });
   });
 
   it("명령이 0 이 아닌 코드로 끝나면 오류(첫 줄만 전달)", async () => {
-    await expect(via("exit1").draft(request)).rejects.toThrow(/초안 명령 실패/);
+    await expect(via("exit1").draft(request)).rejects.toMatchObject({ code: "DRAFTER_FAILED", status: 502, message: expect.stringMatching(/초안 명령 실패/) });
   });
 
   it("시간 초과면 명령을 끊고 오류", async () => {
-    await expect(via("slow", { timeoutMs: 300 }).draft(request)).rejects.toThrow(/300ms/);
+    await expect(via("slow", { timeoutMs: 300 }).draft(request)).rejects.toMatchObject({ code: "DRAFTER_TIMEOUT", status: 504, message: expect.stringMatching(/300ms/) });
   });
 
   it("한 단 본문이 상한을 넘으면 오류", async () => {
-    await expect(via("ok", { maxBodyChars: 5 }).draft(request)).rejects.toThrow(/넘는다/);
+    await expect(via("ok", { maxBodyChars: 5 }).draft(request)).rejects.toMatchObject({ code: "DRAFTER_BAD_OUTPUT", message: expect.stringMatching(/넘는다/) });
   });
 
   it("없는 실행 파일은 오류로 끝난다 (셸을 거치지 않는다)", async () => {
-    await expect(createLocalCommandDrafter({ command: ["definitely-not-a-command-xyz"] }).draft(request)).rejects.toThrow(/초안 명령 실패/);
+    await expect(createLocalCommandDrafter({ command: ["definitely-not-a-command-xyz"] }).draft(request)).rejects.toMatchObject({ code: "DRAFTER_FAILED", message: expect.stringMatching(/초안 명령 실패/) });
+  });
+
+  it("실패는 AppError 계열(DrafterError)이라 응답·기록에 코드가 그대로 실린다", async () => {
+    const e = await via("exit1").draft(request).catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(DrafterError);
+    expect((e as DrafterError).toEnvelope()).toEqual({ error: { code: "DRAFTER_FAILED", message: expect.stringMatching(/초안 명령 실패/) } });
   });
 
   it("설정 문자열(JSON 문자열 배열)을 명령으로 읽는다 — 잘못된 값은 꺼짐", () => {

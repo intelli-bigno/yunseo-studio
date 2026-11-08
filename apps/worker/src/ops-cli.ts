@@ -5,6 +5,7 @@
 // 환경변수는 워커와 같다(STUDIO_DB·YUNSEO_DATA_DIR 또는 YUNSEO_BACKUP_DIR). 복원은 워커·대시보드가 멈춘 상태에서만 한다.
 import { isAbsolute, join } from "node:path";
 import { backupSqlite, createDirBackupCatalog, restoreSqlite } from "@yunseo/adapters-ops";
+import { AppError, describeFailure } from "@yunseo/domain";
 import { loadWorkerConfig } from "./config";
 
 export interface CliIo {
@@ -19,7 +20,7 @@ export async function runOpsCli(argv: readonly string[], io: CliIo): Promise<num
   const config = loadWorkerConfig(io.env);
   const [cmd, arg] = argv;
   const need = (v: string | null, name: string) => {
-    if (!v) throw new Error(`${name} 가 설정되지 않았다`);
+    if (!v) throw new AppError("CONFIG_MISSING", `${name} 가 설정되지 않았다`);
     return v;
   };
 
@@ -35,7 +36,7 @@ export async function runOpsCli(argv: readonly string[], io: CliIo): Promise<num
     return 0;
   }
   if (cmd === "restore") {
-    if (!arg) throw new Error("복원할 백업 파일을 지정한다: restore <파일>");
+    if (!arg) throw new AppError("BAD_REQUEST", "복원할 백업 파일을 지정한다: restore <파일>");
     const dbPath = need(config.dbPath, "STUDIO_DB");
     const backupPath = isAbsolute(arg) ? arg : join(need(config.backupDir, "백업 폴더"), arg);
     if (!argv.includes("--yes")) {
@@ -71,7 +72,7 @@ if (isMain) {
   }).then(
     (code) => process.exit(code),
     (e: unknown) => {
-      console.error(`error: ${e instanceof Error ? e.message : String(e)}`);
+      console.error(`error: ${describeFailure(e)}`);
       process.exit(1);
     },
   );

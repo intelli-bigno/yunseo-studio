@@ -2,6 +2,7 @@
 // 파일 이름·경로는 정해진 모양만 받는다(경로 탈출 금지). 쓰기는 하지 않는다.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
+import { notFound, jsonError } from "./api";
 import { studio, studioWorkDir } from "./studio";
 
 // ── 쇼츠 ────────────────────────────────────────────────
@@ -137,8 +138,9 @@ export function referenceAsset(parts: string[]): string | null {
 // ── 파일 응답(영상은 구간 요청 지원 — 탐색·이어보기) ─────────────────
 const TYPES: Record<string, string> = { mp4: "video/mp4", png: "image/png", jpg: "image/jpeg", mp3: "audio/mpeg", wav: "audio/wav", m4a: "audio/mp4", ogg: "audio/ogg", flac: "audio/flac" };
 
+/** 파일 응답 — 경로가 없으면 404 오류를 던진다(route() 래퍼 안에서 부른다) */
 export function fileResponse(req: Request, path: string | null, opts: { download?: string } = {}): Response {
-  if (!path) return new Response("not found", { status: 404 });
+  if (!path) throw notFound("FILE_NOT_FOUND", "파일이 없다");
   const size = statSync(path).size;
   const type = TYPES[path.slice(path.lastIndexOf(".") + 1).toLowerCase()] ?? "application/octet-stream";
   const headers: Record<string, string> = { "content-type": type, "accept-ranges": "bytes", "cache-control": "private, max-age=300" };
@@ -148,7 +150,7 @@ export function fileResponse(req: Request, path: string | null, opts: { download
   if (range && (range[1] || range[2])) {
     const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
     const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
-    if (start >= size || start > end) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
+    if (start >= size || start > end) return jsonError("RANGE_NOT_SATISFIABLE", "요청한 구간이 파일 밖이다", { status: 416, headers: { "content-range": `bytes */${size}` } });
     return new Response(new Uint8Array(buf.subarray(start, end + 1)), { status: 206, headers: { ...headers, "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(end - start + 1) } });
   }
   return new Response(new Uint8Array(buf), { headers: { ...headers, "content-length": String(size) } });

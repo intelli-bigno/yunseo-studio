@@ -1,5 +1,6 @@
 // [L2] 작성·검수 규칙 — 상태 기계(02 SOP)·사람 게이트 G1~G3·출처/기준 시점 검증·승인 무효화(04 Approval)·수정 이력(01 §6).
 // 전부 순수 함수다. 화면·저장소는 이 규칙을 부르기만 하고 우회할 수 없다(04 규칙 5): 허용 안 된 전이·조건 미충족은 예외.
+import { AppError } from "../errors";
 import { AUTHORING_KINDS, canonical, claimContent, contentHash, contentOf, isAuthoringKind, pieceAsOf, type AuthoringKind } from "./piece-content";
 import { normalizeFields } from "./fields";
 import { documentGateIssues, type GateDocumentContext } from "./document";
@@ -26,12 +27,12 @@ import {
 export type AuthoringErrorCode = "transition_not_allowed" | "guard_failed" | "invalid_edit" | "reason_required" | "not_editable";
 
 /** 규칙 위반. issues 는 사람이 읽는 이유 목록이다 */
-export class AuthoringRuleError extends Error {
+export class AuthoringRuleError extends AppError<AuthoringErrorCode> {
   constructor(
-    readonly code: AuthoringErrorCode,
+    code: AuthoringErrorCode,
     readonly issues: string[],
   ) {
-    super(issues.join(" · ") || code);
+    super(code, issues.join(" · ") || code, { status: 422, details: { issues } });
     this.name = "AuthoringRuleError";
   }
 }

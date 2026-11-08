@@ -1,11 +1,13 @@
 // 쓰기 API 공통 — JSON 본문을 상한 안에서만 읽고, 최상위가 객체인지 확인한다.
 // 상한은 Content-Length 로 먼저 거르고(거짓·생략 대비) 실제 스트림도 상한에서 끊는다 — 큰 본문을 메모리에 다 올리지 않는다.
 // 응답 모양: 413 {error:{code:"TOO_LARGE"}} · 400 {error:{code:"BAD_JSON"|"NOT_OBJECT"}}
+import { jsonError } from "./api";
+
 export const KB = 1024;
 
 export type JsonObjectBody = { ok: true; value: Record<string, unknown>; bytes: number } | { ok: false; response: Response };
 
-const fail = (status: 400 | 413, code: string, message: string): JsonObjectBody => ({ ok: false, response: Response.json({ error: { code, message } }, { status }) });
+const fail = (status: 400 | 413, code: string, message: string): JsonObjectBody => ({ ok: false, response: jsonError(code, message, { status }) });
 const tooLarge = (max: number) => fail(413, "TOO_LARGE", `본문이 ${Math.round(max / KB)}KB 를 넘는다`);
 
 /** 본문 바이트를 max 까지만 읽는다 — 넘으면 null */
