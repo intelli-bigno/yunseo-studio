@@ -14,7 +14,7 @@ export default function RouteError({ error, reset }: { error: Error & { digest?:
     <Page>
       <PageHeader title="화면을 그리지 못했다" />
       <Stack gap={4}>
-        <Notice>{error.digest ? "서버에서 오류가 났다. 다시 시도해도 같으면 로그에서 아래 번호를 찾는다." : error.message || "알 수 없는 오류"}</Notice>
+        <Notice>{error.digest ? "서버에서 오류가 났다. 반복되면 로그에서 아래 번호를 찾는다." : error.message || "알 수 없는 오류"}</Notice>
         {error.digest && (
           <Text tone="mute" mono>
             {error.digest}
